@@ -46,7 +46,7 @@ enum InvestmentCashDistributor {
 
         let commissionRate = configurationService.effectiveInvestorCommissionRate
 
-        let serverOnly = configurationService.investorMonetaryServerOnly
+        let serverOnly = configurationService.investorStatementServerOnly
         let amounts: DistributionAmounts
         if let backendAmounts = await fetchBackendAmounts(
             investment: investment,

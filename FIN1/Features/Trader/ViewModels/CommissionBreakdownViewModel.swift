@@ -51,7 +51,7 @@ final class CommissionBreakdownViewModel: ObservableObject {
     }
 
     private var monetaryServerOnly: Bool {
-        self.configurationService.investorMonetaryServerOnly
+        self.configurationService.investorStatementServerOnly
     }
 
     // MARK: - Initialization

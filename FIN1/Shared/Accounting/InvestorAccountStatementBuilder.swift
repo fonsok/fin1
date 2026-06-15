@@ -38,7 +38,7 @@ enum InvestorAccountStatementBuilder {
 
         // Try backend entries first; fall back to local ledger
         let investmentEntries: [AccountStatementEntry]
-        let serverOnly = configurationService?.investorMonetaryServerOnly ?? false
+        let serverOnly = configurationService?.investorStatementServerOnly ?? true
         if let settlementService = settlementAPIService {
             investmentEntries = await self.loadBackendEntries(
                 for: user,

@@ -173,6 +173,14 @@ function validateConfigValue(paramName, value) {
       type: 'boolean',
       errorMsg: 'investorMonetaryServerOnly muss true oder false sein',
     },
+    traderMonetaryServerOnly: {
+      type: 'boolean',
+      errorMsg: 'traderMonetaryServerOnly muss true oder false sein',
+    },
+    frontendReadonlyMode: {
+      type: 'boolean',
+      errorMsg: 'frontendReadonlyMode muss true oder false sein',
+    },
     showInvestorPartialSellRealizations: {
       type: 'boolean',
       errorMsg: 'showInvestorPartialSellRealizations muss true oder false sein',

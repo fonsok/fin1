@@ -179,6 +179,16 @@ Parse.Cloud.define('getConfig', async (request) => {
   } else if (typeof display.investorMonetaryServerOnly !== 'boolean') {
     display.investorMonetaryServerOnly = true;
   }
+  if (liveConfig.display && typeof liveConfig.display.traderMonetaryServerOnly === 'boolean') {
+    display.traderMonetaryServerOnly = liveConfig.display.traderMonetaryServerOnly;
+  } else if (typeof display.traderMonetaryServerOnly !== 'boolean') {
+    display.traderMonetaryServerOnly = true;
+  }
+  if (liveConfig.display && typeof liveConfig.display.frontendReadonlyMode === 'boolean') {
+    display.frontendReadonlyMode = liveConfig.display.frontendReadonlyMode;
+  } else if (typeof display.frontendReadonlyMode !== 'boolean') {
+    display.frontendReadonlyMode = false;
+  }
   if (liveConfig.display && typeof liveConfig.display.showInvestorPartialSellRealizations === 'boolean') {
     display.showInvestorPartialSellRealizations = liveConfig.display.showInvestorPartialSellRealizations;
   } else if (typeof display.showInvestorPartialSellRealizations !== 'boolean') {

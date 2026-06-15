@@ -36,6 +36,8 @@ export const CONFIG_DEFAULT_VALUES: Record<string, number> = {
   serviceChargeInvoiceFromBackend: 0,
   serviceChargeLegacyClientFallbackEnabled: 1,
   investorMonetaryServerOnly: 1,
+  traderMonetaryServerOnly: 1,
+  frontendReadonlyMode: 0,
   showInvestorPartialSellRealizations: 0,
   /** 1 = true; matches backend default for account-statement voucher links */
   showDocumentReferenceLinksInAccountStatement: 1,

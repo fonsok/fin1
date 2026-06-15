@@ -66,6 +66,13 @@ final class TradingNotificationService: TradingNotificationServiceProtocol, Serv
     }
 
     func generateInvoiceAndNotification(for order: Order, tradeId: String? = nil, tradeNumber: Int? = nil) async {
+        if self.configurationService.blocksLocalInvoiceGeneration {
+            print(
+                "ℹ️ TradingNotificationService: skip client invoice — traderMonetaryServerOnly/frontendReadonlyMode active"
+            )
+            return
+        }
+
         if let tradeId, !tradeId.isEmpty,
            self.documentService.documentExists(for: tradeId, ofType: .invoice) {
             print(
@@ -215,7 +222,7 @@ final class TradingNotificationService: TradingNotificationServiceProtocol, Serv
             return
         }
 
-        if self.configurationService.investorMonetaryServerOnly {
+        if self.configurationService.blocksLocalInvoiceGeneration {
             print("📄 TradingNotificationService: server SSOT — skip local collection bill regeneration")
             return
         }

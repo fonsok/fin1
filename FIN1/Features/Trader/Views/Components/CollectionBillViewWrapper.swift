@@ -34,7 +34,9 @@ struct CollectionBillViewWrapper: View {
         .task {
             if let fullTrade = self.fullTrade {
                 try? await self.services.invoiceService.loadInvoices(for: fullTrade.traderId)
-                await self.services.invoiceService.generateInvoicesForCompletedTrades([fullTrade])
+                if !self.services.configurationService.blocksLocalInvoiceGeneration {
+                    await self.services.invoiceService.generateInvoicesForCompletedTrades([fullTrade])
+                }
             } else if let uid = self.document?.userId, !uid.isEmpty {
                 try? await self.services.invoiceService.loadInvoices(for: uid)
             }

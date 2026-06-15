@@ -280,7 +280,8 @@ final class DashboardStatsViewModel: ObservableObject {
         let completedTrades = self.traderService.completedTrades
             .filter { $0.traderId == currentTraderId }
 
-        if !completedTrades.isEmpty {
+        if !completedTrades.isEmpty,
+           !self.configurationService.blocksLocalInvoiceGeneration {
             await self.invoiceService.generateInvoicesForCompletedTrades(completedTrades)
         }
     }

@@ -153,6 +153,10 @@ struct AppRootContent: View {
     }
 
     private func preloadInvoicesForCompletedTrades() async {
+        guard !self.services.configurationService.blocksLocalInvoiceGeneration else {
+            print("ℹ️ AppRootContent: skip local invoice backfill — monetary server-only active")
+            return
+        }
         let completedTrades = self.services.tradeLifecycleService.completedTrades
         await self.services.invoiceService.generateInvoicesForCompletedTrades(completedTrades)
     }

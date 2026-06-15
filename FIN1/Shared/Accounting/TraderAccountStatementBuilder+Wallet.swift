@@ -20,6 +20,10 @@ extension TraderAccountStatementBuilder {
                 configurationService: configurationService,
                 settlementAPIService: settlementService
             )
+        } else if configurationService.traderStatementServerOnly {
+            let openingBalance = configurationService.initialAccountBalance
+            print("⚠️ TraderAccountStatementBuilder: \(TraderMonetaryMessages.accountStatementUnavailable) (no settlement API)")
+            baseSnapshot = self.emptyServerOnlySnapshot(openingBalance: openingBalance)
         } else {
             baseSnapshot = buildSnapshot(
                 for: user,

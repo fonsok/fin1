@@ -109,6 +109,12 @@ protocol ConfigurationServiceProtocol: ObservableObject, Sendable {
     /// `AccountStatement` and `investorCollectionBill` only — no local fallback calculations.
     var investorMonetaryServerOnly: Bool { get }
 
+    /// When `true`, trader account statements and invoice backfill use server data only.
+    var traderMonetaryServerOnly: Bool { get }
+
+    /// Production kill-switch: no client-side monetary fallbacks or local invoice generation.
+    var frontendReadonlyMode: Bool { get }
+
     // MARK: - Customer Support Configuration
     var slaMonitoringInterval: TimeInterval { get }
 

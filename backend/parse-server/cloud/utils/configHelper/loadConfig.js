@@ -180,6 +180,12 @@ async function loadConfig(forceRefresh = false) {
           investorMonetaryServerOnly:
             config.get('investorMonetaryServerOnly')
             ?? DEFAULT_CONFIG.display.investorMonetaryServerOnly,
+          traderMonetaryServerOnly:
+            config.get('traderMonetaryServerOnly')
+            ?? DEFAULT_CONFIG.display.traderMonetaryServerOnly,
+          frontendReadonlyMode:
+            config.get('frontendReadonlyMode')
+            ?? DEFAULT_CONFIG.display.frontendReadonlyMode,
           showInvestorPartialSellRealizations: config.get('showInvestorPartialSellRealizations')
             ?? DEFAULT_CONFIG.display.showInvestorPartialSellRealizations,
         },

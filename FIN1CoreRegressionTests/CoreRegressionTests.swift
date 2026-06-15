@@ -168,6 +168,8 @@ private final class StubConfigurationService: ObservableObject, ConfigurationSer
     var maximumRiskExposurePercent: Double { 2 }
     var walletFeatureEnabled: Bool { false }
     var investorMonetaryServerOnly: Bool { false }
+    var traderMonetaryServerOnly: Bool { false }
+    var frontendReadonlyMode: Bool { false }
     var serviceChargeInvoiceFromBackend: Bool { false }
     var serviceChargeLegacyClientFallbackEnabled: Bool { true }
     var slaMonitoringInterval: TimeInterval { 300 }

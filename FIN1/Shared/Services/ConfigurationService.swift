@@ -33,6 +33,10 @@ final class ConfigurationService: ConfigurationServiceProtocol, ServiceLifecycle
     @Published var serviceChargeLegacyClientFallbackEnabled: Bool = true
     /// GoB: investor payment surfaces fail closed without server Beleg / AccountStatement.
     @Published var investorMonetaryServerOnly: Bool = true
+    /// Trader Kontoauszug / invoice backfill: server SSOT when true (default).
+    @Published var traderMonetaryServerOnly: Bool = true
+    /// Disables all client monetary fallbacks when true (production kill-switch).
+    @Published var frontendReadonlyMode: Bool = false
     @Published var showInvestorPartialSellRealizations: Bool = false
     @Published var minimumInvestmentAmount: Double = CalculationConstants.Investment.fallbackMinimumInvestmentAmount
     @Published var maximumInvestmentAmount: Double = CalculationConstants.Investment.fallbackMaximumInvestmentAmount

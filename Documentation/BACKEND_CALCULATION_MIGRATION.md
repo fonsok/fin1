@@ -62,7 +62,7 @@ Trade.afterSave:                        Reads and displays:
 ### Remaining (future hardening):
 - ⬜ **InvoiceFactory** → replace local generation with backend `Invoice` reads (low priority; `InvoiceAPIService.fetchInvoices` already prefers cloud function)
 - ⬜ **TradingNotificationService** → consider backend push notifications instead of local document generation
-- ⬜ **Feature flags** → implement `frontend_readonly_mode` flag to disable fallback paths in production
+- ⬜ **Feature flags** → `traderMonetaryServerOnly` + `frontendReadonlyMode` implemented (iOS, admin, Parse); blocks local invoice/statement fallbacks
 
 ### Frontend service roles (after Phase 3):
 - **ProfitDistributionService** → reads backend settlement, local fallback labelled

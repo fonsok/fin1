@@ -19,6 +19,8 @@ struct AppConfiguration: Codable {
     var serviceChargeInvoiceFromBackend: Bool?
     var serviceChargeLegacyClientFallbackEnabled: Bool?
     var investorMonetaryServerOnly: Bool?
+    var traderMonetaryServerOnly: Bool?
+    var frontendReadonlyMode: Bool?
     var showInvestorPartialSellRealizations: Bool?
     var dailyTransactionLimit: Double?
     var weeklyTransactionLimit: Double?
@@ -41,7 +43,7 @@ struct AppConfiguration: Codable {
         case platformServiceChargeRate, platformServiceChargeRateCompanies
         case showCommissionBreakdownInCreditNote, showDocumentReferenceLinksInAccountStatement
         case maximumRiskExposurePercent, walletFeatureEnabled
-        case serviceChargeInvoiceFromBackend, serviceChargeLegacyClientFallbackEnabled, investorMonetaryServerOnly, showInvestorPartialSellRealizations
+        case serviceChargeInvoiceFromBackend, serviceChargeLegacyClientFallbackEnabled, investorMonetaryServerOnly, traderMonetaryServerOnly, frontendReadonlyMode, showInvestorPartialSellRealizations
         case dailyTransactionLimit, weeklyTransactionLimit, monthlyTransactionLimit
         case minInvestment, maxInvestment, maxPoolMirrorBuyOrderAmount, maxTraderPartialSells, taxCollectionMode, userMinimumCashReserves, slaMonitoringInterval, lastUpdated, updatedBy
     }
@@ -70,6 +72,8 @@ struct AppConfiguration: Codable {
         self.serviceChargeInvoiceFromBackend = try c.decodeIfPresent(Bool.self, forKey: .serviceChargeInvoiceFromBackend)
         self.serviceChargeLegacyClientFallbackEnabled = try c.decodeIfPresent(Bool.self, forKey: .serviceChargeLegacyClientFallbackEnabled)
         self.investorMonetaryServerOnly = try c.decodeIfPresent(Bool.self, forKey: .investorMonetaryServerOnly)
+        self.traderMonetaryServerOnly = try c.decodeIfPresent(Bool.self, forKey: .traderMonetaryServerOnly)
+        self.frontendReadonlyMode = try c.decodeIfPresent(Bool.self, forKey: .frontendReadonlyMode)
         self.showInvestorPartialSellRealizations = try c.decodeIfPresent(Bool.self, forKey: .showInvestorPartialSellRealizations)
         self.dailyTransactionLimit = try c.decodeIfPresent(Double.self, forKey: .dailyTransactionLimit)
         self.weeklyTransactionLimit = try c.decodeIfPresent(Double.self, forKey: .weeklyTransactionLimit)
@@ -103,6 +107,8 @@ struct AppConfiguration: Codable {
         try c.encodeIfPresent(self.serviceChargeInvoiceFromBackend, forKey: .serviceChargeInvoiceFromBackend)
         try c.encodeIfPresent(self.serviceChargeLegacyClientFallbackEnabled, forKey: .serviceChargeLegacyClientFallbackEnabled)
         try c.encodeIfPresent(self.investorMonetaryServerOnly, forKey: .investorMonetaryServerOnly)
+        try c.encodeIfPresent(self.traderMonetaryServerOnly, forKey: .traderMonetaryServerOnly)
+        try c.encodeIfPresent(self.frontendReadonlyMode, forKey: .frontendReadonlyMode)
         try c.encodeIfPresent(self.showInvestorPartialSellRealizations, forKey: .showInvestorPartialSellRealizations)
         try c.encodeIfPresent(self.dailyTransactionLimit, forKey: .dailyTransactionLimit)
         try c.encodeIfPresent(self.weeklyTransactionLimit, forKey: .weeklyTransactionLimit)
@@ -135,6 +141,8 @@ struct AppConfiguration: Codable {
         serviceChargeInvoiceFromBackend: Bool? = nil,
         serviceChargeLegacyClientFallbackEnabled: Bool? = nil,
         investorMonetaryServerOnly: Bool? = nil,
+        traderMonetaryServerOnly: Bool? = nil,
+        frontendReadonlyMode: Bool? = nil,
         showInvestorPartialSellRealizations: Bool? = nil,
         dailyTransactionLimit: Double?,
         weeklyTransactionLimit: Double?,
@@ -165,6 +173,8 @@ struct AppConfiguration: Codable {
         self.serviceChargeInvoiceFromBackend = serviceChargeInvoiceFromBackend
         self.serviceChargeLegacyClientFallbackEnabled = serviceChargeLegacyClientFallbackEnabled
         self.investorMonetaryServerOnly = investorMonetaryServerOnly
+        self.traderMonetaryServerOnly = traderMonetaryServerOnly
+        self.frontendReadonlyMode = frontendReadonlyMode
         self.showInvestorPartialSellRealizations = showInvestorPartialSellRealizations
         self.dailyTransactionLimit = dailyTransactionLimit
         self.weeklyTransactionLimit = weeklyTransactionLimit
@@ -195,6 +205,9 @@ struct AppConfiguration: Codable {
         maximumRiskExposurePercent: 2.0,
         walletFeatureEnabled: false,
         serviceChargeLegacyClientFallbackEnabled: true,
+        investorMonetaryServerOnly: true,
+        traderMonetaryServerOnly: true,
+        frontendReadonlyMode: false,
         dailyTransactionLimit: CalculationConstants.TransactionLimits.baseDailyLimit,
         weeklyTransactionLimit: CalculationConstants.TransactionLimits.baseWeeklyLimit,
         monthlyTransactionLimit: CalculationConstants.TransactionLimits.baseMonthlyLimit,
@@ -226,6 +239,8 @@ struct AppConfiguration: Codable {
     var effectiveServiceChargeInvoiceFromBackend: Bool { self.serviceChargeInvoiceFromBackend ?? false }
     var effectiveServiceChargeLegacyClientFallbackEnabled: Bool { self.serviceChargeLegacyClientFallbackEnabled ?? true }
     var effectiveInvestorMonetaryServerOnly: Bool { self.investorMonetaryServerOnly ?? true }
+    var effectiveTraderMonetaryServerOnly: Bool { self.traderMonetaryServerOnly ?? true }
+    var effectiveFrontendReadonlyMode: Bool { self.frontendReadonlyMode ?? false }
     var effectiveShowInvestorPartialSellRealizations: Bool { self.showInvestorPartialSellRealizations ?? false }
     var effectiveDailyTransactionLimit: Double { self.dailyTransactionLimit ?? CalculationConstants.TransactionLimits.baseDailyLimit }
     var effectiveWeeklyTransactionLimit: Double { self.weeklyTransactionLimit ?? CalculationConstants.TransactionLimits.baseWeeklyLimit }

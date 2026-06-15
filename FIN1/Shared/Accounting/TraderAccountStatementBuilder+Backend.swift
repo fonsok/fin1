@@ -1,8 +1,17 @@
 import Foundation
 
 extension TraderAccountStatementBuilder {
+    /// Empty snapshot when server-only mode blocks local invoice fallback.
+    static func emptyServerOnlySnapshot(openingBalance: Double) -> TraderAccountStatementSnapshot {
+        TraderAccountStatementSnapshot(
+            entries: [],
+            openingBalance: openingBalance,
+            closingBalance: openingBalance
+        )
+    }
+
     /// Builds a snapshot from the server customer timeline (`source: customer_display`).
-    /// Falls back to local invoices when the backend is unavailable, empty, or not yet on presentation API.
+    /// Falls back to local invoices only when `traderStatementServerOnly` is false.
     static func buildSnapshotWithBackendCommissions(
         for user: User?,
         invoiceService: any InvoiceServiceProtocol,
@@ -10,12 +19,17 @@ extension TraderAccountStatementBuilder {
         settlementAPIService: any SettlementAPIServiceProtocol
     ) async -> TraderAccountStatementSnapshot {
         let openingBalance = configurationService.initialAccountBalance
+        let serverOnly = configurationService.traderStatementServerOnly
         guard let user else {
             return TraderAccountStatementSnapshot(entries: [], openingBalance: openingBalance, closingBalance: openingBalance)
         }
 
         let fetchResult = await fetchAllBackendEntries(settlementAPIService: settlementAPIService)
         if fetchResult.entries.isEmpty {
+            if serverOnly {
+                print("⚠️ TraderAccountStatementBuilder: \(TraderMonetaryMessages.accountStatementUnavailable)")
+                return self.emptyServerOnlySnapshot(openingBalance: openingBalance)
+            }
             return buildSnapshot(for: user, invoiceService: invoiceService, configurationService: configurationService)
         }
 
@@ -25,6 +39,11 @@ extension TraderAccountStatementBuilder {
                 openingBalance: openingBalance,
                 timelineTruncated: fetchResult.timelineTruncated
             )
+        }
+
+        if serverOnly {
+            print("⚠️ TraderAccountStatementBuilder: \(TraderMonetaryMessages.accountStatementUnavailable) (no customer_display)")
+            return self.emptyServerOnlySnapshot(openingBalance: openingBalance)
         }
 
         return buildSnapshot(for: user, invoiceService: invoiceService, configurationService: configurationService)

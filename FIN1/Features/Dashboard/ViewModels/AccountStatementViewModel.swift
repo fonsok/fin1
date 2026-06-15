@@ -237,7 +237,11 @@ final class AccountStatementViewModel: ObservableObject {
             self.openingBalance = max(0, calculatedOpening)
             self.currentBalance = snapshot.closingBalance
             self.entries = snapshot.entries
-            self.errorMessage = nil
+            if snapshot.entries.isEmpty, self.configurationService.traderStatementServerOnly {
+                self.errorMessage = TraderMonetaryMessages.accountStatementUnavailable
+            } else {
+                self.errorMessage = nil
+            }
             self.infoMessage = snapshot.timelineTruncated
                 ? "Ältere Buchungen sind ausgeblendet (Server-Limit). Bitte Admin kontaktieren, falls der Verlauf unvollständig wirkt."
                 : nil

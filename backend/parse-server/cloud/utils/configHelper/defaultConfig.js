@@ -63,6 +63,10 @@ const DEFAULT_CONFIG = {
     serviceChargeLegacyDisableAllowedFrom: '2026-05-15',
     // Investor monetary flows: Collection Bill metadata + AccountStatement only (no local € math).
     investorMonetaryServerOnly: true,
+    // Trader account statement + invoice backfill: server SSOT (no local InvoiceFactory fallback).
+    traderMonetaryServerOnly: true,
+    // Production kill-switch: disables all client monetary fallbacks when true.
+    frontendReadonlyMode: false,
     /** iOS Investor: Bereich „Teil-Sell-Realisierungen (Active Investment)“ — unabhängig von Trader-Teil-Sells. */
     showInvestorPartialSellRealizations: false,
   },

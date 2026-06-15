@@ -304,6 +304,24 @@ export const PARAMETER_DEFINITIONS: Record<string, Omit<ConfigurationParameter, 
     category: 'display',
     isCritical: false,
   },
+  traderMonetaryServerOnly: {
+    key: 'traderMonetaryServerOnly',
+    displayName: 'Trader-Beträge nur vom Server',
+    description:
+      'Wenn aktiv, nutzt die iOS-App für Trader keine lokal generierten Rechnungen/Kontoauszüge als Fallback. Fehlender Server-Kontoauszug → Fehlermeldung statt lokaler Invoice-Rechnung. Standard: aktiv.',
+    type: 'boolean',
+    category: 'display',
+    isCritical: false,
+  },
+  frontendReadonlyMode: {
+    key: 'frontendReadonlyMode',
+    displayName: 'Client: keine monetären Fallbacks',
+    description:
+      'Kill-Switch für Produktion: blockiert alle client-seitigen monetären Fallbacks und lokale Invoice-Generierung (Investor + Trader). Standard: aus (nur für Notfall/Härtung).',
+    type: 'boolean',
+    category: 'display',
+    isCritical: true,
+  },
   showInvestorPartialSellRealizations: {
     key: 'showInvestorPartialSellRealizations',
     displayName: 'Investor: Teil-Sell-Bereich anzeigen',

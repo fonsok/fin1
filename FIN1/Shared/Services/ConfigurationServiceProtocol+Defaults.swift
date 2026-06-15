@@ -52,6 +52,8 @@ extension ConfigurationServiceProtocol {
     var serviceChargeInvoiceFromBackend: Bool { false }
     var serviceChargeLegacyClientFallbackEnabled: Bool { true }
     var investorMonetaryServerOnly: Bool { true }
+    var traderMonetaryServerOnly: Bool { true }
+    var frontendReadonlyMode: Bool { false }
     var showDocumentReferenceLinksInAccountStatement: Bool { true }
 
     func updateShowDocumentReferenceLinksInAccountStatement(_ value: Bool) async throws {

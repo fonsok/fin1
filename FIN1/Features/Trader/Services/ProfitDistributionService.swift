@@ -93,7 +93,7 @@ final class ProfitDistributionService: ProfitDistributionServiceProtocol, @unche
             }
         }
 
-        if self.configurationService.investorMonetaryServerOnly {
+        if self.configurationService.investorStatementServerOnly {
             print(
                 "⚠️ ProfitDistributionService: Backend settlement missing and investorMonetaryServerOnly=true — skipping local distribution"
             )

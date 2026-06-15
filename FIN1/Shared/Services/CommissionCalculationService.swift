@@ -135,7 +135,7 @@ final class CommissionCalculationService: CommissionCalculationServiceProtocol, 
             }
         }
 
-        if self.configurationService?.investorMonetaryServerOnly == true {
+        if self.configurationService?.investorStatementServerOnly == true {
             throw AppError.serviceError(.serviceUnavailable)
         }
 
@@ -197,7 +197,7 @@ final class CommissionCalculationService: CommissionCalculationServiceProtocol, 
             NSLog("⚠️ CommissionCalc[trade=\(tradeId)] settlementAPIService is nil")
         }
 
-        if self.configurationService?.investorMonetaryServerOnly == true {
+        if self.configurationService?.investorStatementServerOnly == true {
             throw AppError.serviceError(.serviceUnavailable)
         }
 
