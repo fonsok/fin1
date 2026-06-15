@@ -4,6 +4,9 @@ const {
   inspectDocumentBelegDrift,
   parseSnapshotQuantity,
   parseSnapshotExecutionSide,
+  parsePartialSellEventIndexFromSummary,
+  inspectPartialSellMetadataInternalDrift,
+  inspectPartialSellTradeLegDrift,
   inspectTraderCollectionBillBelegDrift,
 } = require('../belegDriftInspect');
 
@@ -91,6 +94,129 @@ describe('traderCollectionBillBelegSnapshot/belegDriftInspect', () => {
     }));
     expect(out.status).toBe('healthy');
     expect(out.drifts).toHaveLength(0);
+  });
+
+  test('parsePartialSellEventIndexFromSummary reads Teilverkauf line', () => {
+    expect(parsePartialSellEventIndexFromSummary('Reihenfolge: Teilverkauf 2 von 2')).toBe(2);
+  });
+
+  test('detects partial-sell amount/qty/price inconsistency without Trade', () => {
+    const drifts = inspectPartialSellMetadataInternalDrift({
+      amount: 2400,
+      quantity: 400,
+      price: 3,
+      sellOrderId: 'sell-1',
+      partialSell: {
+        isPartialSell: true,
+        sellOrderId: 'sell-1',
+        orderQuantity: 400,
+        eventIndex: 1,
+        buyQuantity: 1200,
+        cumulativeSoldQuantity: 400,
+        remainingQuantity: 800,
+      },
+    });
+    expect(drifts).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        code: 'partial_sell_amount_quantity_price_mismatch',
+        metadata: 2400,
+        expected: 1200,
+      }),
+    ]));
+  });
+
+  test('detects stale sellOrderId vs Trade leg on partial sell TSC', () => {
+    const trade = {
+      get(k) {
+        const data = {
+          quantity: 1200,
+          sellOrders: [
+            { id: 'sell-1', quantity: 400, totalAmount: 1600 },
+            { id: 'sell-2', quantity: 800, totalAmount: 2400 },
+          ],
+        };
+        return data[k];
+      },
+    };
+    const drifts = inspectPartialSellTradeLegDrift({
+      executionType: 'sell',
+      amount: 2400,
+      quantity: 400,
+      sellOrderId: 'sell-1',
+      partialSell: {
+        isPartialSell: true,
+        sellOrderId: 'sell-1',
+        orderQuantity: 400,
+        eventIndex: 1,
+      },
+    }, trade);
+    expect(drifts).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        field: 'sellOrderId',
+        code: 'partial_sell_leg_mismatch',
+        metadata: 'sell-1',
+        expected: 'sell-2',
+      }),
+      expect.objectContaining({
+        field: 'partialSell.eventIndex',
+        code: 'partial_sell_leg_mismatch',
+        metadata: 1,
+        expected: 2,
+      }),
+    ]));
+  });
+
+  test('flags partial-sell leg drift on full document inspect with Trade option', () => {
+    const summary = [
+      'Verkaufsabrechnung',
+      'Belegnummer: TSC-2026-0000141',
+      'VERKAUF',
+      'Ordervolumen: 400 St.',
+      'Kurswert: 2.400,00 €',
+      'Σ VERKAUF: 2.392,50 €',
+      '',
+      'TEILVERKAUF',
+      'Reihenfolge: Teilverkauf 1 von 2',
+      'Dieser Verkauf: 400 St.',
+    ].join('\n');
+    const trade = {
+      get(k) {
+        return {
+          quantity: 1200,
+          sellOrders: [
+            { id: 'sell-1', quantity: 400, totalAmount: 1600 },
+            { id: 'sell-2', quantity: 800, totalAmount: 2400 },
+          ],
+        }[k];
+      },
+    };
+    const out = inspectDocumentBelegDrift(mockDoc({
+      accountingSummaryText: summary,
+      metadata: {
+        belegSchemaVersion: 1,
+        executionType: 'sell',
+        amount: 2400,
+        quantity: 400,
+        price: 3,
+        totalWithFees: 2392.5,
+        traderDisplayName: 'Trader One',
+        sellOrderId: 'sell-1',
+        fees: { totalFees: 7.5, orderFee: 5 },
+        partialSell: {
+          isPartialSell: true,
+          sellOrderId: 'sell-1',
+          orderQuantity: 400,
+          eventIndex: 1,
+          totalSellEvents: 2,
+          buyQuantity: 1200,
+          cumulativeSoldQuantity: 400,
+          remainingQuantity: 800,
+        },
+      },
+    }), { trade });
+    expect(out.status).toBe('drifted');
+    expect(out.drifts.some((d) => d.code === 'partial_sell_amount_quantity_price_mismatch')).toBe(true);
+    expect(out.drifts.some((d) => d.code === 'partial_sell_leg_mismatch')).toBe(true);
   });
 
   test('batch inspect aggregates drift counts', async () => {

@@ -6,8 +6,25 @@ const {
   isUsableTraderBelegSummaryText,
   metadataNeedsBackfill,
 } = require('./shared');
+const {
+  findSellOrderForBelegLeg,
+  getOrderArrayFromTradeLike,
+  resolveSellOrderGrossAmount,
+  resolveSellOrderKey,
+} = require('../settlementTradeMath');
+const { sortSellOrdersChronologically } = require('./partialSellSnapshot');
 
 const TRADER_DOC_TYPES = ['traderCollectionBill', 'trade_execution_document'];
+
+const DRIFT_STATUS_CODES = new Set([
+  'snapshot_metadata_mismatch',
+  'metadata_invoice_mismatch',
+  'partial_sell_leg_mismatch',
+  'partial_sell_metadata_inconsistent',
+  'partial_sell_amount_quantity_price_mismatch',
+  'partial_sell_progress_inconsistent',
+  'partial_sell_leg_unresolved',
+]);
 
 function parseGermanEuro(fragment) {
   if (!fragment) return null;
@@ -46,6 +63,157 @@ function parseSnapshotSigmaAmount(text) {
 function amountsDiffer(a, b, tolerance = TOLERANCE) {
   if (a == null || b == null) return false;
   return Math.abs(round2(a) - round2(b)) > tolerance;
+}
+
+function parsePartialSellEventIndexFromSummary(text) {
+  const m = String(text || '').match(/Teilverkauf\s+(\d+)\s+von\s+(\d+)/i);
+  if (!m) return null;
+  const n = parseInt(m[1], 10);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/** In-memory partial-sell consistency — no Trade fetch. */
+function inspectPartialSellMetadataInternalDrift(meta, storedSummary = '') {
+  const drifts = [];
+  const partial = meta.partialSell && typeof meta.partialSell === 'object' ? meta.partialSell : null;
+  if (!partial?.isPartialSell) return drifts;
+
+  const metaSellId = String(meta.sellOrderId || '').trim();
+  const partialSellId = String(partial.sellOrderId || '').trim();
+  if (metaSellId && partialSellId && metaSellId !== partialSellId) {
+    drifts.push({
+      field: 'partialSell.sellOrderId',
+      code: 'partial_sell_metadata_inconsistent',
+      metadata: partialSellId,
+      expected: metaSellId,
+    });
+  }
+
+  const metaQty = round2(Number(meta.quantity) || 0);
+  const legQty = round2(Number(partial.orderQuantity) || 0);
+  if (metaQty > 0 && legQty > 0 && amountsDiffer(metaQty, legQty, 0.001)) {
+    drifts.push({
+      field: 'partialSell.orderQuantity',
+      code: 'partial_sell_metadata_inconsistent',
+      metadata: legQty,
+      expected: metaQty,
+    });
+  }
+
+  const price = round2(Number(meta.price) || 0);
+  const amount = round2(Number(meta.amount) || 0);
+  if (metaQty > 0 && price > 0 && amount > 0 && amountsDiffer(round2(metaQty * price), amount)) {
+    drifts.push({
+      field: 'amount',
+      code: 'partial_sell_amount_quantity_price_mismatch',
+      metadata: amount,
+      expected: round2(metaQty * price),
+      quantity: metaQty,
+      price,
+    });
+  }
+
+  const snapEvent = parsePartialSellEventIndexFromSummary(storedSummary);
+  if (snapEvent != null && partial.eventIndex != null && snapEvent !== partial.eventIndex) {
+    drifts.push({
+      field: 'partialSell.eventIndex',
+      code: 'snapshot_metadata_mismatch',
+      snapshot: snapEvent,
+      metadata: partial.eventIndex,
+    });
+  }
+
+  const buyQty = round2(Number(partial.buyQuantity) || 0);
+  const cumulative = round2(Number(partial.cumulativeSoldQuantity) || 0);
+  const remaining = partial.remainingQuantity != null ? round2(Number(partial.remainingQuantity)) : null;
+  if (buyQty > 0 && cumulative > 0 && remaining != null && amountsDiffer(round2(cumulative + remaining), buyQty, 0.001)) {
+    drifts.push({
+      field: 'partialSell',
+      code: 'partial_sell_progress_inconsistent',
+      cumulative,
+      remaining,
+      buyQuantity: buyQty,
+    });
+  }
+
+  return drifts;
+}
+
+/** Trade-backed leg resolution — one Trade load per tradeId (caller caches). */
+function inspectPartialSellTradeLegDrift(meta, trade) {
+  const drifts = [];
+  if (!trade || String(meta.executionType || '').toLowerCase() !== 'sell') return drifts;
+
+  const partial = meta.partialSell && typeof meta.partialSell === 'object' ? meta.partialSell : null;
+  const sellOrderId = String(meta.sellOrderId || partial?.sellOrderId || '').trim();
+  const gross = round2(Number(meta.amount) || 0);
+  if (!partial?.isPartialSell && !sellOrderId) return drifts;
+
+  const sellOrders = getOrderArrayFromTradeLike(trade);
+  if (!sellOrders.length) return drifts;
+
+  const resolved = findSellOrderForBelegLeg(trade, {
+    sellOrderId,
+    grossAmount: gross,
+    quantity: meta.quantity,
+  });
+
+  if (!resolved) {
+    if (gross > 0) {
+      drifts.push({
+        field: 'partialSell',
+        code: 'partial_sell_leg_unresolved',
+        sellOrderId: sellOrderId || null,
+        amount: gross,
+      });
+    }
+    return drifts;
+  }
+
+  const resolvedKey = resolveSellOrderKey(resolved);
+  if (sellOrderId && resolvedKey !== sellOrderId) {
+    drifts.push({
+      field: 'sellOrderId',
+      code: 'partial_sell_leg_mismatch',
+      metadata: sellOrderId,
+      expected: resolvedKey,
+    });
+  }
+
+  const resolvedGross = resolveSellOrderGrossAmount(resolved);
+  if (gross > 0 && amountsDiffer(resolvedGross, gross)) {
+    drifts.push({
+      field: 'amount',
+      code: 'partial_sell_leg_mismatch',
+      metadata: gross,
+      tradeOrder: resolvedGross,
+    });
+  }
+
+  const sorted = sortSellOrdersChronologically(sellOrders);
+  const idx = sorted.findIndex((o) => resolveSellOrderKey(o) === resolvedKey);
+  const expectedEventIndex = idx >= 0 ? idx + 1 : null;
+  if (partial?.eventIndex != null && expectedEventIndex != null && partial.eventIndex !== expectedEventIndex) {
+    drifts.push({
+      field: 'partialSell.eventIndex',
+      code: 'partial_sell_leg_mismatch',
+      metadata: partial.eventIndex,
+      expected: expectedEventIndex,
+    });
+  }
+
+  const resolvedQty = round2(Number(resolved.quantity || resolved.executedQuantity || 0));
+  if (partial?.orderQuantity != null && resolvedQty > 0
+    && amountsDiffer(Number(partial.orderQuantity), resolvedQty, 0.001)) {
+    drifts.push({
+      field: 'partialSell.orderQuantity',
+      code: 'partial_sell_leg_mismatch',
+      metadata: partial.orderQuantity,
+      expected: resolvedQty,
+    });
+  }
+
+  return drifts;
 }
 
 /**
@@ -135,7 +303,14 @@ function inspectDocumentBelegDrift(doc, options = {}) {
     });
   }
 
-  if (drifts.some((d) => d.code === 'snapshot_metadata_mismatch' || d.code === 'metadata_invoice_mismatch')) {
+  if (metaEx === 'sell' || String(meta.executionType || '').toLowerCase() === 'sell') {
+    drifts.push(...inspectPartialSellMetadataInternalDrift(meta, stored));
+    if (options.trade) {
+      drifts.push(...inspectPartialSellTradeLegDrift(meta, options.trade));
+    }
+  }
+
+  if (drifts.some((d) => DRIFT_STATUS_CODES.has(d.code))) {
     status = 'drifted';
   }
 
@@ -173,6 +348,7 @@ async function inspectTraderCollectionBillBelegDrift(params = {}, deps = {}) {
   const limit = Math.min(500, Math.max(1, parseInt(params.limit, 10) || 50));
   const skip = Math.max(0, parseInt(params.skip, 10) || 0);
   const includeInvoice = Boolean(params.includeInvoice);
+  const includeTrade = params.includeTrade !== false;
   const loadTradeInvoice = deps.loadTradeInvoice
     || ((tradeId, executionType) => {
       const { loadTradeInvoice: load } = require('../../../functions/admin/reports/documentBelegEnrichment');
@@ -191,31 +367,54 @@ async function inspectTraderCollectionBillBelegDrift(params = {}, deps = {}) {
   let needsBackfill = 0;
   let drifted = 0;
   const samples = [];
+  const tradeCache = new Map();
+
+  async function loadTradeCached(tradeId) {
+    if (tradeCache.has(tradeId)) return tradeCache.get(tradeId);
+    try {
+      const trade = await new Parse.Query('Trade').get(tradeId, { useMasterKey: true });
+      tradeCache.set(tradeId, trade);
+      return trade;
+    } catch {
+      tradeCache.set(tradeId, null);
+      return null;
+    }
+  }
+
+  function sellDocNeedsTradeLegCheck(meta) {
+    if (String(meta.executionType || '').toLowerCase() !== 'sell') return false;
+    const partial = meta.partialSell && typeof meta.partialSell === 'object' ? meta.partialSell : null;
+    return Boolean(partial?.isPartialSell || String(meta.sellOrderId || partial?.sellOrderId || '').trim());
+  }
 
   for (const doc of docs) {
     examined += 1;
     let invoiceGrossAmount = null;
+    let trade = null;
 
-    if (includeInvoice) {
-      const tradeId = String(doc.get('tradeId') || '').trim();
-      const meta = doc.get('metadata') || {};
-      const executionType = String(meta.executionType || 'buy').toLowerCase();
-      if (tradeId) {
-        try {
-          const invoice = await loadTradeInvoice(tradeId, executionType);
-          if (invoice) {
-            const items = invoice.get('lineItems') || [];
-            invoiceGrossAmount = items
-              .filter((item) => String(item?.itemType || '') === 'securities')
-              .reduce((sum, item) => sum + round2(Number(item?.totalAmount) || 0), 0);
-          }
-        } catch {
-          // Invoice optional for drift inspect
+    const meta = doc.get('metadata') || {};
+    const tradeId = String(doc.get('tradeId') || '').trim();
+    const executionType = String(meta.executionType || 'buy').toLowerCase();
+
+    if (includeInvoice && tradeId) {
+      try {
+        const invoice = await loadTradeInvoice(tradeId, executionType);
+        if (invoice) {
+          const items = invoice.get('lineItems') || [];
+          invoiceGrossAmount = items
+            .filter((item) => String(item?.itemType || '') === 'securities')
+            .reduce((sum, item) => sum + round2(Number(item?.totalAmount) || 0), 0);
         }
+      } catch {
+        // Invoice optional for drift inspect
       }
     }
 
-    const result = inspectDocumentBelegDrift(doc, { invoiceGrossAmount });
+    if (includeTrade && tradeId && sellDocNeedsTradeLegCheck(meta)) {
+      trade = await loadTradeCached(tradeId);
+    }
+
+    const result = inspectDocumentBelegDrift(doc, { invoiceGrossAmount, trade });
     if (result.status === 'healthy') healthy += 1;
     else if (result.status === 'needs_backfill') needsBackfill += 1;
     else if (result.status === 'drifted') drifted += 1;
@@ -246,6 +445,9 @@ module.exports = {
   TRADER_DOC_TYPES,
   parseSnapshotQuantity,
   parseSnapshotExecutionSide,
+  parsePartialSellEventIndexFromSummary,
+  inspectPartialSellMetadataInternalDrift,
+  inspectPartialSellTradeLegDrift,
   inspectDocumentBelegDrift,
   inspectTraderCollectionBillBelegDrift,
 };

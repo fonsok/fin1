@@ -56,7 +56,7 @@ const REPAIR_CATALOG = [
     cloudFunction: 'checkTraderCollectionBillBelegDrift',
     defaultParams: { dryRun: true, limit: 50, includeInvoice: false },
     relatedChecks: ['trader_beleg_ssot_drift'],
-    notes: 'Compare accountingSummaryText vs Document.metadata (optional invoice gross)',
+    notes: 'Compare accountingSummaryText vs metadata; partial-sell leg vs Trade (cached per tradeId)',
   },
   {
     id: 'trader_beleg_ssot_backfill',
