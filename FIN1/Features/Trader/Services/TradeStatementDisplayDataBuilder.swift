@@ -11,7 +11,8 @@ protocol TradeStatementDisplayDataBuilderProtocol {
         fullTrade: Trade?,
         buyInvoice: Invoice?,
         sellInvoices: [Invoice],
-        presentationScope: TradeStatementPresentationScope
+        presentationScope: TradeStatementPresentationScope,
+        allowsInvoiceSynthesis: Bool
     ) -> TradeStatementDisplayData
 }
 
@@ -35,13 +36,15 @@ final class TradeStatementDisplayDataBuilder: TradeStatementDisplayDataBuilderPr
         fullTrade: Trade?,
         buyInvoice: Invoice?,
         sellInvoices: [Invoice],
-        presentationScope: TradeStatementPresentationScope = .fullTrade
+        presentationScope: TradeStatementPresentationScope = .fullTrade,
+        allowsInvoiceSynthesis: Bool = true
     ) -> TradeStatementDisplayData {
 
         let resolvedBuyInvoice = self.resolveBuyInvoice(
             buyInvoice: buyInvoice,
             fullTrade: fullTrade,
-            presentationScope: presentationScope
+            presentationScope: presentationScope,
+            allowsInvoiceSynthesis: allowsInvoiceSynthesis
         )
 
         let buyTransaction = self.buildBuyTransactionData(
@@ -104,9 +107,11 @@ final class TradeStatementDisplayDataBuilder: TradeStatementDisplayDataBuilderPr
     private func resolveBuyInvoice(
         buyInvoice: Invoice?,
         fullTrade: Trade?,
-        presentationScope: TradeStatementPresentationScope
+        presentationScope: TradeStatementPresentationScope,
+        allowsInvoiceSynthesis: Bool
     ) -> Invoice? {
         if let buyInvoice { return buyInvoice }
+        guard allowsInvoiceSynthesis else { return nil }
         guard presentationScope.allowsBuyLegFromFullTradeFallback, let fullTrade else { return nil }
         let customerInfo = CustomerInfo(
             name: "Dr. Hans-Peter Müller",

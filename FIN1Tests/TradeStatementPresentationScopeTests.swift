@@ -30,11 +30,47 @@ final class TradeStatementPresentationScopeTests: XCTestCase {
             fullTrade: fullTrade,
             buyInvoice: nil,
             sellInvoices: [],
-            presentationScope: .fullTrade
+            presentationScope: .fullTrade,
+            allowsInvoiceSynthesis: true
         )
 
         XCTAssertNotNil(displayData.buyTransaction)
         XCTAssertEqual(displayData.buyTransaction?.orderVolume, "1200 St.")
+    }
+
+    func testFullTradeDoesNotSynthesizeBuyWhenInvoiceSynthesisBlocked() {
+        let builder = TradeStatementDisplayDataBuilder()
+        let trade = Self.makeTradeOverview()
+        let fullTrade = Self.makeFullTrade(buyQty: 1_200, sellQtys: [400])
+
+        let displayData = builder.buildDisplayData(
+            trade: trade,
+            fullTrade: fullTrade,
+            buyInvoice: nil,
+            sellInvoices: [],
+            presentationScope: .fullTrade,
+            allowsInvoiceSynthesis: false
+        )
+
+        XCTAssertNil(displayData.buyTransaction)
+    }
+
+    func testSellLegOnlyDoesNotSynthesizeSellFromFullTradeWhenBlocked() {
+        let builder = TradeStatementDisplayDataBuilder()
+        let trade = Self.makeTradeOverview()
+        let fullTrade = Self.makeFullTrade(buyQty: 1_200, sellQtys: [400, 400])
+
+        let displayData = builder.buildDisplayData(
+            trade: trade,
+            fullTrade: fullTrade,
+            buyInvoice: nil,
+            sellInvoices: [],
+            presentationScope: .sellLegOnly(matchingBelegNumber: "TSC-2026-0000140"),
+            allowsInvoiceSynthesis: false
+        )
+
+        XCTAssertNil(displayData.buyTransaction)
+        XCTAssertTrue(displayData.sellTransactions.isEmpty)
     }
 
     private static func makeTradeOverview() -> TradeOverviewItem {

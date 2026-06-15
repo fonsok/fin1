@@ -62,6 +62,8 @@ final class TradeStatementViewModel: ObservableObject {
     private var presentationScope: TradeStatementPresentationScope = .fullTrade
     private var sourceCollectionBillDocument: Document?
     private var sourceBelegSnapshotText: String?
+    /// When true, never synthesize invoices from `Trade` / `Order` (server-only / GoB P3a).
+    private var blocksInvoiceSynthesis = false
 
     // MARK: - Initialization
 
@@ -96,13 +98,15 @@ final class TradeStatementViewModel: ObservableObject {
         prefetchedFullTrade: Trade? = nil,
         presentationScope: TradeStatementPresentationScope = .fullTrade,
         sourceCollectionBillDocument: Document? = nil,
-        sourceBelegSnapshotText: String? = nil
+        sourceBelegSnapshotText: String? = nil,
+        blocksInvoiceSynthesis: Bool = false
     ) {
         self.invoiceService = invoiceService
         self.tradeService = tradeService
         self.presentationScope = presentationScope
         self.sourceCollectionBillDocument = sourceCollectionBillDocument
         self.sourceBelegSnapshotText = sourceBelegSnapshotText
+        self.blocksInvoiceSynthesis = blocksInvoiceSynthesis
         self.displayDataSource = .invoiceFallback
         self.loadFullTrade(prefetched: prefetchedFullTrade)
         self.loadInvoices()
@@ -219,7 +223,8 @@ final class TradeStatementViewModel: ObservableObject {
                 sourceDocument: self.sourceCollectionBillDocument,
                 belegNumber: self.documentNumber,
                 fullTrade: self.fullTrade,
-                snapshotText: self.sourceBelegSnapshotText
+                snapshotText: self.sourceBelegSnapshotText,
+                blocksInvoiceSynthesis: self.blocksInvoiceSynthesis
             )
         }
 
@@ -237,7 +242,8 @@ final class TradeStatementViewModel: ObservableObject {
             fullTrade: self.fullTrade,
             buyInvoice: self.buyInvoice,
             sellInvoices: self.sellInvoices,
-            presentationScope: self.presentationScope
+            presentationScope: self.presentationScope,
+            allowsInvoiceSynthesis: !self.blocksInvoiceSynthesis
         )
     }
 
@@ -334,7 +340,8 @@ final class TradeStatementViewModel: ObservableObject {
         sourceDocument: Document?,
         belegNumber: String?,
         fullTrade: Trade?,
-        snapshotText: String?
+        snapshotText: String?,
+        blocksInvoiceSynthesis: Bool
     ) -> [Invoice] {
         let sells = allInvoices.filter { $0.transactionType == .sell }
 
@@ -357,17 +364,20 @@ final class TradeStatementViewModel: ObservableObject {
             return [match]
         }
 
-        if let trade = fullTrade, let synthesized = synthesizeSellInvoice(
-            for: trade,
-            targetQuantity: targetQty,
-            belegNumber: belegNumber ?? sourceDocument?.accountingDocumentNumber
-        ) {
+        if !blocksInvoiceSynthesis,
+           let trade = fullTrade,
+           let synthesized = Self.synthesizeSellInvoice(
+               for: trade,
+               targetQuantity: targetQty,
+               belegNumber: belegNumber ?? sourceDocument?.accountingDocumentNumber
+           ) {
             return [synthesized]
         }
 
         return sells.count == 1 ? sells : []
     }
 
+    /// Dev/test only — blocked in production via `blocksInvoiceSynthesis` (GoB P3a).
     private static func synthesizeSellInvoice(
         for trade: Trade,
         targetQuantity: Int?,
@@ -394,7 +404,7 @@ final class TradeStatementViewModel: ObservableObject {
             bank: "Deutsche Bank AG",
             customerNumber: trade.traderId
         )
-        var invoice = Invoice.from(
+        let invoice = Invoice.from(
             sellOrder: sellOrder,
             customerInfo: customerInfo,
             transactionIdService: TransactionIdService(),

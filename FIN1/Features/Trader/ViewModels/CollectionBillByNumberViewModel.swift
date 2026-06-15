@@ -20,6 +20,7 @@ final class CollectionBillByNumberViewModel: ObservableObject {
     private let tradingStatisticsService: any TradingStatisticsServiceProtocol
     private let invoiceService: any InvoiceServiceProtocol
     private let userService: (any UserServiceProtocol)?
+    private let blocksInvoiceSynthesis: Bool
 
     // MARK: - Current Trader ID
     /// Returns the current trader's ID from the user service
@@ -34,13 +35,15 @@ final class CollectionBillByNumberViewModel: ObservableObject {
         tradeLifecycleService: any TradeLifecycleServiceProtocol,
         tradingStatisticsService: any TradingStatisticsServiceProtocol,
         invoiceService: any InvoiceServiceProtocol,
-        userService: (any UserServiceProtocol)? = nil
+        userService: (any UserServiceProtocol)? = nil,
+        blocksInvoiceSynthesis: Bool = false
     ) {
         self.tradeNumber = tradeNumber
         self.tradeLifecycleService = tradeLifecycleService
         self.tradingStatisticsService = tradingStatisticsService
         self.invoiceService = invoiceService
         self.userService = userService
+        self.blocksInvoiceSynthesis = blocksInvoiceSynthesis
     }
 
     /// Convenience initializer using AppServices
@@ -50,7 +53,8 @@ final class CollectionBillByNumberViewModel: ObservableObject {
             tradeLifecycleService: services.tradeLifecycleService,
             tradingStatisticsService: services.tradingStatisticsService,
             invoiceService: services.invoiceService,
-            userService: services.userService
+            userService: services.userService,
+            blocksInvoiceSynthesis: services.configurationService.blocksLocalInvoiceGeneration
         )
     }
 
@@ -103,7 +107,11 @@ final class CollectionBillByNumberViewModel: ObservableObject {
             print("✅ Created TradeOverviewItem with tradeId: \(tradeOverview.tradeId ?? "NIL")")
 
             let viewModel = TradeStatementViewModel(trade: tradeOverview)
-            viewModel.attach(invoiceService: self.invoiceService, tradeService: self.tradeLifecycleService)
+            viewModel.attach(
+                invoiceService: self.invoiceService,
+                tradeService: self.tradeLifecycleService,
+                blocksInvoiceSynthesis: self.blocksInvoiceSynthesis
+            )
 
             self.tradeStatementViewModel = viewModel
             self.isLoading = false

@@ -94,7 +94,8 @@ struct CollectionBillViewWrapper: View {
                 prefetchedFullTrade: self.fullTrade,
                 presentationScope: self.statementPresentationScope,
                 sourceCollectionBillDocument: self.document,
-                sourceBelegSnapshotText: self.belegSnapshotText
+                sourceBelegSnapshotText: self.belegSnapshotText,
+                blocksInvoiceSynthesis: self.services.configurationService.blocksLocalInvoiceGeneration
             )
             self.viewModel.refreshDisplayData()
         }
