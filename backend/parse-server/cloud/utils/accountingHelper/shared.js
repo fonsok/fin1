@@ -1,7 +1,10 @@
 'use strict';
 
+const { round2Euro, TOLERANCE_CENTS } = require('./moneyCents');
+
+/** @deprecated Prefer moneyCents.euroToCents / normalizeEuro — delegates to P3c cent SSOT. */
 function round2(n) {
-  return Math.round(n * 100) / 100;
+  return round2Euro(n);
 }
 
 function round4(n) {
@@ -79,6 +82,7 @@ function resolveTradeSellPrice(trade) {
 
 module.exports = {
   round2,
+  TOLERANCE_CENTS,
   round4,
   formatDateCompact,
   generateShortHash,
