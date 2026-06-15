@@ -99,19 +99,19 @@ final class TradingNotificationService: TradingNotificationServiceProtocol, Serv
         )
 
         // Create invoice from actual order data with trade ID and trade number
-        let invoice: Invoice
-        if order.type == .buy {
-            let orderBuy = OrderBuy(from: order)
-            invoice = Invoice.from(
-                order: orderBuy,
-                customerInfo: customerInfo,
-                transactionIdService: self.transactionIdService,
-                tradeId: tradeId,
-                tradeNumber: tradeNumber
-            )
-        } else {
+        let invoice: Invoice = InvoiceLocalSynthesisGate.withPermitted {
+            if order.type == .buy {
+                let orderBuy = OrderBuy(from: order)
+                return Invoice.from(
+                    order: orderBuy,
+                    customerInfo: customerInfo,
+                    transactionIdService: self.transactionIdService,
+                    tradeId: tradeId,
+                    tradeNumber: tradeNumber
+                )
+            }
             let orderSell = OrderSell(from: order)
-            invoice = Invoice.from(
+            return Invoice.from(
                 sellOrder: orderSell,
                 customerInfo: customerInfo,
                 transactionIdService: self.transactionIdService,

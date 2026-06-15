@@ -1,6 +1,6 @@
 import Foundation
 
-// MARK: - Invoice Factory
+// MARK: - Invoice Factory (local synthesis — test/dev only, gated by InvoiceLocalSynthesisGate P3b)
 extension Invoice {
 
     /// Creates a securities settlement invoice from an order using actual order values
@@ -11,6 +11,7 @@ extension Invoice {
         tradeId: String? = nil,
         tradeNumber: Int? = nil
     ) -> Invoice {
+        InvoiceLocalSynthesisGate.requirePermitted()
         let invoiceNumber = InvoiceNumberGenerator.generate(using: transactionIdService)
 
         // Create invoice items from actual order data
@@ -64,6 +65,7 @@ extension Invoice {
         tradeId: String? = nil,
         tradeNumber: Int? = nil
     ) -> Invoice {
+        InvoiceLocalSynthesisGate.requirePermitted()
         let invoiceNumber = InvoiceNumberGenerator.generate(using: transactionIdService)
 
         // Create invoice items from actual sell order data
@@ -105,6 +107,7 @@ extension Invoice {
 
     /// Creates a securities settlement invoice from a holding using actual order values
     static func from(holding: DepotHolding, customerInfo: CustomerInfo, transactionIdService: any TransactionIdServiceProtocol) -> Invoice {
+        InvoiceLocalSynthesisGate.requirePermitted()
         let invoiceNumber = InvoiceNumberGenerator.generate(using: transactionIdService)
 
         // Create invoice items from actual holding data

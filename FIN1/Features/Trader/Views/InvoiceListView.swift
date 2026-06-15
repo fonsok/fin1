@@ -34,11 +34,13 @@ struct InvoiceListView: View {
             .navigationTitle("Rechnungen")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Neu") {
-                        self.showingCreateInvoice = true
+                if !self.services.configurationService.blocksLocalInvoiceGeneration {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("Neu") {
+                            self.showingCreateInvoice = true
+                        }
+                        .buttonStyle(.borderedProminent)
                     }
-                    .buttonStyle(.borderedProminent)
                 }
             }
             .sheet(isPresented: self.$showingCreateInvoice) {

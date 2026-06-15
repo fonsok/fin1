@@ -25,14 +25,16 @@ final class TradeStatementPresentationScopeTests: XCTestCase {
         let trade = Self.makeTradeOverview()
         let fullTrade = Self.makeFullTrade(buyQty: 1_200, sellQtys: [400])
 
-        let displayData = builder.buildDisplayData(
-            trade: trade,
-            fullTrade: fullTrade,
-            buyInvoice: nil,
-            sellInvoices: [],
-            presentationScope: .fullTrade,
-            allowsInvoiceSynthesis: true
-        )
+        let displayData = InvoiceLocalSynthesisGate.withPermitted {
+            builder.buildDisplayData(
+                trade: trade,
+                fullTrade: fullTrade,
+                buyInvoice: nil,
+                sellInvoices: [],
+                presentationScope: .fullTrade,
+                allowsInvoiceSynthesis: true
+            )
+        }
 
         XCTAssertNotNil(displayData.buyTransaction)
         XCTAssertEqual(displayData.buyTransaction?.orderVolume, "1200 St.")

@@ -15,15 +15,26 @@ final class InvoiceService: InvoiceServiceProtocol, ServiceLifecycle, @unchecked
     private let pdfService: any InvoicePDFServiceProtocol
     private let parseAPIClient: (any ParseAPIClientProtocol)?
     private var invoiceAPIService: InvoiceAPIServiceProtocol?
+    private var configurationService: (any ConfigurationServiceProtocol)?
 
     init(
         transactionIdService: any TransactionIdServiceProtocol = TransactionIdService(),
         parseAPIClient: (any ParseAPIClientProtocol)? = nil,
-        pdfService: (any InvoicePDFServiceProtocol)? = nil
+        pdfService: (any InvoicePDFServiceProtocol)? = nil,
+        configurationService: (any ConfigurationServiceProtocol)? = nil
     ) {
         self.transactionIdService = transactionIdService
         self.parseAPIClient = parseAPIClient
         self.pdfService = pdfService ?? InvoicePDFService()
+        self.configurationService = configurationService
+    }
+
+    func configure(configurationService: any ConfigurationServiceProtocol) {
+        self.configurationService = configurationService
+    }
+
+    var blocksLocalInvoiceGeneration: Bool {
+        self.configurationService?.blocksLocalInvoiceGeneration ?? true
     }
 
     /// Configures the invoice API service for backend synchronization
@@ -81,6 +92,10 @@ final class InvoiceService: InvoiceServiceProtocol, ServiceLifecycle, @unchecked
     }
 
     func createInvoice(from order: OrderBuy, customerInfo: CustomerInfo) async throws -> Invoice {
+        guard !self.blocksLocalInvoiceGeneration else {
+            throw InvoiceLocalSynthesisError.disabledInProduction
+        }
+
         await MainActor.run {
             self.isLoading = true
         }
@@ -88,7 +103,9 @@ final class InvoiceService: InvoiceServiceProtocol, ServiceLifecycle, @unchecked
         // Simulate API call
         try await Task.sleep(nanoseconds: 600_000_000) // 0.6 seconds
 
-        let invoice = Invoice.from(order: order, customerInfo: customerInfo, transactionIdService: self.transactionIdService)
+        let invoice = InvoiceLocalSynthesisGate.withPermitted {
+            Invoice.from(order: order, customerInfo: customerInfo, transactionIdService: self.transactionIdService)
+        }
 
         await MainActor.run {
             self.invoices.append(invoice)
@@ -99,6 +116,10 @@ final class InvoiceService: InvoiceServiceProtocol, ServiceLifecycle, @unchecked
     }
 
     func createInvoice(from sellOrder: OrderSell, customerInfo: CustomerInfo) async throws -> Invoice {
+        guard !self.blocksLocalInvoiceGeneration else {
+            throw InvoiceLocalSynthesisError.disabledInProduction
+        }
+
         await MainActor.run {
             self.isLoading = true
         }
@@ -106,7 +127,9 @@ final class InvoiceService: InvoiceServiceProtocol, ServiceLifecycle, @unchecked
         // Simulate API call
         try await Task.sleep(nanoseconds: 600_000_000) // 0.6 seconds
 
-        let invoice = Invoice.from(sellOrder: sellOrder, customerInfo: customerInfo, transactionIdService: self.transactionIdService)
+        let invoice = InvoiceLocalSynthesisGate.withPermitted {
+            Invoice.from(sellOrder: sellOrder, customerInfo: customerInfo, transactionIdService: self.transactionIdService)
+        }
 
         await MainActor.run {
             self.invoices.append(invoice)

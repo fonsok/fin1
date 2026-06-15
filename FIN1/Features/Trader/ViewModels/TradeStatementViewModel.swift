@@ -404,13 +404,15 @@ final class TradeStatementViewModel: ObservableObject {
             bank: "Deutsche Bank AG",
             customerNumber: trade.traderId
         )
-        let invoice = Invoice.from(
-            sellOrder: sellOrder,
-            customerInfo: customerInfo,
-            transactionIdService: TransactionIdService(),
-            tradeId: trade.id,
-            tradeNumber: trade.tradeNumber
-        )
+        let invoice = InvoiceLocalSynthesisGate.withPermitted {
+            Invoice.from(
+                sellOrder: sellOrder,
+                customerInfo: customerInfo,
+                transactionIdService: TransactionIdService(),
+                tradeId: trade.id,
+                tradeNumber: trade.tradeNumber
+            )
+        }
         if let belegNumber, !belegNumber.isEmpty {
             return Invoice(
                 id: invoice.id,

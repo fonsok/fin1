@@ -26,7 +26,10 @@ final class ServiceFactory {
             parseLiveQueryClient: nil,
             userService: nil
         )
-        self.invoiceService = InvoiceService(transactionIdService: self.transactionIdService)
+        self.invoiceService = InvoiceService(
+            transactionIdService: self.transactionIdService,
+            configurationService: configurationService
+        )
         self.configurationService = configurationService
         self.userService = userService
     }
@@ -261,7 +264,8 @@ final class ServiceFactory {
         // Note: This replaces the existing instance, so all references should use coreInvoiceService
         self.invoiceService = InvoiceService(
             transactionIdService: self.transactionIdService,
-            parseAPIClient: parseAPIClient
+            parseAPIClient: parseAPIClient,
+            configurationService: self.configurationService
         )
 
         // Configure InvoiceAPIService if ParseAPIClient is available

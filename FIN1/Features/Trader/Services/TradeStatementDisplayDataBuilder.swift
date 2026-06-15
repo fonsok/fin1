@@ -123,13 +123,15 @@ final class TradeStatementDisplayDataBuilder: TradeStatementDisplayDataBuilderPr
             bank: "Deutsche Bank AG",
             customerNumber: fullTrade.traderId
         )
-        return Invoice.from(
-            order: fullTrade.buyOrder,
-            customerInfo: customerInfo,
-            transactionIdService: TransactionIdService(),
-            tradeId: fullTrade.id,
-            tradeNumber: fullTrade.tradeNumber
-        )
+        return InvoiceLocalSynthesisGate.withPermitted {
+            Invoice.from(
+                order: fullTrade.buyOrder,
+                customerInfo: customerInfo,
+                transactionIdService: TransactionIdService(),
+                tradeId: fullTrade.id,
+                tradeNumber: fullTrade.tradeNumber
+            )
+        }
     }
 
     private func buildCalculationBreakdown(buyInvoice: Invoice?, sellInvoices: [Invoice]) -> CalculationBreakdownData {
