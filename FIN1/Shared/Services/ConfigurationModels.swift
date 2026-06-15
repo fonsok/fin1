@@ -200,7 +200,7 @@ struct AppConfiguration: Codable {
         investorCommissionRateTotal: 0.1,
         appServiceChargeRate: 0.02,
         appServiceChargeRateCompanies: 0.02,
-        showCommissionBreakdownInCreditNote: true,
+        showCommissionBreakdownInCreditNote: false,
         showDocumentReferenceLinksInAccountStatement: true,
         maximumRiskExposurePercent: 2.0,
         walletFeatureEnabled: false,

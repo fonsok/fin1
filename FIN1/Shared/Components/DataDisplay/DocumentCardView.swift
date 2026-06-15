@@ -55,7 +55,7 @@ struct DocumentCardView: View {
                         }
                     }
 
-                    Text(self.document.description)
+                    Text(DocumentInboxPolicy.inboxSubtitle(for: self.document))
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.7))
                         .lineLimit(2)

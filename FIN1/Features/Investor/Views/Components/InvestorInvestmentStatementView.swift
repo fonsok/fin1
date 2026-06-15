@@ -335,7 +335,7 @@ struct InvestorInvestmentStatementView: View {
 
             // Commission row (using pre-calculated value from model - single source of truth)
             HStack {
-                Text("Commission (\(self.services.configurationService.traderCommissionPercentage))")
+                Text("Commission (\(self.services.configurationService.investorCommissionPercentage))")
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(DocumentDesignSystem.textColor)
                 Spacer()

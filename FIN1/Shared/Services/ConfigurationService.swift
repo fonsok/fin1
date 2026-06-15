@@ -22,7 +22,7 @@ final class ConfigurationService: ConfigurationServiceProtocol, ServiceLifecycle
     @Published var investorCommissionRateTotal: Double = 0.1
     @Published var appServiceChargeRate: Double = 0.02 // internal(set) for extension access
     @Published var appServiceChargeRateCompanies: Double = 0.02 // internal(set) for extension access
-    @Published var showCommissionBreakdownInCreditNote: Bool = true // internal(set) for extension access
+    @Published var showCommissionBreakdownInCreditNote: Bool = false // internal(set) for extension access
     @Published var showDocumentReferenceLinksInAccountStatement: Bool = true // internal(set) for extension access
     @Published var maximumRiskExposurePercent: Double = 2.0 // internal(set) for extension access
     @Published var walletFeatureEnabled: Bool = false // internal(set) for extension access

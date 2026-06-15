@@ -370,6 +370,7 @@ final class TradingNotificationService: TradingNotificationServiceProtocol, Serv
             uploadedAt: Date(),
             invoiceData: creditNoteInvoice,
             tradeId: trade.id,
+            tradeNumber: trade.tradeNumber,
             documentNumber: creditNoteInvoice.invoiceNumber,
             traderCommissionRateSnapshot: creditNoteInvoice.traderCommissionRateSnapshot
         )

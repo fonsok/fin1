@@ -29,6 +29,19 @@ export type FinanceConsistencySmokeStatus = {
     }>;
   };
   settlementConsistency?: { overall?: HealthStatus; checkedTrades?: number; checkedInvestments?: number; mismatchCount?: number };
+  traderBelegDrift?: {
+    overall?: HealthStatus;
+    checkedDocuments?: number;
+    driftedDocuments?: number;
+    needsBackfillDocuments?: number;
+    reason?: string | null;
+    driftSamples?: Array<{
+      objectId?: string;
+      accountingDocumentNumber?: string;
+      status?: string;
+      drifts?: Array<{ field?: string; code?: string; snapshot?: number; metadata?: number }>;
+    }>;
+  };
   ledgerFuzzySmoke?: { fuzzyUserFilter?: string; sampledRows?: number; matches?: number; parseObjectIdFilterWouldApply?: boolean };
   referenceCoverage?: { checkedRows?: number; missingReferenceDocumentId?: number };
 };
@@ -67,7 +80,7 @@ export function FinanceConsistencySmokeCard({
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-3">
+      <div className="mt-4 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <div className={clsx('rounded-md border p-3', adminSurfaceMetricTile(isDark))}>
           <p className={clsx('text-xs', adminMuted(isDark))}>Issues</p>
           <p
@@ -92,6 +105,24 @@ export function FinanceConsistencySmokeCard({
         <div className={clsx('rounded-md border p-3', adminSurfaceMetricTile(isDark))}>
           <p className={clsx('text-xs', adminMuted(isDark))}>Ledger Fuzzy Matches</p>
           <p className={clsx('text-lg font-semibold', adminPrimary(isDark))}>{financeSmoke.ledgerFuzzySmoke?.matches ?? 0}</p>
+        </div>
+        <div className={clsx('rounded-md border p-3', adminSurfaceMetricTile(isDark))}>
+          <p className={clsx('text-xs', adminMuted(isDark))}>Trader Beleg Drift</p>
+          <p
+            className={clsx(
+              'text-lg font-semibold',
+              (financeSmoke.traderBelegDrift?.driftedDocuments || 0) === 0
+                && (financeSmoke.traderBelegDrift?.needsBackfillDocuments || 0) === 0
+                ? isDark
+                  ? 'text-emerald-400'
+                  : 'text-green-500'
+                : isDark
+                  ? 'text-amber-400'
+                  : 'text-yellow-500',
+            )}
+          >
+            {financeSmoke.traderBelegDrift?.driftedDocuments ?? 0}
+          </p>
         </div>
         <div className={clsx('rounded-md border p-3', adminSurfaceMetricTile(isDark))}>
           <p className={clsx('text-xs', adminMuted(isDark))}>Missing Beleg-Refs</p>
@@ -136,6 +167,19 @@ export function FinanceConsistencySmokeCard({
                   <li key={s.docId || `${s.tradeId}-${s.investmentId}`}>
                     doc {s.docId || '—'} · Δ {s.deltaPp ?? '?'} pp (gespeichert {s.storedReturnPercentage ?? '—'} % vs. SSOT{' '}
                     {s.derivedReturnPercentage ?? '—'} %)
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+          {(financeSmoke.traderBelegDrift?.driftSamples?.length || 0) > 0 && (
+            <details>
+              <summary className="cursor-pointer text-xs font-medium">Trader-Beleg Drift (max. 5)</summary>
+              <ul className="mt-1 text-xs font-mono space-y-1 list-disc pl-4">
+                {financeSmoke.traderBelegDrift!.driftSamples!.slice(0, 5).map((s) => (
+                  <li key={s.objectId || s.accountingDocumentNumber}>
+                    {s.accountingDocumentNumber || s.objectId} · {s.status}
+                    {s.drifts?.length ? ` · ${s.drifts.map((d) => d.field).join(', ')}` : ''}
                   </li>
                 ))}
               </ul>

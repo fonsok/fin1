@@ -85,7 +85,7 @@ final class InvestorGrossProfitService: InvestorGrossProfitServiceProtocol, Obse
         for investmentId: String,
         tradeId: String
     ) async throws -> Double {
-        let commissionRate = self.configurationService.effectiveCommissionRate
+        let commissionRate = self.configurationService.effectiveInvestorCommissionRate
         let serverOnly = self.configurationService.investorMonetaryServerOnly
 
         let summary: InvestorInvestmentStatementSummary?

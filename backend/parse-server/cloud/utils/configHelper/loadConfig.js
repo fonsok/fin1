@@ -186,6 +186,9 @@ async function loadConfig(forceRefresh = false) {
           frontendReadonlyMode:
             config.get('frontendReadonlyMode')
             ?? DEFAULT_CONFIG.display.frontendReadonlyMode,
+          settlementGLOutboxEnabled:
+            config.get('settlementGLOutboxEnabled')
+            ?? DEFAULT_CONFIG.display.settlementGLOutboxEnabled,
           showInvestorPartialSellRealizations: config.get('showInvestorPartialSellRealizations')
             ?? DEFAULT_CONFIG.display.showInvestorPartialSellRealizations,
         },

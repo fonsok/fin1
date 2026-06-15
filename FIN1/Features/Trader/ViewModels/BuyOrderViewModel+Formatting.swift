@@ -31,4 +31,25 @@ extension BuyOrderViewModel {
     func formattedCost(_ cost: Double) -> String {
         cost.formattedAsLocalizedCurrency()
     }
+
+    /// Applies German grouping after editing (e.g. `1200` → `1.200`) without fighting live keystrokes.
+    func normalizeQuantityTextAfterEditing() {
+        let parsed = OrderCalculationUtility.parseGermanQuantity(self.quantityText)
+        guard parsed > 0 else { return }
+
+        if parsed > 10_000_000 {
+            self.showMaxValueWarning = true
+            let capped = 10_000_000
+            self.quantity = Double(capped)
+            self.quantityText = OrderCalculationUtility.formatGermanQuantity(capped)
+            return
+        }
+
+        self.showMaxValueWarning = false
+        self.quantity = Double(parsed)
+        let formatted = OrderCalculationUtility.formatGermanQuantity(parsed)
+        if self.quantityText != formatted {
+            self.quantityText = formatted
+        }
+    }
 }

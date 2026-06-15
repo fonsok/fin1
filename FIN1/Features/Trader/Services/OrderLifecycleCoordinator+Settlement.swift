@@ -112,6 +112,20 @@ extension OrderLifecycleCoordinator {
         }
     }
 
+    /// After each sell leg (including partial sells), merge TSC/CN rows from the backend into the inbox.
+    /// `trade.isCompleted` is false for partial sells, but the server already books per-leg Belege.
+    func syncTraderSellDocumentsIntoInboxAfterSell(for trade: Trade) async {
+        if await self.checkBackendSettlement(for: trade) {
+            await self.syncSettlementDocumentsIntoInbox(for: trade)
+            return
+        }
+        NotificationCenter.default.post(
+            name: .userDocumentInboxShouldRefresh,
+            object: nil,
+            userInfo: ["force": true]
+        )
+    }
+
     /// Merges backend `Document` rows (collection bill, credit note, …) into the notifications inbox cache.
     func syncSettlementDocumentsIntoInbox(for trade: Trade) async {
         guard let settlementAPI = settlementAPIService,

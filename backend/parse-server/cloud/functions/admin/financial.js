@@ -19,12 +19,18 @@ const {
   handleRunSettlementRetryQueue,
   handleGetSettlementRetryQueueStatus,
 } = require('./financialSettlementRetryQueue');
+const {
+  handleRunSettlementGLOutbox,
+  handleGetSettlementGLOutboxStatus,
+  handlePostSettlementGLFromOutbox,
+} = require('./financialSettlementGLOutbox');
 const { handleReconcileStaleSettlementRetryJobs } = require('./financialSettlementRetryRepair');
 const { handleCleanupLegacyDocumentsAllUsers } = require('./financialCleanupLegacyDocuments');
 const { handleReconcileAccountStatementDocumentReferences } = require('./financialReconcileStatementRefs');
 const { handleVerifyAccountStatementChain } = require('./financialVerifyAccountStatementChain');
 const { handleBackfillUserCashBalanceFromStatements } = require('./financialUserCashBalanceBackfill');
 const { handleBackfillTraderCollectionBillBeleg } = require('./financialTraderCollectionBillBelegBackfill');
+const { handleInspectTraderCollectionBillBelegDrift } = require('./financialTraderCollectionBillBelegDrift');
 const { handleBackfillPoolMirrorExecutionEigenbeleg } = require('./financialPoolMirrorExecutionEigenbelegBackfill');
 const { handleBackfillAppCommissionEigenbeleg } = require('./financialAppCommissionEigenbelegBackfill');
 const { handleRepairMirrorPoolBuyQuantity } = require('./financialMirrorPoolBuyQuantityRepair');
@@ -113,6 +119,27 @@ Parse.Cloud.define('reconcileStaleSettlementRetryJobs', async (request) => {
   return handleReconcileStaleSettlementRetryJobs(request);
 });
 
+Parse.Cloud.define('runSettlementGLOutbox', async (request) => {
+  if (!request.master) {
+    requireAdminRole(request);
+  }
+  return handleRunSettlementGLOutbox(request);
+});
+
+Parse.Cloud.define('getSettlementGLOutboxStatus', async (request) => {
+  if (!request.master) {
+    requireAdminRole(request);
+  }
+  return handleGetSettlementGLOutboxStatus(request);
+});
+
+Parse.Cloud.define('executeSettlementGLFromOutbox', async (request) => {
+  if (!request.master) {
+    requireAdminRole(request);
+  }
+  return handlePostSettlementGLFromOutbox(request);
+});
+
 Parse.Cloud.define('cleanupLegacyDocumentsAllUsers', async (request) => {
   if (!request.master) {
     requireAdminRole(request);
@@ -146,6 +173,13 @@ Parse.Cloud.define('backfillTraderCollectionBillBeleg', async (request) => {
     requireAdminRole(request);
   }
   return handleBackfillTraderCollectionBillBeleg(request);
+});
+
+Parse.Cloud.define('checkTraderCollectionBillBelegDrift', async (request) => {
+  if (!request.master) {
+    requireAdminRole(request);
+  }
+  return handleInspectTraderCollectionBillBelegDrift(request);
 });
 
 Parse.Cloud.define('backfillPoolMirrorExecutionEigenbeleg', async (request) => {

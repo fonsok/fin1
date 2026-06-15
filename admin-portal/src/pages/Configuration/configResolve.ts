@@ -38,9 +38,12 @@ export const CONFIG_DEFAULT_VALUES: Record<string, number> = {
   investorMonetaryServerOnly: 1,
   traderMonetaryServerOnly: 1,
   frontendReadonlyMode: 0,
+  settlementGLOutboxEnabled: 0,
   showInvestorPartialSellRealizations: 0,
   /** 1 = true; matches backend default for account-statement voucher links */
   showDocumentReferenceLinksInAccountStatement: 1,
+  /** 0 = false; Trader-Gutschrift: Commission Calculation Breakdown standardmäßig aus */
+  showCommissionBreakdownInCreditNote: 0,
 };
 
 const CONFIG_DEFAULT_STRING_VALUES: Record<string, string> = {

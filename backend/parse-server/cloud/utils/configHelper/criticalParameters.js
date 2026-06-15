@@ -30,6 +30,7 @@ const CRITICAL_PARAMETERS = [
   'weekly_transaction_limit',
   'monthly_transaction_limit',
   'showDocumentReferenceLinksInAccountStatement',
+  'showCommissionBreakdownInCreditNote',
   'walletActionMode',
   'walletActionModeGlobal',
   'walletActionModeInvestor',

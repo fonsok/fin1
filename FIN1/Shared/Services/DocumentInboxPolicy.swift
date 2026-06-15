@@ -191,6 +191,19 @@ enum DocumentInboxPolicy {
 
     /// Title for Notifications → Documents (prefer accounting number CB-/CN- over storage filename).
     static func inboxTitle(for document: Document) -> String {
+        if document.type == .traderCreditNote,
+           let reference = document.traderCreditNoteTradeReferenceLabel {
+            if let number = document.accountingDocumentNumber?.trimmingCharacters(in: .whitespacesAndNewlines),
+               !number.isEmpty {
+                return "\(number) · \(reference)"
+            }
+            if let number = document.documentNumber?.trimmingCharacters(in: .whitespacesAndNewlines),
+               !number.isEmpty,
+               number.contains("-") {
+                return "\(number) · \(reference)"
+            }
+            return reference
+        }
         if let number = document.accountingDocumentNumber?.trimmingCharacters(in: .whitespacesAndNewlines),
            !number.isEmpty {
             return number
@@ -201,6 +214,16 @@ enum DocumentInboxPolicy {
             return number
         }
         return document.name
+    }
+
+    /// Secondary line for Notifications → Documents.
+    static func inboxSubtitle(for document: Document) -> String {
+        switch document.type {
+        case .traderCreditNote:
+            return document.traderCreditNoteInboxSubtitle
+        default:
+            return document.description
+        }
     }
 
     /// Prefer server settlement row over pre-backend local placeholder for the same trade + type.

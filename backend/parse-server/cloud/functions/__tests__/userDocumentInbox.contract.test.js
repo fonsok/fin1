@@ -56,6 +56,36 @@ describe('userDocumentInbox', () => {
       get(field) { return this[field]; },
       toJSON() { return { ...this, objectId: this.id }; },
     },
+    {
+      id: 'tsc-sell-1',
+      userId: 'trd-1',
+      type: 'traderCollectionBill',
+      accountingDocumentNumber: 'TSC-2026-0000138',
+      metadata: { executionType: 'sell' },
+      name: 'Verkaufsabrechnung',
+      get(field) { return this[field]; },
+      toJSON() { return { ...this, objectId: this.id }; },
+    },
+    {
+      id: 'tsc-sell-2',
+      userId: 'trd-1',
+      type: 'traderCollectionBill',
+      accountingDocumentNumber: 'TSC-2026-0000139',
+      metadata: { executionType: 'sell' },
+      name: 'Verkaufsabrechnung',
+      get(field) { return this[field]; },
+      toJSON() { return { ...this, objectId: this.id }; },
+    },
+    {
+      id: 'tbc-buy-1',
+      userId: 'trd-1',
+      type: 'traderCollectionBill',
+      accountingDocumentNumber: 'TBC-2026-0000141',
+      metadata: { executionType: 'buy' },
+      name: 'Kaufabrechnung',
+      get(field) { return this[field]; },
+      toJSON() { return { ...this, objectId: this.id }; },
+    },
   ];
 
   const investments = [
@@ -209,5 +239,19 @@ describe('userDocumentInbox', () => {
     expect(ids).not.toContain('eigen-1');
     expect(ids).not.toContain('iar-1');
     expect(ids).not.toContain('act-1');
+  });
+
+  test('getUserDocumentInbox returns all trader buy and partial-sell TSC rows', async () => {
+    const handler = cloudFunctions.getUserDocumentInbox;
+    const result = await handler({
+      user: { id: 'trd-1', get: () => null },
+      params: { limit: 50 },
+    });
+    const ids = result.documents.map((d) => d.objectId || d.id);
+    expect(ids).toContain('cn-1');
+    expect(ids).toContain('tbc-buy-1');
+    expect(ids).toContain('tsc-sell-1');
+    expect(ids).toContain('tsc-sell-2');
+    expect(result.documents).toHaveLength(4);
   });
 });

@@ -10,7 +10,8 @@ protocol TradeStatementDisplayDataBuilderProtocol {
         trade: TradeOverviewItem,
         fullTrade: Trade?,
         buyInvoice: Invoice?,
-        sellInvoices: [Invoice]
+        sellInvoices: [Invoice],
+        presentationScope: TradeStatementPresentationScope
     ) -> TradeStatementDisplayData
 }
 
@@ -33,10 +34,15 @@ final class TradeStatementDisplayDataBuilder: TradeStatementDisplayDataBuilderPr
         trade: TradeOverviewItem,
         fullTrade: Trade?,
         buyInvoice: Invoice?,
-        sellInvoices: [Invoice]
+        sellInvoices: [Invoice],
+        presentationScope: TradeStatementPresentationScope = .fullTrade
     ) -> TradeStatementDisplayData {
 
-        let resolvedBuyInvoice = self.resolveBuyInvoice(buyInvoice: buyInvoice, fullTrade: fullTrade)
+        let resolvedBuyInvoice = self.resolveBuyInvoice(
+            buyInvoice: buyInvoice,
+            fullTrade: fullTrade,
+            presentationScope: presentationScope
+        )
 
         let buyTransaction = self.buildBuyTransactionData(
             trade: trade,
@@ -94,10 +100,14 @@ final class TradeStatementDisplayDataBuilder: TradeStatementDisplayDataBuilderPr
 
     // MARK: - Private Methods
 
-    /// KAUF-Daten: Parse-`buy_invoice` wenn vorhanden, sonst aus `Trade.buyOrder` (Gebühren in einer Abrechnung).
-    private func resolveBuyInvoice(buyInvoice: Invoice?, fullTrade: Trade?) -> Invoice? {
+    /// KAUF-Daten: Parse-`buy_invoice` wenn vorhanden, sonst aus `Trade.buyOrder` (nur bei Full-Trade/Buy-Leg).
+    private func resolveBuyInvoice(
+        buyInvoice: Invoice?,
+        fullTrade: Trade?,
+        presentationScope: TradeStatementPresentationScope
+    ) -> Invoice? {
         if let buyInvoice { return buyInvoice }
-        guard let fullTrade else { return nil }
+        guard presentationScope.allowsBuyLegFromFullTradeFallback, let fullTrade else { return nil }
         let customerInfo = CustomerInfo(
             name: "Dr. Hans-Peter Müller",
             address: "Hauptstraße 42",

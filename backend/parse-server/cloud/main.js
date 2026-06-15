@@ -118,7 +118,7 @@ Parse.Cloud.define('getConfig', async (request) => {
 
   const display = configData.display || {};
   if (typeof display.showCommissionBreakdownInCreditNote !== 'boolean') {
-    display.showCommissionBreakdownInCreditNote = true;
+    display.showCommissionBreakdownInCreditNote = false;
   }
   if (liveConfig.display && typeof liveConfig.display.showDocumentReferenceLinksInAccountStatement === 'boolean') {
     display.showDocumentReferenceLinksInAccountStatement = liveConfig.display.showDocumentReferenceLinksInAccountStatement;
@@ -187,6 +187,11 @@ Parse.Cloud.define('getConfig', async (request) => {
     display.frontendReadonlyMode = liveConfig.display.frontendReadonlyMode;
   } else if (typeof display.frontendReadonlyMode !== 'boolean') {
     display.frontendReadonlyMode = false;
+  }
+  if (liveConfig.display && typeof liveConfig.display.settlementGLOutboxEnabled === 'boolean') {
+    display.settlementGLOutboxEnabled = liveConfig.display.settlementGLOutboxEnabled;
+  } else if (typeof display.settlementGLOutboxEnabled !== 'boolean') {
+    display.settlementGLOutboxEnabled = false;
   }
   if (liveConfig.display && typeof liveConfig.display.showInvestorPartialSellRealizations === 'boolean') {
     display.showInvestorPartialSellRealizations = liveConfig.display.showInvestorPartialSellRealizations;
@@ -282,7 +287,7 @@ Parse.Cloud.define('updateConfig', async (request) => {
   const configData = config.toJSON();
   return {
     display: configData.display || {
-      showCommissionBreakdownInCreditNote: true,
+      showCommissionBreakdownInCreditNote: false,
       showDocumentReferenceLinksInAccountStatement: true,
       maximumRiskExposurePercent: 2.0
     }
@@ -298,6 +303,7 @@ Parse.Cloud.define('updateConfig', async (request) => {
 const { DEFAULT_CONFIG, loadConfig } = require('./utils/configHelper/index.js');
 const { FINANCIAL_RECONCILIATION_SKIP_KEYS } = require('./utils/configHelper/reconciliationSkips.js');
 const { processDueSettlementRetries } = require('./utils/accountingHelper/retryQueue');
+const { processDueSettlementOutbox } = require('./utils/accountingHelper/settlementOutbox');
 const { audit } = require('./utils/structuredLogger');
 
 async function reconcileConfigDefaults() {
@@ -401,6 +407,32 @@ setInterval(async () => {
     settlementRetryWorkerRunning = false;
   }
 }, 60 * 1000);
+
+// ============================================================================
+// SETTLEMENT GL OUTBOX WORKER (ADR-017 async AppLedger posting)
+// ============================================================================
+let settlementGLOutboxWorkerRunning = false;
+setInterval(async () => {
+  if (settlementGLOutboxWorkerRunning) return;
+  settlementGLOutboxWorkerRunning = true;
+  try {
+    const result = await processDueSettlementOutbox({ limit: 25 });
+    if (Number(result?.processed || 0) > 0) {
+      audit.info('settlement.outbox.worker.tick', {
+        processed: result.processed,
+        message: 'SettlementGLOutboxWorker processed row(s)',
+      });
+    }
+  } catch (err) {
+    audit.error('settlement.outbox.worker.failure', {
+      error: err && err.message ? err.message : String(err),
+      stack: err && err.stack ? err.stack : undefined,
+      message: 'SettlementGLOutboxWorker failed',
+    });
+  } finally {
+    settlementGLOutboxWorkerRunning = false;
+  }
+}, 45 * 1000);
 
 // ============================================================================
 // SLA AUTO-ESCALATION WORKER (support tickets — aligns with iOS SLAMonitoringService)

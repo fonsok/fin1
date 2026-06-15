@@ -51,6 +51,23 @@ const REPAIR_CATALOG = [
     relatedChecks: ['settlement_consistency'],
   },
   {
+    id: 'trader_beleg_ssot_drift',
+    layer: 'detection',
+    cloudFunction: 'checkTraderCollectionBillBelegDrift',
+    defaultParams: { dryRun: true, limit: 50, includeInvoice: false },
+    relatedChecks: ['trader_beleg_ssot_drift'],
+    notes: 'Compare accountingSummaryText vs Document.metadata (optional invoice gross)',
+  },
+  {
+    id: 'trader_beleg_ssot_backfill',
+    layer: 'repair',
+    cloudFunction: 'backfillTraderCollectionBillBeleg',
+    defaultParams: { dryRun: true, limit: 25 },
+    applyParams: { dryRun: false, limit: 25 },
+    relatedChecks: ['trader_beleg_ssot_drift'],
+    notes: 'Persist accountingSummaryText + metadata v1 on legacy trader TBC/TSC rows',
+  },
+  {
     id: 'mirror_basis_drift',
     layer: 'repair',
     cloudFunction: 'backfillTraderCollectionBillBeleg',
@@ -73,6 +90,14 @@ const REPAIR_CATALOG = [
     defaultParams: { dryRun: true, limit: 25 },
     applyParams: { dryRun: false, limit: 25 },
     notes: 'Create EAP eigenbeleg for trades with appCommission GL leg but no appCommissionEigenbeleg document',
+    relatedChecks: ['settlement_gl_reconciliation'],
+  },
+  {
+    id: 'settlement_gl_outbox_queue',
+    layer: 'repair',
+    cloudFunction: 'runSettlementGLOutbox',
+    defaultParams: { limit: 25 },
+    notes: 'ADR-017: drain pending SettlementOutbox rows (async GL posting)',
     relatedChecks: ['settlement_gl_reconciliation'],
   },
   {

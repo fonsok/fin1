@@ -18,4 +18,17 @@ describe('resolveConfig', () => {
 
     expect(config.legalAppName).toBe('LegacyApp');
   });
+
+  it('defaults showCommissionBreakdownInCreditNote to disabled', () => {
+    const config = resolveConfig(undefined);
+    expect(config.showCommissionBreakdownInCreditNote).toBe(0);
+  });
+
+  it('merges display.showCommissionBreakdownInCreditNote from backend response', () => {
+    const config = resolveConfig({
+      display: { showCommissionBreakdownInCreditNote: false },
+    } as ConfigResponse);
+
+    expect(config.showCommissionBreakdownInCreditNote).toBe(false);
+  });
 });

@@ -228,6 +228,15 @@ export const PARAMETER_DEFINITIONS: Record<string, Omit<ConfigurationParameter, 
     category: 'display',
     isCritical: true,
   },
+  showCommissionBreakdownInCreditNote: {
+    key: 'showCommissionBreakdownInCreditNote',
+    displayName: 'Gutschrift: Commission Calculation Breakdown',
+    description:
+      'Steuert in der Trader-App, ob in der Gutschrift (CN-) der Bereich „Commission Calculation Breakdown“ mit der Investor-Aufschlüsselung angezeigt wird (`display.showCommissionBreakdownInCreditNote`). Standard: deaktiviert.',
+    type: 'boolean',
+    category: 'display',
+    isCritical: true,
+  },
   walletActionModeGlobal: {
     key: 'walletActionModeGlobal',
     displayName: 'Konto-Aktionsmodus (Global)',
@@ -318,6 +327,15 @@ export const PARAMETER_DEFINITIONS: Record<string, Omit<ConfigurationParameter, 
     displayName: 'Client: keine monetären Fallbacks',
     description:
       'Kill-Switch für Produktion: blockiert alle client-seitigen monetären Fallbacks und lokale Invoice-Generierung (Investor + Trader). Standard: aus (nur für Notfall/Härtung).',
+    type: 'boolean',
+    category: 'display',
+    isCritical: true,
+  },
+  settlementGLOutboxEnabled: {
+    key: 'settlementGLOutboxEnabled',
+    displayName: 'Settlement GL Outbox (ADR-017)',
+    description:
+      'Wenn aktiv: AccountStatement und SettlementOutbox in einer Mongo-Transaktion; AppLedger-Paare werden asynchron vom Worker gebucht (kein synchrones fail-open GL mehr). Standard: aus (Rollout).',
     type: 'boolean',
     category: 'display',
     isCritical: true,

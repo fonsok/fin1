@@ -40,7 +40,10 @@ protocol ConfigurationServiceProtocol: ObservableObject, Sendable {
     var poolBalanceDistributionThreshold: Double { get }
     var traderCommissionRate: Double { get }
     var traderCommissionPercentage: String { get }
+    /// Investor Collection Bill total commission (trader + app), e.g. "10%".
+    var investorCommissionPercentage: String { get }
     var appCommissionRate: Double { get }
+    var appCommissionPercentage: String { get }
     var appServiceChargeRate: Double { get }
     var appServiceChargeRateCompanies: Double { get }
     var appServiceChargePercentage: String { get }

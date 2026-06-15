@@ -29,6 +29,7 @@ struct OrderDetailsSection<Content: View>: View {
 /// Shared component for quantity input with validation
 struct QuantityInputField: View {
     @Binding var text: String
+    var isFocused: FocusState<Bool>.Binding?
     let placeholder: String
     let accessibilityLabel: String
     let accessibilityHint: String
@@ -43,6 +44,7 @@ struct QuantityInputField: View {
 
     init(
         text: Binding<String>,
+        isFocused: FocusState<Bool>.Binding? = nil,
         placeholder: String,
         accessibilityLabel: String,
         accessibilityHint: String,
@@ -51,6 +53,7 @@ struct QuantityInputField: View {
         errorMessage: String? = nil
     ) {
         self._text = text
+        self.isFocused = isFocused
         self.placeholder = placeholder
         self.accessibilityLabel = accessibilityLabel
         self.accessibilityHint = accessibilityHint
@@ -67,22 +70,29 @@ struct QuantityInputField: View {
                     .foregroundColor(AppTheme.fontColor.opacity(0.8))
                 Spacer()
                 ZStack(alignment: .trailing) {
-                    TextField("", text: self.$text)
-                        .keyboardType(.numberPad)
-                        .multilineTextAlignment(.trailing)
-                        .foregroundColor(Color("InputText"))
-                        .accentColor(Color("InputText"))
-                        .padding(.horizontal, ResponsiveDesign.spacing(12))
-                        .padding(.vertical, ResponsiveDesign.spacing(8))
-                        .background(Color("InputFieldBackground"))
-                        .cornerRadius(ResponsiveDesign.spacing(8))
-                        .frame(width: ResponsiveDesign.spacing(145))
-                        .onSubmit {
-                            self.onSubmit?()
+                    Group {
+                        if let isFocused = self.isFocused {
+                            TextField("", text: self.$text)
+                                .focused(isFocused)
+                        } else {
+                            TextField("", text: self.$text)
                         }
-                        .accessibilityIdentifier("QuantityInputField")
-                        .accessibilityLabel(self.accessibilityLabel)
-                        .accessibilityHint(self.accessibilityHint)
+                    }
+                    .keyboardType(.numberPad)
+                    .multilineTextAlignment(.trailing)
+                    .foregroundColor(Color("InputText"))
+                    .accentColor(Color("InputText"))
+                    .padding(.horizontal, ResponsiveDesign.spacing(12))
+                    .padding(.vertical, ResponsiveDesign.spacing(8))
+                    .background(Color("InputFieldBackground"))
+                    .cornerRadius(ResponsiveDesign.spacing(8))
+                    .frame(width: ResponsiveDesign.spacing(145))
+                    .onSubmit {
+                        self.onSubmit?()
+                    }
+                    .accessibilityIdentifier("QuantityInputField")
+                    .accessibilityLabel(self.accessibilityLabel)
+                    .accessibilityHint(self.accessibilityHint)
 
                     // Custom placeholder
                     if self.text.isEmpty {

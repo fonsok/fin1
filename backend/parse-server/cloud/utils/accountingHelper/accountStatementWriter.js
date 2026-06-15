@@ -45,6 +45,7 @@ async function bookAccountStatementEntry({
   businessCaseId,
   customerDisplaySnapshot,
   enforceReferenceDocumentId = true,
+  glOutboxPayload = null,
 }) {
   if (enforceReferenceDocumentId && (!referenceDocumentId || !referenceDocumentNumber)) {
     throw new Error(
@@ -103,7 +104,12 @@ async function bookAccountStatementEntry({
   entry.set('source', 'backend');
 
   try {
-    await entry.save(null, { useMasterKey: true });
+    if (glOutboxPayload) {
+      const { saveAccountStatementWithOutbox } = require('./settlementOutbox');
+      await saveAccountStatementWithOutbox(entry, glOutboxPayload);
+    } else {
+      await entry.save(null, { useMasterKey: true });
+    }
   } catch (saveErr) {
     const rolledBack = await compensateUserCashBalanceAdvance({ userId, amount });
     if (rolledBack) {

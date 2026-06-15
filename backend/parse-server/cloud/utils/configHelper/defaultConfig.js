@@ -50,7 +50,7 @@ const DEFAULT_CONFIG = {
     executionPriceToleranceBps: 100,
   },
   display: {
-    showCommissionBreakdownInCreditNote: true,
+    showCommissionBreakdownInCreditNote: false,
     showDocumentReferenceLinksInAccountStatement: true,
     maximumRiskExposurePercent: 2.0,
     walletActionModeGlobal: 'disabled',
@@ -73,6 +73,8 @@ const DEFAULT_CONFIG = {
     traderMonetaryServerOnly: true,
     // Production kill-switch: disables all client monetary fallbacks when true.
     frontendReadonlyMode: false,
+    // ADR-017: async GL posting via SettlementOutbox (Statement + outbox in Mongo transaction).
+    settlementGLOutboxEnabled: false,
     /** iOS Investor: Bereich „Teil-Sell-Realisierungen (Active Investment)“ — unabhängig von Trader-Teil-Sells. */
     showInvestorPartialSellRealizations: false,
   },

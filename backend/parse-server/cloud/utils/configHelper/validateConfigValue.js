@@ -181,9 +181,17 @@ function validateConfigValue(paramName, value) {
       type: 'boolean',
       errorMsg: 'frontendReadonlyMode muss true oder false sein',
     },
+    settlementGLOutboxEnabled: {
+      type: 'boolean',
+      errorMsg: 'settlementGLOutboxEnabled muss true oder false sein',
+    },
     showInvestorPartialSellRealizations: {
       type: 'boolean',
       errorMsg: 'showInvestorPartialSellRealizations muss true oder false sein',
+    },
+    showCommissionBreakdownInCreditNote: {
+      type: 'boolean',
+      errorMsg: 'showCommissionBreakdownInCreditNote muss true oder false sein',
     },
     showDocumentReferenceLinksInAccountStatement: {
       type: 'boolean',

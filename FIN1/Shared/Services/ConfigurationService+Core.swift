@@ -37,7 +37,7 @@ extension ConfigurationService {
                 if self.configuration.appServiceChargeRate == nil { self.configuration.appServiceChargeRate = CalculationConstants.ServiceCharges.appServiceChargeRate }
                 if self.configuration.appServiceChargeRateCompanies == nil { self.configuration.appServiceChargeRateCompanies = self.configuration.appServiceChargeRate }
                 if self.configuration.slaMonitoringInterval == 0 { self.configuration.slaMonitoringInterval = 300.0 }
-                if self.configuration.showCommissionBreakdownInCreditNote == nil { self.configuration.showCommissionBreakdownInCreditNote = true }
+                if self.configuration.showCommissionBreakdownInCreditNote == nil { self.configuration.showCommissionBreakdownInCreditNote = false }
                 if self.configuration.showDocumentReferenceLinksInAccountStatement == nil { self.configuration.showDocumentReferenceLinksInAccountStatement = true }
                 if self.configuration.maximumRiskExposurePercent == nil { self.configuration.maximumRiskExposurePercent = 2.0 }
                 if self.configuration.walletFeatureEnabled == nil { self.configuration.walletFeatureEnabled = false }
@@ -78,7 +78,7 @@ extension ConfigurationService {
         investorCommissionRateTotal = configuration.effectiveInvestorCommissionRateTotal
         appServiceChargeRate = configuration.effectiveAppServiceChargeRate
         appServiceChargeRateCompanies = configuration.effectiveAppServiceChargeRateCompanies
-        showCommissionBreakdownInCreditNote = configuration.showCommissionBreakdownInCreditNote ?? true
+        showCommissionBreakdownInCreditNote = configuration.showCommissionBreakdownInCreditNote ?? false
         showDocumentReferenceLinksInAccountStatement = configuration.effectiveShowDocumentReferenceLinksInAccountStatement
         maximumRiskExposurePercent = configuration.effectiveMaximumRiskExposurePercent
         walletFeatureEnabled = configuration.effectiveWalletFeatureEnabled

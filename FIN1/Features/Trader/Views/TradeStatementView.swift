@@ -9,6 +9,7 @@ struct TradeStatementView: View {
     @Environment(\.appServices) private var services
     let showCustomBackButton: Bool
     let isInvoiceComparisonMode: Bool
+    let comparisonNavigationTitle: String?
 
     // Server-driven Collection Bill texts (with strong local fallback)
     @State private var referenceText: String = TradeStatementReferenceSection.defaultReferenceText
@@ -20,11 +21,13 @@ struct TradeStatementView: View {
     init(
         viewModel: TradeStatementViewModel,
         showCustomBackButton: Bool = true,
-        isInvoiceComparisonMode: Bool = false
+        isInvoiceComparisonMode: Bool = false,
+        comparisonNavigationTitle: String? = nil
     ) {
         self.viewModel = viewModel
         self.showCustomBackButton = showCustomBackButton
         self.isInvoiceComparisonMode = isInvoiceComparisonMode
+        self.comparisonNavigationTitle = comparisonNavigationTitle
     }
 
     var body: some View {
@@ -52,110 +55,114 @@ struct TradeStatementView: View {
 
             ScrollView([.vertical, .horizontal], showsIndicators: true) {
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(16)) {
-                    if self.isInvoiceComparisonMode {
-                        self.invoiceComparisonBanner
-                    }
-                    // Document Header (einheitliches Layout für alle Dokumente)
-                    if let displayProperties = viewModel.displayProperties {
-                        DocumentHeaderLayoutView(
-                            accountHolderName: displayProperties.depotHolder,
-                            accountHolderAddress: self.viewModel.buyInvoice?.customerInfo.address,
-                            accountHolderCity: self.viewModel.buyInvoice != nil ? "\(self.viewModel.buyInvoice!.customerInfo.postalCode) \(self.viewModel.buyInvoice!.customerInfo.city)" : nil,
-                            documentDate: self.viewModel.trade.endDate
-                        ) {
-                            CollectionBillQRCodeView(trade: self.viewModel.trade, displayProperties: displayProperties)
+                    if self.viewModel.displayDataSource == .belegMetadataUnavailable {
+                        self.belegMetadataUnavailableContent
+                    } else {
+                        if self.isInvoiceComparisonMode {
+                            self.comparisonDetailBanner
                         }
-                    }
-
-                    // Document Number Section (Name removed - already shown in DocumentHeaderLayoutView)
-                    if let documentNumber = viewModel.documentNumber {
-                        VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                            HStack {
-                                Text("Belegnummer:")
-                                    .font(ResponsiveDesign.captionFont())
-                                    .foregroundColor(DocumentDesignSystem.textColorSecondary)
-                                Text(documentNumber)
-                                    .font(ResponsiveDesign.captionFont())
-                                    .fontWeight(.medium)
-                                    .foregroundColor(DocumentDesignSystem.textColor)
+                        // Document Header (einheitliches Layout für alle Dokumente)
+                        if let displayProperties = viewModel.displayProperties {
+                            DocumentHeaderLayoutView(
+                                accountHolderName: displayProperties.depotHolder,
+                                accountHolderAddress: self.viewModel.buyInvoice?.customerInfo.address,
+                                accountHolderCity: self.viewModel.buyInvoice != nil ? "\(self.viewModel.buyInvoice!.customerInfo.postalCode) \(self.viewModel.buyInvoice!.customerInfo.city)" : nil,
+                                documentDate: self.viewModel.trade.endDate
+                            ) {
+                                CollectionBillQRCodeView(trade: self.viewModel.trade, displayProperties: displayProperties)
                             }
                         }
-                        .documentSection(level: 1)
-                    }
 
-                    // Account Information Section
-                    if let displayProperties = viewModel.displayProperties {
-                        TradeStatementHeaderView(
-                            depotNumber: displayProperties.depotNumber,
-                            depotHolder: displayProperties.depotHolder,
-                            tradeNumber: self.viewModel.trade.tradeNumber
-                        )
-                    }
+                        // Document Number Section (Name removed - already shown in DocumentHeaderLayoutView)
+                        if let documentNumber = viewModel.documentNumber {
+                            VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
+                                HStack {
+                                    Text("Belegnummer:")
+                                        .font(ResponsiveDesign.captionFont())
+                                        .foregroundColor(DocumentDesignSystem.textColorSecondary)
+                                    Text(documentNumber)
+                                        .font(ResponsiveDesign.captionFont())
+                                        .fontWeight(.medium)
+                                        .foregroundColor(DocumentDesignSystem.textColor)
+                                }
+                            }
+                            .documentSection(level: 1)
+                        }
 
-                    // KAUF Section
-                    if let displayProperties = viewModel.displayProperties, displayProperties.hasBuyTransaction {
-                        TradeStatementBuySection(
-                            securityIdentifier: displayProperties.securityIdentifier,
-                            underlyingAsset: self.viewModel.fullTrade?.underlyingAsset,
-                            orderVolume: displayProperties.buyOrderVolume,
-                            executedVolume: displayProperties.buyExecutedVolume,
-                            price: displayProperties.buyPrice,
-                            exchangeRate: displayProperties.buyExchangeRate,
-                            conversionFactor: displayProperties.buyConversionFactor,
-                            custodyType: displayProperties.buyCustodyType,
-                            depository: displayProperties.buyDepository,
-                            depositoryCountry: displayProperties.buyDepositoryCountry,
-                            profitLoss: displayProperties.buyProfitLoss,
-                            profitLossColor: displayProperties.buyProfitLossColor,
-                            valueDate: displayProperties.buyValueDate,
-                            tradingVenue: displayProperties.buyTradingVenue,
-                            closingDate: displayProperties.buyClosingDate,
-                            marketValue: displayProperties.buyMarketValue,
-                            commission: displayProperties.buyCommission,
-                            ownExpenses: displayProperties.buyOwnExpenses,
-                            externalExpenses: displayProperties.buyExternalExpenses,
-                            assessmentBasis: displayProperties.buyAssessmentBasis,
-                            withheldTax: displayProperties.buyWithheldTax,
-                            finalAmount: displayProperties.buyFinalAmount,
-                            finalAmountColor: displayProperties.buyFinalAmountColor
-                        )
-                    }
+                        // Account Information Section
+                        if let displayProperties = viewModel.displayProperties {
+                            TradeStatementHeaderView(
+                                depotNumber: displayProperties.depotNumber,
+                                depotHolder: displayProperties.depotHolder,
+                                tradeNumber: self.viewModel.trade.tradeNumber
+                            )
+                        }
 
-                    // VERKAUF Section - Multiple Sell Orders
-                    if let displayProperties = viewModel.displayProperties, displayProperties.hasSellTransaction {
-                        TradeStatementSellSection(
-                            sellOrderData: displayProperties.sellOrderData,
-                            securityIdentifier: displayProperties.securityIdentifier,
-                            underlyingAsset: self.viewModel.fullTrade?.underlyingAsset,
-                            tradingVenue: displayProperties.sellTradingVenue,
-                            profitLoss: displayProperties.sellProfitLoss,
-                            profitLossColor: displayProperties.sellProfitLossColor,
-                            assessmentBasis: displayProperties.sellAssessmentBasis,
-                            withheldTax: displayProperties.sellWithheldTax,
-                            finalAmountColor: displayProperties.sellFinalAmountColor
-                        )
-                    }
+                        // KAUF Section
+                        if let displayProperties = viewModel.displayProperties, displayProperties.hasBuyTransaction {
+                            TradeStatementBuySection(
+                                securityIdentifier: displayProperties.securityIdentifier,
+                                underlyingAsset: self.viewModel.fullTrade?.underlyingAsset,
+                                orderVolume: displayProperties.buyOrderVolume,
+                                executedVolume: displayProperties.buyExecutedVolume,
+                                price: displayProperties.buyPrice,
+                                exchangeRate: displayProperties.buyExchangeRate,
+                                conversionFactor: displayProperties.buyConversionFactor,
+                                custodyType: displayProperties.buyCustodyType,
+                                depository: displayProperties.buyDepository,
+                                depositoryCountry: displayProperties.buyDepositoryCountry,
+                                profitLoss: displayProperties.buyProfitLoss,
+                                profitLossColor: displayProperties.buyProfitLossColor,
+                                valueDate: displayProperties.buyValueDate,
+                                tradingVenue: displayProperties.buyTradingVenue,
+                                closingDate: displayProperties.buyClosingDate,
+                                marketValue: displayProperties.buyMarketValue,
+                                commission: displayProperties.buyCommission,
+                                ownExpenses: displayProperties.buyOwnExpenses,
+                                externalExpenses: displayProperties.buyExternalExpenses,
+                                assessmentBasis: displayProperties.buyAssessmentBasis,
+                                withheldTax: displayProperties.buyWithheldTax,
+                                finalAmount: displayProperties.buyFinalAmount,
+                                finalAmountColor: displayProperties.buyFinalAmountColor
+                            )
+                        }
 
-                    if let displayProperties = viewModel.displayProperties {
-                        DocumentNotesSection(
-                            accountNumber: displayProperties.accountNumber,
-                            taxNote: self.taxNoteSnippet,
-                            legalNote: self.legalNoteSnippet
-                        )
-                    }
+                        // VERKAUF Section - Multiple Sell Orders
+                        if let displayProperties = viewModel.displayProperties, displayProperties.hasSellTransaction {
+                            TradeStatementSellSection(
+                                sellOrderData: displayProperties.sellOrderData,
+                                securityIdentifier: displayProperties.securityIdentifier,
+                                underlyingAsset: self.viewModel.fullTrade?.underlyingAsset,
+                                tradingVenue: displayProperties.sellTradingVenue,
+                                profitLoss: displayProperties.sellProfitLoss,
+                                profitLossColor: displayProperties.sellProfitLossColor,
+                                assessmentBasis: displayProperties.sellAssessmentBasis,
+                                withheldTax: displayProperties.sellWithheldTax,
+                                finalAmountColor: displayProperties.sellFinalAmountColor
+                            )
+                        }
 
-                    // Reference Information and Legal Disclaimer
-                    if let displayProperties = viewModel.displayProperties {
-                        TradeStatementReferenceSection(
-                            taxReportTransactionNumber: displayProperties.taxReportTransactionNumber,
-                            accountNumber: displayProperties.accountNumber,
-                            referenceText: self.referenceText,
-                            legalDisclaimer: self.legalDisclaimerText,
-                            footerNote: self.footerNoteText
-                        )
-                    }
+                        if let displayProperties = viewModel.displayProperties {
+                            DocumentNotesSection(
+                                accountNumber: displayProperties.accountNumber,
+                                taxNote: self.taxNoteSnippet,
+                                legalNote: self.legalNoteSnippet
+                            )
+                        }
 
-                    // QR Code already shown in header section above
+                        // Reference Information and Legal Disclaimer
+                        if let displayProperties = viewModel.displayProperties {
+                            TradeStatementReferenceSection(
+                                taxReportTransactionNumber: displayProperties.taxReportTransactionNumber,
+                                accountNumber: displayProperties.accountNumber,
+                                referenceText: self.referenceText,
+                                legalDisclaimer: self.legalDisclaimerText,
+                                footerNote: self.footerNoteText
+                            )
+                        }
+
+                        // QR Code already shown in header section above
+                    }
                 }
                 .frame(width: a4Width, alignment: .leading)
                 .padding(ResponsiveDesign.spacing(16))
@@ -170,7 +177,7 @@ struct TradeStatementView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(AppTheme.screenBackground)
         }
-        .navigationTitle("Collection Bill")
+        .navigationTitle(self.resolvedNavigationTitle)
         .navigationBarTitleDisplayMode(.inline)
         .task {
             // Load server-driven snippets for Collection Bill reference texts (if available)
@@ -303,6 +310,87 @@ struct TradeStatementView: View {
     }
 
     // headerSection removed - name is now shown in DocumentHeaderLayoutView, documentNumber shown separately
+
+    private var resolvedNavigationTitle: String {
+        if self.isInvoiceComparisonMode, let comparisonNavigationTitle, !comparisonNavigationTitle.isEmpty {
+            return comparisonNavigationTitle
+        }
+        return "Collection Bill"
+    }
+
+    private var comparisonDetailBanner: some View {
+        Group {
+            if !self.viewModel.belegSnapshotMetadataDrifts.isEmpty {
+                self.belegDriftWarningBanner
+            }
+            switch self.viewModel.displayDataSource {
+            case .belegMetadataSSOT:
+                self.belegMetadataSSOTBanner
+            case .invoiceFallback:
+                self.invoiceComparisonBanner
+            case .belegMetadataUnavailable:
+                EmptyView()
+            }
+        }
+    }
+
+    private var belegMetadataUnavailableContent: some View {
+        VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
+            HStack(alignment: .top, spacing: ResponsiveDesign.spacing(10)) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundColor(AppTheme.accentRed)
+                Text(self.viewModel.belegUnavailableMessage ?? TraderMonetaryMessages.belegDetailUnavailable)
+                    .font(ResponsiveDesign.bodyFont())
+                    .foregroundColor(DocumentDesignSystem.textColor)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if let documentNumber = self.viewModel.documentNumber {
+                Text("Belegnummer: \(documentNumber)")
+                    .font(ResponsiveDesign.captionFont())
+                    .foregroundColor(DocumentDesignSystem.textColorSecondary)
+            }
+            Text("Bitte den Klartext-Beleg auf dem vorherigen Bildschirm verwenden oder den Support kontaktieren.")
+                .font(ResponsiveDesign.captionFont())
+                .foregroundColor(DocumentDesignSystem.textColorSecondary)
+        }
+        .documentSection(level: 2)
+    }
+
+    private var belegDriftWarningBanner: some View {
+        HStack(alignment: .top, spacing: ResponsiveDesign.spacing(10)) {
+            Image(systemName: "exclamationmark.triangle")
+                .foregroundColor(AppTheme.accentOrange)
+            Text(
+                "Abweichung zwischen Klartext-Beleg und Server-Metadaten: "
+                    + self.viewModel.belegSnapshotMetadataDrifts.map(\.rawValue).joined(separator: ", ")
+                    + ". Bitte Admin-Backfill prüfen."
+            )
+            .font(ResponsiveDesign.captionFont())
+            .foregroundColor(DocumentDesignSystem.textColorSecondary)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(ResponsiveDesign.spacing(12))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(AppTheme.accentOrange.opacity(0.12))
+        .cornerRadius(ResponsiveDesign.spacing(8))
+    }
+
+    private var belegMetadataSSOTBanner: some View {
+        HStack(alignment: .top, spacing: ResponsiveDesign.spacing(10)) {
+            Image(systemName: "checkmark.seal")
+                .foregroundColor(AppTheme.accentGreen)
+            Text(
+                "Strukturierte Detailansicht aus dem GoB-Server-Beleg (Metadaten). Keine Rechnungssynthese."
+            )
+            .font(ResponsiveDesign.captionFont())
+            .foregroundColor(DocumentDesignSystem.textColorSecondary)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(ResponsiveDesign.spacing(12))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(AppTheme.accentGreen.opacity(0.12))
+        .cornerRadius(ResponsiveDesign.spacing(8))
+    }
 
     private var invoiceComparisonBanner: some View {
         HStack(alignment: .top, spacing: ResponsiveDesign.spacing(10)) {

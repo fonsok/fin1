@@ -67,6 +67,8 @@ extension OrderLifecycleCoordinator {
                 tradeNumber: trade.tradeNumber
             )
 
+            await self.syncTraderSellDocumentsIntoInboxAfterSell(for: trade)
+
             if trade.isCompleted {
                 let settledByBackend = await self.checkBackendSettlement(for: trade)
 
@@ -75,7 +77,10 @@ extension OrderLifecycleCoordinator {
                     await self.syncSettlementDocumentsIntoInbox(for: trade)
                 } else if let documentService = documentService,
                           documentService.documentExists(for: trade.id, ofType: .traderCollectionBill) {
-                    print("ℹ️ Trade #\(trade.tradeNumber) completion logic already ran; skipping duplicate run.")
+                    print(
+                        "ℹ️ Trade #\(trade.tradeNumber): buy bill in cache — pull sell Belege from server inbox SSOT"
+                    )
+                    await self.syncTraderSellDocumentsIntoInboxAfterSell(for: trade)
                     await self.tradingNotificationService.showSellConfirmation(for: trade)
                     return
                 } else {

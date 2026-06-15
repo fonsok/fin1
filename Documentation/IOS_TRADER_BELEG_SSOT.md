@@ -1,6 +1,6 @@
 # iOS: Trader Collection Bill — Beleg-SSOT
 
-**Status:** Phase 1–3 umgesetzt (Snapshot + Cloud-Enrichment + Vergleichs-Hinweis).
+**Status:** Phase 1–4 umgesetzt (Snapshot + Cloud-Enrichment + Metadata-Detail + Drift-Guard).
 
 **Backend-SSOT:** `traderCollectionBillBelegSnapshot.js` → `Document.metadata` + `accountingSummaryText` auf Parse.
 
@@ -8,36 +8,37 @@
 
 | Priorität | Quelle | Wann |
 |-----------|--------|------|
-| 1 | `Document.accountingSummaryText` (Parse) | Neue TBC/TSC |
-| 2 | `getTraderDocumentBelegDetail` (Session) | Alt-Belege ohne Parse-Text |
-| 3 | `TradeStatementView` + `Invoice` | Nur Vergleich / fehlender Beleg |
+| 1 | `Document.accountingSummaryText` (Parse) | Klartext-Beleg (Snapshot) |
+| 2 | `Document.metadata` (Parse) | Strukturierte Detailansicht (iOS) |
+| 3 | `getTraderDocumentBelegDetail` (Session) | Alt-Belege ohne Parse-Felder |
+| 4 | `Invoice` | Nur Fallback, orangener Banner |
 
-## Phase 1 ✅
+## Phase 1 ✅ — Klartext-Snapshot
 
-- `TraderCollectionBillBelegSnapshotView` — Klartext-Beleg
-- `CollectionBillDocumentView` routet Snapshot vor `TradeStatementView`
+- `TraderCollectionBillBelegSnapshotView`
+- `CollectionBillDocumentView` routet Snapshot vor Legacy-Invoice-View
 
-## Phase 2 ✅
+## Phase 2 ✅ — Cloud-Enrichment
 
-- Cloud: `getTraderDocumentBelegDetail` (`functions/documents/traderBelegDetail.js`)
-  - Session-only, nur eigene `Document.userId`
-  - `enrichTraderDocumentMetadata` + `projectDocumentDetail`
-- iOS: `DocumentAPIService.fetchTraderBelegDetail` → `DocumentService.fetchTraderBelegDetailEnriched`
-- `CollectionBillDocumentViewModel+BelegSnapshot` ruft Cloud-Funktion auf, wenn Parse-Text fehlt
+- `getTraderDocumentBelegDetail` (Session, eigene Document.userId)
+- iOS decodiert `metadata` in `TraderCollectionBillBelegMetadata`
 
-## Phase 3 ✅
+## Phase 3 ✅ — Strukturierte Detailansicht (Metadata-SSOT)
 
-- Link „Abrechnung aus Rechnung“ setzt `isInvoiceComparisonMode`
-- `TradeStatementView` zeigt orangenen Hinweis-Banner
+- `TraderCollectionBillLegDisplayDataBuilder` → `TradeStatementDisplayData` ohne Invoice-Synthese
+- `CollectionBillViewWrapper` metadata-first; kein `generateInvoicesForCompletedTrades` im Vergleichsmodus
+- Grüner Banner: GoB-Server-Metadaten; orange nur bei Invoice-Fallback
 
-## Offen (optional)
+## Phase 4 ✅ — Drift & Backfill (Admin)
 
-- Admin-Backfill: `accountingSummaryText` auf Alt-`Document`-Rows persistieren
-- Strukturierte `displaySections` auf iOS decodieren
-- Automatischer Drift-Check Snapshot vs. Invoice-Beträge
+- **Detection:** `checkTraderCollectionBillBelegDrift` — Snapshot-Text ↔ `metadata` (optional Invoice)
+- **Observability:** `getTraderCollectionBillBelegDriftStatus` in `getFinanceIntegrityStatus` + Finance Smoke
+- **Repair:** `backfillTraderCollectionBillBeleg` (dry-run → apply) via Finance Repair Catalog
+- **iOS:** `Document.traderBelegSnapshotMetadataDrifts()` — Warnbanner bei Abweichung
 
 ## Abnahme
 
-1. Neuer TBC: Snapshot aus Parse ohne Cloud-Call.
-2. Alter TBC ohne Text: nach Login Snapshot via `getTraderDocumentBelegDetail`.
-3. Rechnungsdetail: Banner sichtbar, Inhalt aus Invoice.
+1. Neuer TBC/TSC: Snapshot + Detail aus Parse-`metadata`, kein Invoice-Load.
+2. TSC Partial Sell: Detail zeigt VERKAUF mit `metadata.quantity` (z. B. 400 St.).
+3. Drift: Admin Smoke zeigt `trader_beleg_ssot_drift`; iOS warnt bei Snapshot≠Metadata.
+4. Legacy: `backfillTraderCollectionBillBeleg` mit `dryRun:true`, dann `dryRun:false`.

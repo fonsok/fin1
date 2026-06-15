@@ -136,7 +136,7 @@ struct CommissionCalculationExplanationSheet: View {
                                 )
                                 self.calculationStep(
                                     number: "3",
-                                    text: "Trader receives \(self.services.configurationService.traderCommissionPercentage) commission on the gross profit (only when profit > 0)"
+                                    text: "Total success commission \(self.services.configurationService.investorCommissionPercentage) on gross profit (Trader \(self.services.configurationService.traderCommissionPercentage) + App \(self.services.configurationService.appCommissionPercentage); only when profit > 0)"
                                 )
                                 self.calculationStep(
                                     number: "4",
@@ -240,7 +240,7 @@ struct CommissionCalculationExplanationSheet: View {
 
                 // Commission (€)
                 self.calculationTableRow(
-                    label: "Trader Commission (\(self.services.configurationService.traderCommissionPercentage))",
+                    label: "Commission (\(self.services.configurationService.investorCommissionPercentage))",
                     value: "-\(self.commission.formattedAsLocalizedCurrency())",
                     valueColor: AppTheme.fontColor.opacity(0.8)
                 )

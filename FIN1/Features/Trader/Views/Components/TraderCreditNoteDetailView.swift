@@ -13,7 +13,6 @@ struct TraderCreditNoteDetailView: View {
     @State private var legalNoteSnippet: String?
 
     let document: Document
-    let tradeNumber: Int?
     /// Steuerung über Admin-Option: Commission-Breakdown-Tabelle anzeigen oder ausblenden.
     let showCommissionBreakdown: Bool
 
@@ -21,7 +20,6 @@ struct TraderCreditNoteDetailView: View {
 
     init(document: Document, showCommissionBreakdown: Bool = true) {
         self.document = document
-        self.tradeNumber = document.invoiceData?.tradeNumber
         self.showCommissionBreakdown = showCommissionBreakdown
         self._viewModel = StateObject(wrappedValue: TraderCreditNoteDetailViewModel())
     }
@@ -53,7 +51,7 @@ struct TraderCreditNoteDetailView: View {
             .padding(.vertical, ResponsiveDesign.spacing(20))
         }
         .background(DocumentDesignSystem.documentBackground.ignoresSafeArea())
-        .navigationTitle("Trader Commission Calculation")
+        .navigationTitle(self.document.traderCreditNoteNavigationTitle)
         .navigationBarTitleDisplayMode(.inline)
         .toolbarColorScheme(.light, for: .navigationBar)
         .toolbarBackground(DocumentDesignSystem.documentBackground, for: .navigationBar)
@@ -100,14 +98,26 @@ struct TraderCreditNoteDetailView: View {
                 .fontWeight(.bold)
                 .foregroundColor(DocumentDesignSystem.textColor)
 
-            Text("Commission Credit Note")
+            Text("Provision aus abgeschlossenem Trade")
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(DocumentDesignSystem.textColorSecondary)
                 .padding(.bottom, ResponsiveDesign.spacing(4))
 
-            if let tradeNumber = tradeNumber {
-                Text("Trade #\(String(format: "%03d", tradeNumber))")
-                    .font(ResponsiveDesign.bodyFont())
+            if let tradeReference = self.viewModel.tradeReferenceLabel ?? self.document.traderCreditNoteTradeReferenceLabel {
+                HStack(spacing: ResponsiveDesign.spacing(8)) {
+                    Text("Zugehöriger Trade:")
+                        .font(ResponsiveDesign.bodyFont())
+                        .foregroundColor(DocumentDesignSystem.textColorSecondary)
+                    Text(tradeReference)
+                        .font(ResponsiveDesign.bodyFont())
+                        .fontWeight(.semibold)
+                        .foregroundColor(DocumentDesignSystem.textColor)
+                }
+            }
+
+            if let security = viewModel.tradeSecuritySummary, !security.isEmpty {
+                Text(security)
+                    .font(ResponsiveDesign.captionFont())
                     .foregroundColor(DocumentDesignSystem.textColorSecondary)
             }
 
@@ -132,6 +142,33 @@ struct TraderCreditNoteDetailView: View {
 
     private var tradeInfoSection: some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
+            if let tradeReference = self.viewModel.tradeReferenceLabel ?? self.document.traderCreditNoteTradeReferenceLabel {
+                HStack {
+                    Text("Trade:")
+                        .font(ResponsiveDesign.bodyFont())
+                        .foregroundColor(DocumentDesignSystem.textColorSecondary)
+                    Spacer()
+                    Text(tradeReference)
+                        .font(ResponsiveDesign.bodyFont())
+                        .fontWeight(.semibold)
+                        .foregroundColor(DocumentDesignSystem.textColor)
+                }
+            }
+
+            if let security = viewModel.tradeSecuritySummary, !security.isEmpty {
+                HStack(alignment: .top) {
+                    Text("Wertpapier:")
+                        .font(ResponsiveDesign.bodyFont())
+                        .foregroundColor(DocumentDesignSystem.textColorSecondary)
+                    Spacer()
+                    Text(security)
+                        .font(ResponsiveDesign.bodyFont())
+                        .fontWeight(.medium)
+                        .foregroundColor(DocumentDesignSystem.textColor)
+                        .multilineTextAlignment(.trailing)
+                }
+            }
+
             // Trade Period
             if let dates = viewModel.tradeDates {
                 HStack {
@@ -147,25 +184,6 @@ struct TraderCreditNoteDetailView: View {
             }
 
             Divider().background(DocumentDesignSystem.textColor.opacity(0.2))
-
-            // Gross Profit Row
-            HStack {
-                Text("Bruttogewinn (Profit):")
-                    .font(ResponsiveDesign.bodyFont())
-                    .foregroundColor(DocumentDesignSystem.textColorSecondary)
-                Spacer()
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text(self.viewModel.tradeGrossProfit.formatted(.currency(code: "EUR")))
-                        .font(ResponsiveDesign.bodyFont())
-                        .fontWeight(.semibold)
-                        .foregroundColor(DocumentDesignSystem.textColor)
-                    if self.viewModel.tradeROI != 0 {
-                        Text("+\(String(format: "%.2f", self.viewModel.tradeROI))%")
-                            .font(ResponsiveDesign.captionFont())
-                            .foregroundColor(DocumentDesignSystem.textColorSecondary)
-                    }
-                }
-            }
 
             // Total Commission Row
             HStack {
@@ -320,7 +338,8 @@ struct TraderCreditNoteDetailView: View {
                 fileURL: "",
                 size: 0,
                 uploadedAt: Date(),
-                tradeId: "trade-001"
+                tradeId: "trade-001",
+                tradeNumber: 1
             )
         )
     }

@@ -31,7 +31,7 @@ const getConfigResult = {
     dailyTransactionLimit: 10000,
   },
   display: {
-    showCommissionBreakdownInCreditNote: true,
+    showCommissionBreakdownInCreditNote: false,
     showDocumentReferenceLinksInAccountStatement: true,
     maximumRiskExposurePercent: 2,
     walletFeatureEnabled: false,

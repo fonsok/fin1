@@ -67,6 +67,8 @@ final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
 
     /// Coalesces concurrent pool-investment refreshes (`.task` + placeOrder).
     var poolInvestmentsRefreshTask: Task<Void, Never>?
+    var transactionLimitCheckTask: Task<Void, Never>?
+    var investmentCalculationTask: Task<Void, Never>?
 
     // Helpers (extracted for file size reduction; internal for extensions)
     var quantityConstraintHelper: BuyOrderQuantityConstraintHelper {
@@ -223,6 +225,8 @@ final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
             return
         }
         self.orderStatus = .transmitting
+
+        self.normalizeQuantityTextAfterEditing()
 
         await self.refreshInvestmentsFromBackend()
 

@@ -66,6 +66,7 @@ struct BuyOrderView: View {
     @State private var transactionLimitIntroText: String?
     @State private var orderFailureAlertError: AppError?
     @State private var showOrderFailureAlert = false
+    @FocusState private var quantityFieldFocused: Bool
 
     private var isPlacingOrder: Bool { self.viewModel.isPlacingOrder }
 
@@ -250,9 +251,13 @@ struct BuyOrderView: View {
         OrderDetailsSection {
             QuantityInputField(
                 text: self.$viewModel.quantityText,
+                isFocused: self.$quantityFieldFocused,
                 placeholder: "Stück",
                 accessibilityLabel: "Number of shares",
                 accessibilityHint: "Enter the number of shares you want to buy",
+                onSubmit: {
+                    self.viewModel.normalizeQuantityTextAfterEditing()
+                },
                 maxValueWarning: self.viewModel.showMaxValueWarning ?
                     QuantityInputField.MaxValueWarning(
                         enteredValue: Int(self.viewModel.quantity),
@@ -260,6 +265,11 @@ struct BuyOrderView: View {
                     ) : nil,
                 errorMessage: self.viewModel.quantityConstraintMessage
             )
+            .onChange(of: self.quantityFieldFocused) { _, isFocused in
+                if !isFocused {
+                    self.viewModel.normalizeQuantityTextAfterEditing()
+                }
+            }
 
             OrderTypeSelection(
                 selectedOrderMode: self.$viewModel.orderMode,

@@ -31,9 +31,7 @@ final class QuantityInputManager: ObservableObject {
     // MARK: - Public Methods
 
     func processQuantityText(_ text: String) -> Double {
-        // Convert German formatted text to Double
-        let cleanText = text.replacingOccurrences(of: ".", with: "")
-        let value = Double(cleanText) ?? 0.0
+        let value = Double(OrderCalculationUtility.parseGermanQuantity(text))
 
         // Validate and correct if exceeds maximum
         if value > Double(self.maxQuantity) {

@@ -4,12 +4,16 @@ import Foundation
 extension BuyOrderViewModel {
 
     func setupBindings() {
+        // Parse quantity from text only — do not write formatted text back while editing
+        // (SellOrderViewModel pattern; avoids "1.000" → "1.200" fighting the TextField).
         $quantityText
             .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
             .map { [weak self] text -> (value: Double?, message: String?) in
-                guard let self = self else { return (0.0, nil) }
+                guard let self = self else { return (nil, nil) }
+                let parsed = OrderCalculationUtility.parseGermanQuantity(text)
                 let processedValue = self.quantityInputManager.processQuantityText(text)
-                return self.quantityConstraintHelper.evaluateQuantityConstraints(for: processedValue)
+                let effectiveValue = processedValue > 0 ? processedValue : Double(parsed)
+                return self.quantityConstraintHelper.evaluateQuantityConstraints(for: effectiveValue)
             }
             .handleEvents(receiveOutput: { [weak self] result in
                 self?.quantityConstraintMessage = result.message
@@ -27,11 +31,6 @@ extension BuyOrderViewModel {
             }
             .store(in: &cancellables)
 
-        $quantity
-            .map { NumberFormatter.localizedIntegerFormatter.string(from: NSNumber(value: $0)) ?? "\(Int($0))" }
-            .assign(to: \.quantityText, on: self)
-            .store(in: &cancellables)
-
         Publishers.orderCalculation(
             quantityText: $quantityText.eraseToAnyPublisher(),
             orderMode: $orderMode.eraseToAnyPublisher(),
@@ -45,21 +44,28 @@ extension BuyOrderViewModel {
         .store(in: &cancellables)
 
         $estimatedCost
+            .debounce(for: .milliseconds(350), scheduler: RunLoop.main)
             .sink { [weak self] _ in
-                self?.updateInsufficientFundsWarning()
-                Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.updateInsufficientFundsWarning()
+                self.transactionLimitCheckTask?.cancel()
+                self.transactionLimitCheckTask = Task { @MainActor [weak self] in
                     await self?.checkTransactionLimits()
                 }
             }
             .store(in: &cancellables)
 
-        Publishers.CombineLatest($quantity, $searchResult)
-            .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
-            .sink { [weak self] _, _ in
-                Task { @MainActor [weak self] in
-                    await self?.calculateInvestmentOrder()
-                }
+        Publishers.CombineLatest(
+            $quantityText.debounce(for: .milliseconds(300), scheduler: RunLoop.main),
+            $searchResult
+        )
+        .sink { [weak self] _, _ in
+            guard let self else { return }
+            self.investmentCalculationTask?.cancel()
+            self.investmentCalculationTask = Task { @MainActor [weak self] in
+                await self?.calculateInvestmentOrder()
             }
-            .store(in: &cancellables)
+        }
+        .store(in: &cancellables)
     }
 }

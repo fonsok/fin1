@@ -115,7 +115,7 @@ private struct InvestmentSheetContent: View {
                         // Commission Confirmation
                         CommissionConfirmationView(
                             traderUsername: self.viewModel.trader.username,
-                            commissionPercentage: self.services.configurationService.traderCommissionPercentage,
+                            commissionPercentage: self.services.configurationService.investorCommissionPercentage,
                             isConfirmed: self.$viewModel.isCommissionConfirmed
                         )
 

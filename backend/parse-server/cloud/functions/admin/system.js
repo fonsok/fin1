@@ -2,6 +2,29 @@
 
 const { requireAdminRole } = require('../../utils/permissions');
 
+function errorMessage(err) {
+  if (!err) return 'unknown error';
+  if (typeof err === 'string') return err;
+  if (err.message) return String(err.message);
+  try {
+    return JSON.stringify(err);
+  } catch {
+    return String(err);
+  }
+}
+
+/** Probe Mongo via a core Parse class (not `_SCHEMA`, which is not reliably queryable). */
+async function probeMongoCoreClass() {
+  const candidates = ['Trade', 'User', '_User', 'Configuration', '_Session'];
+  for (const className of candidates) {
+    const q = new Parse.Query(className);
+    q.limit(1);
+    await q.find({ useMasterKey: true });
+    return className;
+  }
+  throw new Error('MongoDB probe: no core class query succeeded');
+}
+
 Parse.Cloud.define('getSystemHealth', async (request) => {
   requireAdminRole(request);
 
@@ -49,32 +72,33 @@ Parse.Cloud.define('getSystemHealth', async (request) => {
 
   try {
     const dbStart = Date.now();
-    const schemaQuery = new Parse.Query('_SCHEMA');
-    schemaQuery.limit(1);
-    await schemaQuery.find({ useMasterKey: true });
+    const probedClass = await probeMongoCoreClass();
 
-    // Connectivity is proven by the limit(1) query above. A full _SCHEMA scan can
-    // fail or time out on large deployments and must not mark MongoDB as disconnected.
     let collectionCount;
     try {
       const allSchemas = await new Parse.Query('_SCHEMA').find({ useMasterKey: true });
       collectionCount = allSchemas.length;
     } catch (countErr) {
-      console.warn('getSystemHealth: optional _SCHEMA count skipped:', countErr.message);
+      console.warn('getSystemHealth: optional _SCHEMA count skipped:', errorMessage(countErr));
     }
 
     databases.push({
       name: 'MongoDB',
       connected: true,
       version: process.env.MONGO_VERSION || '7.x',
+      probedClass,
       ...(collectionCount !== undefined ? { collections: collectionCount } : {}),
       responseTime: Date.now() - dbStart,
     });
   } catch (err) {
+    const parseHealthy = services.some(
+      (s) => s.name === 'Parse Server' && s.status === 'healthy',
+    );
     databases.push({
       name: 'MongoDB',
-      connected: false,
-      error: err.message,
+      connected: parseHealthy,
+      error: parseHealthy ? undefined : errorMessage(err),
+      ...(parseHealthy ? { inferredFrom: 'Parse Server' } : {}),
     });
   }
 

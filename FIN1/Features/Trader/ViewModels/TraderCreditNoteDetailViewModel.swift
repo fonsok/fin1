@@ -27,6 +27,10 @@ final class TraderCreditNoteDetailViewModel: ObservableObject {
     @Published var totalCommission: Double = 0.0
     @Published var tradeROI: Double = 0.0
     @Published var tradeDates: (entry: Date, exit: Date)?
+    /// e.g. `Trade #001` — shown prominently on the Gutschrift.
+    @Published var tradeReferenceLabel: String?
+    /// WKN / underlying from the settled trade when available.
+    @Published var tradeSecuritySummary: String?
     /// Für Document-Header (MVVM: View ruft keinen Service auf).
     @Published var accountHolderName: String = ""
     @Published var accountNumber: String = ""
@@ -52,6 +56,7 @@ final class TraderCreditNoteDetailViewModel: ObservableObject {
         self.sourceDocument = document
         self.creditNoteDocumentId = document.id
         self.tradeId = Self.resolveTradeId(document: document, services: services)
+        self.refreshTradePresentation(document: document, services: services)
         self.displayRateFromBreakdown = nil
         self.documentCommissionRateSnapshot =
             document.traderCommissionRateSnapshot ?? document.invoiceData?.traderCommissionRateSnapshot
@@ -132,10 +137,9 @@ final class TraderCreditNoteDetailViewModel: ObservableObject {
             return
         }
 
-        // Get trade details for ROI and dates
+        // Get trade details for ROI, dates, and security line
         if let trade = appServices.tradingStateStore.completedTrades.first(where: { $0.id == tradeId }) {
-            self.tradeROI = trade.roi ?? 0.0
-            self.tradeDates = (trade.createdAt, trade.completedAt ?? Date())
+            self.applyTradeContext(trade)
         }
 
         let rate = self.commissionRate
@@ -189,11 +193,50 @@ final class TraderCreditNoteDetailViewModel: ObservableObject {
 
     private static func resolveTradeId(document: Document, services: AppServices) -> String? {
         if let tradeId = document.tradeId, !tradeId.isEmpty { return tradeId }
+        if let tradeNumber = document.resolvedTraderCreditNoteTradeNumber,
+           let trade = services.tradingStateStore.completedTrades.first(where: { $0.tradeNumber == tradeNumber }) {
+            return trade.id
+        }
         if let tradeNumber = document.invoiceData?.tradeNumber,
            let trade = services.tradingStateStore.completedTrades.first(where: { $0.tradeNumber == tradeNumber }) {
             return trade.id
         }
         return nil
+    }
+
+    private func refreshTradePresentation(document: Document, services: AppServices) {
+        if let label = document.traderCreditNoteTradeReferenceLabel {
+            self.tradeReferenceLabel = label
+        }
+
+        let trade: Trade? = {
+            if let tradeId, let found = services.tradingStateStore.completedTrades.first(where: { $0.id == tradeId }) {
+                return found
+            }
+            if let number = document.resolvedTraderCreditNoteTradeNumber {
+                return services.tradingStateStore.completedTrades.first(where: { $0.tradeNumber == number })
+            }
+            return nil
+        }()
+
+        if let trade {
+            self.applyTradeContext(trade)
+        }
+    }
+
+    private func applyTradeContext(_ trade: Trade) {
+        self.tradeReferenceLabel = String(format: "Trade #%03d", trade.tradeNumber)
+        let symbol = trade.symbol.trimmingCharacters(in: .whitespacesAndNewlines)
+        let description = trade.description.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !symbol.isEmpty, !description.isEmpty, symbol.caseInsensitiveCompare(description) != .orderedSame {
+            self.tradeSecuritySummary = "\(symbol) — \(description)"
+        } else if !description.isEmpty {
+            self.tradeSecuritySummary = description
+        } else if !symbol.isEmpty {
+            self.tradeSecuritySummary = symbol
+        }
+        self.tradeROI = trade.roi ?? self.tradeROI
+        self.tradeDates = (trade.createdAt, trade.completedAt ?? trade.updatedAt)
     }
 
     private func applyInvoiceAndSettlementSummaryFallback(documentCommissionOnly: Bool) async {
@@ -251,8 +294,7 @@ final class TraderCreditNoteDetailViewModel: ObservableObject {
         }
 
         if let trade = services.tradingStateStore.completedTrades.first(where: { $0.id == tradeId }) {
-            self.tradeROI = trade.roi ?? 0.0
-            self.tradeDates = (trade.createdAt, trade.completedAt ?? Date())
+            self.applyTradeContext(trade)
         }
 
         guard let resolved = await TradeCommissionSettlementBreakdownResolver.resolve(

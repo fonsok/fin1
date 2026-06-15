@@ -169,7 +169,11 @@ final class TradeStatementDisplayService: TradeStatementDisplayServiceProtocol {
             calculationBreakdown: displayData.calculationBreakdown,
             feeItems: displayData.fees,
             taxItems: displayData.taxes,
-            sellOrderData: self.buildSellOrderData(from: displayData.sellInvoices, trade: trade)
+            sellOrderData: self.buildSellOrderData(
+                from: displayData.sellInvoices,
+                sellTransactions: displayData.sellTransactions,
+                trade: trade
+            )
         )
     }
 
@@ -282,12 +286,19 @@ final class TradeStatementDisplayService: TradeStatementDisplayServiceProtocol {
 
     // MARK: - Sell Order Data Builder
 
-    private func buildSellOrderData(from sellInvoices: [Invoice], trade: TradeOverviewItem) -> [SellOrderData] {
-        return sellInvoices.enumerated().map { index, invoice in
-            SellOrderData(
-                transactionNumber: "\(trade.tradeNumber)/\(index + 2)",
-                invoice: invoice
-            )
+    private func buildSellOrderData(
+        from sellInvoices: [Invoice],
+        sellTransactions: [SellTransactionData],
+        trade: TradeOverviewItem
+    ) -> [SellOrderData] {
+        if !sellInvoices.isEmpty {
+            return sellInvoices.enumerated().map { index, invoice in
+                SellOrderData(
+                    transactionNumber: "\(trade.tradeNumber)/\(index + 2)",
+                    invoice: invoice
+                )
+            }
         }
+        return sellTransactions.map { SellOrderData.from(transaction: $0) }
     }
 }

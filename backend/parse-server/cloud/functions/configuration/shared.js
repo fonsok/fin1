@@ -59,7 +59,7 @@ function buildDisplay(config) {
     ? config.display.walletActionModeCompany
     : 'deposit_and_withdrawal';
   return {
-    showCommissionBreakdownInCreditNote: config.display?.showCommissionBreakdownInCreditNote ?? true,
+    showCommissionBreakdownInCreditNote: config.display?.showCommissionBreakdownInCreditNote ?? false,
     showDocumentReferenceLinksInAccountStatement: config.display?.showDocumentReferenceLinksInAccountStatement ?? true,
     maximumRiskExposurePercent: config.display?.maximumRiskExposurePercent ?? 2.0,
     walletActionModeGlobal,
@@ -79,6 +79,7 @@ function buildDisplay(config) {
     investorMonetaryServerOnly: config.display?.investorMonetaryServerOnly ?? true,
     traderMonetaryServerOnly: config.display?.traderMonetaryServerOnly ?? true,
     frontendReadonlyMode: config.display?.frontendReadonlyMode ?? false,
+    settlementGLOutboxEnabled: config.display?.settlementGLOutboxEnabled ?? false,
     showInvestorPartialSellRealizations: config.display?.showInvestorPartialSellRealizations ?? false,
   };
 }

@@ -26,9 +26,10 @@ final class DocumentInboxPolicyTests: XCTestCase {
             fileURL: "",
             size: 0,
             uploadedAt: Date(),
+            tradeNumber: 1,
             documentNumber: "CN-2026-0042"
         )
-        XCTAssertEqual(DocumentInboxPolicy.inboxTitle(for: doc), "CN-2026-0042")
+        XCTAssertEqual(DocumentInboxPolicy.inboxTitle(for: doc), "CN-2026-0042 · Trade #001")
     }
 
     func testDetectsLocalPlaceholderCreditNote() {
@@ -226,6 +227,49 @@ final class DocumentInboxPolicyTests: XCTestCase {
         )
         let inbox = DocumentInboxPolicy.inboxDocuments(from: [investorBill], for: user)
         XCTAssertTrue(inbox.isEmpty)
+    }
+
+    func testTraderInboxIncludesMultipleSellCollectionBillsPerTrade() {
+        let user = Self.makeTraderUser(id: "qFaNaREwn7", email: "trader2@test.com")
+        let tradeId = "mlETWoRJPf"
+        let buy = Document(
+            id: "A86AF2RHog",
+            userId: "qFaNaREwn7",
+            name: "TBC-2026-0000141",
+            type: .traderCollectionBill,
+            status: .verified,
+            fileURL: "",
+            size: 1,
+            uploadedAt: Date(),
+            tradeId: tradeId,
+            documentNumber: "TBC-2026-0000141"
+        )
+        let sell1 = Document(
+            id: "cDiIQmXM4W",
+            userId: "qFaNaREwn7",
+            name: "TSC-2026-0000138",
+            type: .traderCollectionBill,
+            status: .verified,
+            fileURL: "",
+            size: 1,
+            uploadedAt: Date(),
+            tradeId: tradeId,
+            documentNumber: "TSC-2026-0000138"
+        )
+        let sell2 = Document(
+            id: "fkVWPIwNux",
+            userId: "qFaNaREwn7",
+            name: "TSC-2026-0000139",
+            type: .traderCollectionBill,
+            status: .verified,
+            fileURL: "",
+            size: 1,
+            uploadedAt: Date(),
+            tradeId: tradeId,
+            documentNumber: "TSC-2026-0000139"
+        )
+        let inbox = DocumentInboxPolicy.inboxDocuments(from: [buy, sell1, sell2], for: user)
+        XCTAssertEqual(inbox.count, 3)
     }
 
     func testIncludesInvestorCollectionBill() {

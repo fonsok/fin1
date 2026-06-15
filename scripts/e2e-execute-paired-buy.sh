@@ -5,7 +5,7 @@
 # Env (optional):
 #   PARSE_SERVER_URL       default https://192.168.178.20/parse
 #   PARSE_APPLICATION_ID   default fin1-app-id
-#   E2E_TRADER_USERNAME      default trader1@test.com (Parse username; Dev seeds use email-as-username)
+#   E2E_TRADER_USERNAME      default trader2@test.com (avoid polluting Jan Becker / trader1)
 #   E2E_TRADER_PASSWORD      default TestPassword123!
 #
 # Requirements: curl, python3
@@ -15,7 +15,7 @@ set -euo pipefail
 PARSE_URL="${PARSE_SERVER_URL:-https://192.168.178.20/parse}"
 APP_ID="${PARSE_APPLICATION_ID:-fin1-app-id}"
 export PARSE_URL APP_ID
-TRADER_USER="${E2E_TRADER_USERNAME:-trader1@test.com}"
+TRADER_USER="${E2E_TRADER_USERNAME:-trader2@test.com}"
 TRADER_PASS="${E2E_TRADER_PASSWORD:-TestPassword123!}"
 export TRADER_USER TRADER_PASS
 

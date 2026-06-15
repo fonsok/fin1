@@ -102,6 +102,7 @@ function registerConfigurationWorkflowFunctions() {
       'investorMonetaryServerOnly',
       'traderMonetaryServerOnly',
       'frontendReadonlyMode',
+      'settlementGLOutboxEnabled',
     ]);
     const valueToApply = booleanParameters.has(parameterName)
       ? Boolean(Number(normalizedNewValue))

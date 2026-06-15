@@ -20,8 +20,11 @@ struct TraderCollectionBillBelegSnapshotView: View {
             .padding(ResponsiveDesign.spacing(16))
         }
         .background(DocumentDesignSystem.documentBackground)
-        .navigationTitle("Kaufabrechnung")
+        .navigationTitle(self.document.traderBelegNavigationTitle)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(AppTheme.screenBackground, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbarColorScheme(.dark, for: .navigationBar)
     }
 
     private var headerSection: some View {
@@ -64,15 +67,16 @@ struct TraderCollectionBillBelegSnapshotView: View {
                     trade: self.trade,
                     document: self.document,
                     fullTrade: self.fullTrade,
-                    isInvoiceComparisonMode: true
+                    isInvoiceComparisonMode: true,
+                    belegSnapshotText: self.snapshotText
                 )
             } label: {
-                Label("Abrechnung aus Rechnung (Detail)", systemImage: "doc.text.magnifyingglass")
+                Label("Abrechnung (Detail)", systemImage: "doc.text.magnifyingglass")
                     .font(ResponsiveDesign.bodyFont())
             }
             .foregroundColor(AppTheme.accentLightBlue)
 
-            Text("Vergleichsansicht aus Invoice — nicht der GoB-Beleg auf dem Server.")
+            Text("Strukturierte Detailansicht aus Server-Metadaten (GoB). Rechnung nur als Fallback.")
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(DocumentDesignSystem.textColorSecondary)
         }

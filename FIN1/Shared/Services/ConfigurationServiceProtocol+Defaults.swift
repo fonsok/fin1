@@ -14,7 +14,19 @@ extension ConfigurationServiceProtocol {
     }
 
     var traderCommissionPercentage: String {
-        let percent = (traderCommissionRate * 100).formatted(.number.precision(.fractionLength(0...2)))
+        Self.formatCommissionPercent(traderCommissionRate)
+    }
+
+    var investorCommissionPercentage: String {
+        Self.formatCommissionPercent(self.effectiveInvestorCommissionRate)
+    }
+
+    var appCommissionPercentage: String {
+        Self.formatCommissionPercent(self.appCommissionRate)
+    }
+
+    private static func formatCommissionPercent(_ rate: Double) -> String {
+        let percent = (rate * 100).formatted(.number.precision(.fractionLength(0...2)))
         return "\(percent)%"
     }
 

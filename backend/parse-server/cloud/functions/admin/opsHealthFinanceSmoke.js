@@ -110,6 +110,12 @@ async function handleRunFinanceConsistencySmoke(request) {
     }, { useMasterKey: true })
       .catch((err) => ({ overall: 'down', error: err?.message || String(err) }));
 
+  const traderBelegDrift = financeIntegrity?.checks?.find((c) => c.id === 'trader_beleg_ssot_drift')
+    || await Parse.Cloud.run('getTraderCollectionBillBelegDriftStatus', {
+      limit: Number(request.params?.traderBelegDriftLimit || 75),
+    }, { useMasterKey: true })
+      .catch((err) => ({ overall: 'down', error: err?.message || String(err) }));
+
   const ledgerFuzzySmoke = await runLedgerFuzzySmoke({
     userFilter,
     sampleLimit: ledgerSampleLimit,
@@ -126,6 +132,9 @@ async function handleRunFinanceConsistencySmoke(request) {
     if (settlementConsistency?.overall && settlementConsistency.overall !== 'healthy') {
       issues.push(`settlement_consistency_${settlementConsistency.overall}`);
     }
+    if (traderBelegDrift?.overall && traderBelegDrift.overall !== 'healthy') {
+      issues.push(`trader_beleg_ssot_drift_${traderBelegDrift.overall}`);
+    }
   }
   if ((referenceCoverage?.missingReferenceDocumentId || 0) > 0 || (referenceCoverage?.missingReferenceDocumentNumber || 0) > 0) {
     issues.push('missing_reference_document_fields');
@@ -138,6 +147,7 @@ async function handleRunFinanceConsistencySmoke(request) {
     financeIntegrity,
     mirrorBasis,
     settlementConsistency,
+    traderBelegDrift,
     ledgerFuzzySmoke,
     referenceCoverage,
   };

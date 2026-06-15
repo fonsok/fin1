@@ -164,7 +164,7 @@ private final class StubConfigurationService: ObservableObject, ConfigurationSer
     var investorCommissionRateTotal: Double { 0.1 }
     var appServiceChargeRate: Double { 0.02 }
     var isAdminMode: Bool { false }
-    var showCommissionBreakdownInCreditNote: Bool { true }
+    var showCommissionBreakdownInCreditNote: Bool { false }
     var maximumRiskExposurePercent: Double { 2 }
     var walletFeatureEnabled: Bool { false }
     var investorMonetaryServerOnly: Bool { false }

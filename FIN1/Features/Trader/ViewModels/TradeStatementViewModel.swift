@@ -5,6 +5,15 @@ import SwiftUI
 // MARK: - Trade Statement View Model
 /// Handles data and calculations for the collective billing statement
 
+enum TradeStatementDisplayDataSource: Equatable {
+    /// Structured detail from Parse `Document.metadata` (GoB SSOT).
+    case belegMetadataSSOT
+    /// Legacy invoice synthesis — last resort when metadata is unavailable (non-server-only only).
+    case invoiceFallback
+    /// Server-only: metadata missing — no silent invoice synthesis.
+    case belegMetadataUnavailable
+}
+
 @MainActor
 final class TradeStatementViewModel: ObservableObject {
     /// Snapshot for statement/PDF; includes a non-Sendable `onDetailsTapped` closure — not passed across actors.
@@ -44,6 +53,16 @@ final class TradeStatementViewModel: ObservableObject {
     /// Eindeutige Belegnummer für dieses Collection Bill Dokument (gemäß GoB)
     @Published var documentNumber: String?
 
+    @Published private(set) var displayDataSource: TradeStatementDisplayDataSource = .invoiceFallback
+
+    @Published private(set) var belegSnapshotMetadataDrifts: [Document.TraderBelegDriftField] = []
+
+    @Published private(set) var belegUnavailableMessage: String?
+
+    private var presentationScope: TradeStatementPresentationScope = .fullTrade
+    private var sourceCollectionBillDocument: Document?
+    private var sourceBelegSnapshotText: String?
+
     // MARK: - Initialization
 
     init(
@@ -74,13 +93,72 @@ final class TradeStatementViewModel: ObservableObject {
     func attach(
         invoiceService: any InvoiceServiceProtocol,
         tradeService: any TradeLifecycleServiceProtocol,
-        prefetchedFullTrade: Trade? = nil
+        prefetchedFullTrade: Trade? = nil,
+        presentationScope: TradeStatementPresentationScope = .fullTrade,
+        sourceCollectionBillDocument: Document? = nil,
+        sourceBelegSnapshotText: String? = nil
     ) {
         self.invoiceService = invoiceService
         self.tradeService = tradeService
+        self.presentationScope = presentationScope
+        self.sourceCollectionBillDocument = sourceCollectionBillDocument
+        self.sourceBelegSnapshotText = sourceBelegSnapshotText
+        self.displayDataSource = .invoiceFallback
         self.loadFullTrade(prefetched: prefetchedFullTrade)
         self.loadInvoices()
         self.updateDisplayData()
+    }
+
+    /// GoB SSOT: structured detail from server `Document.metadata` — no invoice load or synthesis.
+    func attachBelegMetadataSSOT(
+        tradeService: any TradeLifecycleServiceProtocol,
+        metadata: TraderCollectionBillBelegMetadata,
+        prefetchedFullTrade: Trade? = nil,
+        belegNumber: String? = nil,
+        sourceCollectionBillDocument: Document? = nil,
+        snapshotTextForDrift: String? = nil
+    ) {
+        self.tradeService = tradeService
+        self.invoiceService = nil
+        self.presentationScope = metadata.isSell
+            ? .sellLegOnly(matchingBelegNumber: belegNumber)
+            : .buyLegOnly
+        self.sourceCollectionBillDocument = sourceCollectionBillDocument
+        self.sourceBelegSnapshotText = nil
+        self.displayDataSource = .belegMetadataSSOT
+        self.belegSnapshotMetadataDrifts = Document.traderBelegSnapshotMetadataDrifts(
+            snapshotText: snapshotTextForDrift ?? sourceCollectionBillDocument?.accountingSummaryText,
+            metadata: metadata
+        )
+        self.buyInvoice = nil
+        self.sellInvoices = []
+        self.documentNumber = belegNumber ?? sourceCollectionBillDocument?.accountingDocumentNumber
+        self.loadFullTrade(prefetched: prefetchedFullTrade)
+        self.displayData = TraderCollectionBillLegDisplayDataBuilder.build(
+            trade: self.trade,
+            metadata: metadata,
+            belegNumber: self.documentNumber
+        )
+    }
+
+    /// Server-only guard: metadata enrichment failed — show error, do not synthesize from Invoice.
+    func attachBelegMetadataUnavailable(
+        tradeService: any TradeLifecycleServiceProtocol,
+        belegNumber: String? = nil,
+        message: String = TraderMonetaryMessages.belegDetailUnavailable
+    ) {
+        self.tradeService = tradeService
+        self.invoiceService = nil
+        self.presentationScope = .fullTrade
+        self.sourceCollectionBillDocument = nil
+        self.sourceBelegSnapshotText = nil
+        self.displayDataSource = .belegMetadataUnavailable
+        self.belegUnavailableMessage = message
+        self.belegSnapshotMetadataDrifts = []
+        self.buyInvoice = nil
+        self.sellInvoices = []
+        self.documentNumber = belegNumber
+        self.displayData = nil
     }
 
     // MARK: - Public Methods
@@ -126,8 +204,24 @@ final class TradeStatementViewModel: ObservableObject {
         }
 
         let allInvoices = service.invoices.filter { $0.tradeId == tradeId }
-        self.buyInvoice = allInvoices.first { $0.transactionType == .buy }
-        self.sellInvoices = allInvoices.filter { $0.transactionType == .sell }
+
+        switch self.presentationScope {
+        case .fullTrade:
+            self.buyInvoice = allInvoices.first { $0.transactionType == .buy }
+            self.sellInvoices = allInvoices.filter { $0.transactionType == .sell }
+        case .buyLegOnly:
+            self.buyInvoice = allInvoices.first { $0.transactionType == .buy }
+            self.sellInvoices = []
+        case .sellLegOnly:
+            self.buyInvoice = nil
+            self.sellInvoices = Self.resolveSellInvoicesForLeg(
+                from: allInvoices,
+                sourceDocument: self.sourceCollectionBillDocument,
+                belegNumber: self.documentNumber,
+                fullTrade: self.fullTrade,
+                snapshotText: self.sourceBelegSnapshotText
+            )
+        }
 
         print(
             "📄 TradeStatementViewModel: Loaded \(allInvoices.count) invoices: \(self.buyInvoice != nil ? "1 buy" : "0 buy"), \(self.sellInvoices.count) sell"
@@ -142,7 +236,8 @@ final class TradeStatementViewModel: ObservableObject {
             trade: self.trade,
             fullTrade: self.fullTrade,
             buyInvoice: self.buyInvoice,
-            sellInvoices: self.sellInvoices
+            sellInvoices: self.sellInvoices,
+            presentationScope: self.presentationScope
         )
     }
 
@@ -232,5 +327,103 @@ final class TradeStatementViewModel: ObservableObject {
     func clearError() {
         self.showError = false
         self.errorMessage = nil
+    }
+
+    private static func resolveSellInvoicesForLeg(
+        from allInvoices: [Invoice],
+        sourceDocument: Document?,
+        belegNumber: String?,
+        fullTrade: Trade?,
+        snapshotText: String?
+    ) -> [Invoice] {
+        let sells = allInvoices.filter { $0.transactionType == .sell }
+
+        if let beleg = belegNumber?.trimmingCharacters(in: .whitespacesAndNewlines), !beleg.isEmpty,
+           let match = sells.first(where: { $0.invoiceNumber == beleg }) {
+            return [match]
+        }
+
+        if let document = sourceDocument,
+           let beleg = document.accountingDocumentNumber,
+           let match = sells.first(where: { $0.invoiceNumber == beleg }) {
+            return [match]
+        }
+
+        let targetQty = sourceDocument?.traderBelegOrderQuantityFromSnapshot
+            ?? snapshotText.flatMap { Document.traderBelegOrderQuantity(fromSnapshotText: $0) }
+
+        if let qty = targetQty,
+           let match = sells.first(where: { securitiesQuantity(of: $0) == Double(qty) }) {
+            return [match]
+        }
+
+        if let trade = fullTrade, let synthesized = synthesizeSellInvoice(
+            for: trade,
+            targetQuantity: targetQty,
+            belegNumber: belegNumber ?? sourceDocument?.accountingDocumentNumber
+        ) {
+            return [synthesized]
+        }
+
+        return sells.count == 1 ? sells : []
+    }
+
+    private static func synthesizeSellInvoice(
+        for trade: Trade,
+        targetQuantity: Int?,
+        belegNumber: String?
+    ) -> Invoice? {
+        let sellOrder: OrderSell? = {
+            if let qty = targetQuantity, qty > 0 {
+                return trade.sellOrders.first { Int($0.quantity) == qty }
+            }
+            if trade.sellOrders.count == 1 {
+                return trade.sellOrders.first
+            }
+            return nil
+        }()
+        guard let sellOrder else { return nil }
+
+        let customerInfo = CustomerInfo(
+            name: "Dr. Hans-Peter Müller",
+            address: "Hauptstraße 42",
+            city: "Frankfurt am Main",
+            postalCode: "60311",
+            taxNumber: "43/123/45678",
+            depotNumber: "DE12345678901234567890",
+            bank: "Deutsche Bank AG",
+            customerNumber: trade.traderId
+        )
+        var invoice = Invoice.from(
+            sellOrder: sellOrder,
+            customerInfo: customerInfo,
+            transactionIdService: TransactionIdService(),
+            tradeId: trade.id,
+            tradeNumber: trade.tradeNumber
+        )
+        if let belegNumber, !belegNumber.isEmpty {
+            return Invoice(
+                id: invoice.id,
+                invoiceNumber: belegNumber,
+                type: invoice.type,
+                status: invoice.status,
+                customerInfo: invoice.customerInfo,
+                items: invoice.items,
+                tradeId: invoice.tradeId,
+                tradeNumber: invoice.tradeNumber,
+                orderId: invoice.orderId,
+                transactionType: invoice.transactionType,
+                taxNote: invoice.taxNote,
+                legalNote: invoice.legalNote,
+                dueDate: invoice.dueDate
+            )
+        }
+        return invoice
+    }
+
+    private static func securitiesQuantity(of invoice: Invoice) -> Double {
+        invoice.items
+            .filter { $0.itemType == .securities }
+            .reduce(0.0) { $0 + $1.quantity }
     }
 }

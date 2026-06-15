@@ -11,6 +11,10 @@ const { postLedgerPair, hasLeg } = require('./journal');
 const { bookAccountStatementEntry, composeStatementBusinessReference } = require('./accountStatementWriter');
 const { getSettlementGLRule, roleFromEntryType } = require('./settlementGLRules');
 const { resolveTraderCustomerBookingContext } = require('../../services/poolMirrorActivation/traderCustomerBookingPolicy');
+const {
+  isSettlementGLOutboxEnabled,
+  processDueSettlementOutbox,
+} = require('./settlementOutbox');
 
 /** Per-investor settlement rows need distinct GL legs on the same trade reference. */
 function resolveSettlementGLLeg(baseLeg, investmentId) {
@@ -86,6 +90,25 @@ async function bookSettlementEntry({
   });
   const resolvedTradeId = bookingContext.tradeId;
   const resolvedTradeNumber = bookingContext.tradeNumber;
+  const glRule = getSettlementGLRule(entryType);
+  const outboxEnabled = glRule && await isSettlementGLOutboxEnabled();
+
+  const glOutboxPayload = outboxEnabled ? {
+    userId,
+    userRole,
+    entryType,
+    amount,
+    tradeId: resolvedTradeId,
+    tradeNumber: resolvedTradeNumber,
+    investmentId,
+    investmentNumber,
+    description,
+    referenceDocumentId,
+    referenceDocumentNumber,
+    feeBreakdown,
+    ledgerReference,
+    businessCaseId,
+  } : null;
 
   const stmt = await bookAccountStatementEntry({
     userId,
@@ -101,7 +124,20 @@ async function bookSettlementEntry({
     businessCaseId,
     customerDisplaySnapshot,
     enforceReferenceDocumentId,
+    glOutboxPayload,
   });
+
+  if (outboxEnabled) {
+    setImmediate(() => {
+      processDueSettlementOutbox({ limit: 15 }).catch((err) => {
+        console.error(
+          `❌ settlement outbox drain failed entryType=${entryType} tradeId=${tradeId}:`,
+          err && err.message ? err.message : err,
+        );
+      });
+    });
+    return stmt;
+  }
 
   try {
     await postSettlementGLPair({
@@ -336,6 +372,7 @@ async function postOrderFeeBreakdown({
 
 module.exports = {
   bookSettlementEntry,
+  postSettlementGLPair,
   getSettlementGLRule,
   resolveSettlementGLLeg,
   removeSupersededLegacyCommissionLeg,

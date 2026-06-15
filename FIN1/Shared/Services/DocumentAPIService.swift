@@ -50,6 +50,7 @@ struct TraderDocumentBelegDetail: Decodable, Sendable {
     let investmentId: String?
     let accountingSummaryText: String?
     let summarySource: String?
+    let metadata: TraderCollectionBillBelegMetadata?
 
     func toDocument() -> Document {
         let formatter = ISO8601DateFormatter()
@@ -72,7 +73,8 @@ struct TraderDocumentBelegDetail: Decodable, Sendable {
             tradeId: self.tradeId,
             investmentId: self.investmentId,
             documentNumber: self.documentNumber ?? self.accountingDocumentNumber,
-            accountingSummaryText: self.accountingSummaryText
+            accountingSummaryText: self.accountingSummaryText,
+            traderCollectionBillMetadata: self.metadata
         )
     }
 }
@@ -153,6 +155,7 @@ private struct ParseDocumentResponse: Decodable {
     let readAt: String?
     let downloadedAt: String?
     let tradeId: String?
+    let tradeNumber: Int?
     let investmentId: String?
     let statementYear: Int?
     let statementMonth: Int?
@@ -161,6 +164,7 @@ private struct ParseDocumentResponse: Decodable {
     let accountingDocumentNumber: String?
     let traderCommissionRateSnapshot: Double?
     let accountingSummaryText: String?
+    let metadata: TraderCollectionBillBelegMetadata?
 
     enum CodingKeys: String, CodingKey {
         case objectId
@@ -178,6 +182,7 @@ private struct ParseDocumentResponse: Decodable {
         case readAt
         case downloadedAt
         case tradeId
+        case tradeNumber
         case investmentId
         case statementYear
         case statementMonth
@@ -186,6 +191,7 @@ private struct ParseDocumentResponse: Decodable {
         case accountingDocumentNumber
         case traderCommissionRateSnapshot
         case accountingSummaryText
+        case metadata
     }
 
     init(from decoder: Decoder) throws {
@@ -211,6 +217,7 @@ private struct ParseDocumentResponse: Decodable {
         self.downloadedAt = try c.decodeIfPresent(String.self, forKey: .downloadedAt)
         self.userId = c.decodeParseStringOrPointerObjectId(forKey: .userId) ?? ""
         self.tradeId = c.decodeParseStringOrPointerObjectId(forKey: .tradeId)
+        self.tradeNumber = c.decodeLossyInt(forKey: .tradeNumber)
         self.investmentId = c.decodeParseStringOrPointerObjectId(forKey: .investmentId)
         self.statementYear = c.decodeLossyInt(forKey: .statementYear)
         self.statementMonth = c.decodeLossyInt(forKey: .statementMonth)
@@ -219,6 +226,7 @@ private struct ParseDocumentResponse: Decodable {
         self.accountingDocumentNumber = try c.decodeIfPresent(String.self, forKey: .accountingDocumentNumber)
         self.traderCommissionRateSnapshot = c.decodeLossyDouble(forKey: .traderCommissionRateSnapshot)
         self.accountingSummaryText = try c.decodeIfPresent(String.self, forKey: .accountingSummaryText)
+        self.metadata = try c.decodeIfPresent(TraderCollectionBillBelegMetadata.self, forKey: .metadata)
     }
 
     func toDocument() -> Document {
@@ -248,13 +256,15 @@ private struct ParseDocumentResponse: Decodable {
             expiresAt: expiresDate,
             invoiceData: nil, // Invoice data not stored in Parse (stored separately)
             tradeId: tradeId,
+            tradeNumber: tradeNumber,
             investmentId: investmentId,
             statementYear: statementYear,
             statementMonth: statementMonth,
             statementRole: role,
             documentNumber: documentNumber ?? self.accountingDocumentNumber,
             traderCommissionRateSnapshot: self.traderCommissionRateSnapshot,
-            accountingSummaryText: self.accountingSummaryText
+            accountingSummaryText: self.accountingSummaryText,
+            traderCollectionBillMetadata: self.metadata
         )
         // Set var properties after initialization
         document.readAt = readDate

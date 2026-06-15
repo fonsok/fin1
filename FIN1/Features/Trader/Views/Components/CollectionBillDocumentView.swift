@@ -62,15 +62,33 @@ struct CollectionBillDocumentView: View {
                     services: self.services
                 )
             } else if let trade = viewModel.trade {
-                CollectionBillViewWrapper(trade: trade, document: self.displayDocument, fullTrade: self.viewModel.resolvedFullTrade)
+                CollectionBillViewWrapper(
+                    trade: trade,
+                    document: self.displayDocument,
+                    fullTrade: self.viewModel.resolvedFullTrade,
+                    belegSnapshotText: self.viewModel.resolvedBelegSnapshotText
+                )
             } else if let investment = viewModel.investment {
                 InvestmentDetailView(investment: investment)
             } else {
                 self.errorView
             }
         }
-        .navigationTitle("Collection Bill")
+        .navigationTitle(self.navigationTitleForDocument)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(AppTheme.screenBackground, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbarColorScheme(.dark, for: .navigationBar)
+    }
+
+    private var navigationTitleForDocument: String {
+        if self.displayDocument.type == .traderCollectionBill {
+            return self.displayDocument.traderBelegNavigationTitle
+        }
+        if self.displayDocument.type == .investorCollectionBill {
+            return "Collection Bill"
+        }
+        return "Document"
     }
 
     private var errorView: some View {

@@ -124,6 +124,8 @@ struct Document: Identifiable, Codable, Hashable {
     // Special property for invoice documents
     var invoiceData: Invoice?
     let tradeId: String?
+    /// Parse `Document.tradeNumber` (SSOT for CN-/settlement rows).
+    let tradeNumber: Int?
     let investmentId: String?
     let statementYear: Int?
     let statementMonth: Int?
@@ -140,6 +142,9 @@ struct Document: Identifiable, Codable, Hashable {
     /// Mehrzeiliger Buchhaltungs-/Eigenbeleg-Text vom Backend (z. B. Reservierung GoB), für Anzeige ohne PDF.
     let accountingSummaryText: String?
 
+    /// Strukturierte GoB-Belegdaten (`traderCollectionBillBelegSnapshot` → Parse `metadata`).
+    let traderCollectionBillMetadata: TraderCollectionBillBelegMetadata?
+
     init(
         id: String = UUID().uuidString,
         userId: String,
@@ -153,13 +158,15 @@ struct Document: Identifiable, Codable, Hashable {
         expiresAt: Date? = nil,
         invoiceData: Invoice? = nil,
         tradeId: String? = nil,
+        tradeNumber: Int? = nil,
         investmentId: String? = nil,
         statementYear: Int? = nil,
         statementMonth: Int? = nil,
         statementRole: UserRole? = nil,
         documentNumber: String? = nil,
         traderCommissionRateSnapshot: Double? = nil,
-        accountingSummaryText: String? = nil
+        accountingSummaryText: String? = nil,
+        traderCollectionBillMetadata: TraderCollectionBillBelegMetadata? = nil
     ) {
         self.id = id
         self.userId = userId
@@ -173,6 +180,7 @@ struct Document: Identifiable, Codable, Hashable {
         self.expiresAt = expiresAt
         self.invoiceData = invoiceData
         self.tradeId = tradeId
+        self.tradeNumber = tradeNumber
         self.investmentId = investmentId
         self.statementYear = statementYear
         self.statementMonth = statementMonth
@@ -182,6 +190,7 @@ struct Document: Identifiable, Codable, Hashable {
         self.documentNumber = invoiceData?.invoiceNumber ?? documentNumber
         self.traderCommissionRateSnapshot = traderCommissionRateSnapshot
         self.accountingSummaryText = accountingSummaryText
+        self.traderCollectionBillMetadata = traderCollectionBillMetadata
     }
 
     // MARK: - Computed Properties

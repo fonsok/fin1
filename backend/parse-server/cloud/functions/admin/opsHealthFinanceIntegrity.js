@@ -9,6 +9,7 @@ const { handleGetPairedSellInvestorChainStatus } = require('./opsHealthPairedSel
 const { handleGetFinanceIntegrityPreventionStatus } = require('./opsHealthFinancePrevention');
 const { handleGetTraderPoolBidAskContractStatus } = require('./opsHealthTraderPoolBidAskContract');
 const { handleGetSettlementGLReconciliationStatus } = require('./opsHealthSettlementGLReconciliation');
+const { handleGetTraderCollectionBillBelegDriftStatus } = require('./opsHealthTraderCollectionBillBelegDrift');
 
 const OVERALL_RANK = {
   healthy: 1,
@@ -99,6 +100,12 @@ async function handleGetFinanceIntegrityStatus(request) {
       'settlement_gl_reconciliation',
       'AccountStatement ↔ AppLedger settlement GL',
       handleGetSettlementGLReconciliationStatus,
+      { limit: Math.min(100, settlementLimit * 2) },
+    ),
+    safeCheck(
+      'trader_beleg_ssot_drift',
+      'Trader TBC/TSC snapshot ↔ metadata SSOT',
+      handleGetTraderCollectionBillBelegDriftStatus,
       { limit: Math.min(100, settlementLimit * 2) },
     ),
   ]);

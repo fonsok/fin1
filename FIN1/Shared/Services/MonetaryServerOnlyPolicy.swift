@@ -5,6 +5,10 @@ import Foundation
 enum TraderMonetaryMessages {
     static let accountStatementUnavailable =
         "Kontoauszug konnte nicht vom Server geladen werden. Lokale Rechnungen werden nicht angezeigt."
+
+    static let belegDetailUnavailable =
+        "Strukturierte Belegdaten konnten nicht vom Server geladen werden. "
+            + "Lokale Rechnungssynthese ist deaktiviert (Server-only)."
 }
 
 extension ConfigurationServiceProtocol {
