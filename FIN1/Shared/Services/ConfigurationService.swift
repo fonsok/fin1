@@ -29,8 +29,8 @@ final class ConfigurationService: ConfigurationServiceProtocol, ServiceLifecycle
     /// ADR-007 Phase-2 rollout flag. Mirrors `AppConfiguration.serviceChargeInvoiceFromBackend`.
     /// When `true`, iOS clients route service-charge-invoice creation through
     /// `bookAppServiceCharge` instead of writing the `Invoice` locally.
-    @Published var serviceChargeInvoiceFromBackend: Bool = false
-    @Published var serviceChargeLegacyClientFallbackEnabled: Bool = true
+    @Published var serviceChargeInvoiceFromBackend: Bool = true
+    @Published var serviceChargeLegacyClientFallbackEnabled: Bool = false
     /// GoB: investor payment surfaces fail closed without server Beleg / AccountStatement.
     @Published var investorMonetaryServerOnly: Bool = true
     /// Trader Kontoauszug / invoice backfill: server SSOT when true (default).

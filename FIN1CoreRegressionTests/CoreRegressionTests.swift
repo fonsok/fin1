@@ -171,7 +171,7 @@ private final class StubConfigurationService: ObservableObject, ConfigurationSer
     var traderMonetaryServerOnly: Bool { false }
     var frontendReadonlyMode: Bool { false }
     var serviceChargeInvoiceFromBackend: Bool { false }
-    var serviceChargeLegacyClientFallbackEnabled: Bool { true }
+    var serviceChargeLegacyClientFallbackEnabled: Bool { false }
     var slaMonitoringInterval: TimeInterval { 300 }
     var parseServerURL: String? { "http://localhost/parse" }
     var parseApplicationId: String? { "test" }

@@ -49,8 +49,8 @@ extension ConfigurationServiceProtocol {
     var effectiveMaxTraderPartialSells: Int { min(3, max(0, self.maxTraderPartialSells)) }
     var taxCollectionMode: TaxCollectionMode { .customerSelfReports }
     var showInvestorPartialSellRealizations: Bool { false }
-    var serviceChargeInvoiceFromBackend: Bool { false }
-    var serviceChargeLegacyClientFallbackEnabled: Bool { true }
+    var serviceChargeInvoiceFromBackend: Bool { true }
+    var serviceChargeLegacyClientFallbackEnabled: Bool { false }
     var investorMonetaryServerOnly: Bool { true }
     var traderMonetaryServerOnly: Bool { true }
     var frontendReadonlyMode: Bool { false }

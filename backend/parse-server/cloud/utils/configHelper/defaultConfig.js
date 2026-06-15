@@ -55,10 +55,10 @@ const DEFAULT_CONFIG = {
     // Legacy single-scope key kept for backward compatibility.
     walletActionMode: 'disabled',
     walletFeatureEnabled: false,
-    // ADR-007 Phase 2 rollout flag: default false — flip via admin portal when ready.
-    serviceChargeInvoiceFromBackend: false,
-    // Stability rollout: keep legacy client fallback enabled by default.
-    serviceChargeLegacyClientFallbackEnabled: true,
+    // ADR-007 Phase 2: server books service-charge Invoice (idempotent per batch).
+    serviceChargeInvoiceFromBackend: true,
+    // Legacy client Invoice write disabled after serviceChargeLegacyDisableAllowedFrom.
+    serviceChargeLegacyClientFallbackEnabled: false,
     // Earliest date when disabling the legacy fallback is allowed.
     serviceChargeLegacyDisableAllowedFrom: '2026-05-15',
     // Investor monetary flows: Collection Bill metadata + AccountStatement only (no local € math).

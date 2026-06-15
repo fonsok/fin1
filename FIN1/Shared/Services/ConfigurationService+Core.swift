@@ -42,9 +42,9 @@ extension ConfigurationService {
                 if self.configuration.maximumRiskExposurePercent == nil { self.configuration.maximumRiskExposurePercent = 2.0 }
                 if self.configuration.walletFeatureEnabled == nil { self.configuration.walletFeatureEnabled = false }
                 let serviceChargeFlagMissing = self.configuration.serviceChargeInvoiceFromBackend == nil
-                if serviceChargeFlagMissing { self.configuration.serviceChargeInvoiceFromBackend = false }
+                if serviceChargeFlagMissing { self.configuration.serviceChargeInvoiceFromBackend = true }
                 let legacyFallbackFlagMissing = self.configuration.serviceChargeLegacyClientFallbackEnabled == nil
-                if legacyFallbackFlagMissing { self.configuration.serviceChargeLegacyClientFallbackEnabled = true }
+                if legacyFallbackFlagMissing { self.configuration.serviceChargeLegacyClientFallbackEnabled = false }
                 if self.configuration.traderCommissionRate == nil || self.configuration.appServiceChargeRate == nil || self.configuration.appServiceChargeRateCompanies == nil || self.configuration.slaMonitoringInterval == 0 || self.configuration.showCommissionBreakdownInCreditNote == nil || self.configuration.showDocumentReferenceLinksInAccountStatement == nil || self.configuration.maximumRiskExposurePercent == nil || self.configuration.walletFeatureEnabled == nil || serviceChargeFlagMissing || legacyFallbackFlagMissing {
                     self.saveConfiguration()
                 }

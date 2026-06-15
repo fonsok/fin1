@@ -71,9 +71,9 @@ function buildDisplay(config) {
     walletActionMode: walletActionModeGlobal,
     walletFeatureEnabled: fallbackWalletEnabled,
     // ADR-007 Phase 2 rollout flag: default false so legacy clients keep the local Invoice path.
-    serviceChargeInvoiceFromBackend: config.display?.serviceChargeInvoiceFromBackend ?? false,
+    serviceChargeInvoiceFromBackend: config.display?.serviceChargeInvoiceFromBackend ?? true,
     serviceChargeLegacyClientFallbackEnabled:
-      config.display?.serviceChargeLegacyClientFallbackEnabled ?? true,
+      config.display?.serviceChargeLegacyClientFallbackEnabled ?? false,
     serviceChargeLegacyDisableAllowedFrom:
       config.display?.serviceChargeLegacyDisableAllowedFrom ?? '2026-05-15',
     investorMonetaryServerOnly: config.display?.investorMonetaryServerOnly ?? true,

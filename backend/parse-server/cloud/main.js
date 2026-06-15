@@ -157,17 +157,16 @@ Parse.Cloud.define('getConfig', async (request) => {
       : 'deposit_and_withdrawal';
   // Legacy alias.
   display.walletActionMode = display.walletActionModeGlobal;
-  // ADR-007 Phase 2 rollout flag: server is the source of truth. Default false so
-  // legacy clients keep writing the Invoice locally until the admin flips the flag.
+  // ADR-007 Phase 2: server is SSOT for service-charge Invoice rows.
   if (liveConfig.display && typeof liveConfig.display.serviceChargeInvoiceFromBackend === 'boolean') {
     display.serviceChargeInvoiceFromBackend = liveConfig.display.serviceChargeInvoiceFromBackend;
   } else if (typeof display.serviceChargeInvoiceFromBackend !== 'boolean') {
-    display.serviceChargeInvoiceFromBackend = false;
+    display.serviceChargeInvoiceFromBackend = true;
   }
   if (liveConfig.display && typeof liveConfig.display.serviceChargeLegacyClientFallbackEnabled === 'boolean') {
     display.serviceChargeLegacyClientFallbackEnabled = liveConfig.display.serviceChargeLegacyClientFallbackEnabled;
   } else if (typeof display.serviceChargeLegacyClientFallbackEnabled !== 'boolean') {
-    display.serviceChargeLegacyClientFallbackEnabled = true;
+    display.serviceChargeLegacyClientFallbackEnabled = false;
   }
   if (liveConfig.display && typeof liveConfig.display.serviceChargeLegacyDisableAllowedFrom === 'string') {
     display.serviceChargeLegacyDisableAllowedFrom = liveConfig.display.serviceChargeLegacyDisableAllowedFrom;

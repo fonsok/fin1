@@ -204,7 +204,8 @@ struct AppConfiguration: Codable {
         showDocumentReferenceLinksInAccountStatement: true,
         maximumRiskExposurePercent: 2.0,
         walletFeatureEnabled: false,
-        serviceChargeLegacyClientFallbackEnabled: true,
+        serviceChargeInvoiceFromBackend: true,
+        serviceChargeLegacyClientFallbackEnabled: false,
         investorMonetaryServerOnly: true,
         traderMonetaryServerOnly: true,
         frontendReadonlyMode: false,
@@ -236,8 +237,8 @@ struct AppConfiguration: Codable {
     var effectiveMaximumRiskExposurePercent: Double { self.maximumRiskExposurePercent ?? 2.0 }
     var effectiveShowDocumentReferenceLinksInAccountStatement: Bool { self.showDocumentReferenceLinksInAccountStatement ?? true }
     var effectiveWalletFeatureEnabled: Bool { self.walletFeatureEnabled ?? false }
-    var effectiveServiceChargeInvoiceFromBackend: Bool { self.serviceChargeInvoiceFromBackend ?? false }
-    var effectiveServiceChargeLegacyClientFallbackEnabled: Bool { self.serviceChargeLegacyClientFallbackEnabled ?? true }
+    var effectiveServiceChargeInvoiceFromBackend: Bool { self.serviceChargeInvoiceFromBackend ?? true }
+    var effectiveServiceChargeLegacyClientFallbackEnabled: Bool { self.serviceChargeLegacyClientFallbackEnabled ?? false }
     var effectiveInvestorMonetaryServerOnly: Bool { self.investorMonetaryServerOnly ?? true }
     var effectiveTraderMonetaryServerOnly: Bool { self.traderMonetaryServerOnly ?? true }
     var effectiveFrontendReadonlyMode: Bool { self.frontendReadonlyMode ?? false }

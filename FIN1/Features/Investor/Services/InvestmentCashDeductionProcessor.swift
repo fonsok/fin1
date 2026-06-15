@@ -202,7 +202,8 @@ final class InvestmentCashDeductionProcessor {
                 if self.isDuplicateServiceChargeInvoiceError(error) {
                     print("ℹ️ InvestmentCashDeductionProcessor: Service charge invoice already exists server-side — skipping client fallback")
                 } else {
-                    if self.configurationService.serviceChargeLegacyClientFallbackEnabled {
+                    if self.configurationService.serviceChargeLegacyClientFallbackEnabled,
+                       !self.configurationService.blocksLocalInvoiceGeneration {
                         // Fail-safe: on transient technical error, use legacy fallback path.
                         print(
                             "⚠️ InvestmentCashDeductionProcessor: bookAppServiceCharge failed, falling back to client path — \(error.localizedDescription)"
@@ -217,6 +218,11 @@ final class InvestmentCashDeductionProcessor {
                     }
                 }
             }
+        } else if self.configurationService.serviceChargeInvoiceFromBackend,
+                  !self.configurationService.serviceChargeLegacyClientFallbackEnabled {
+            print(
+                "❌ InvestmentCashDeductionProcessor: bookAppServiceCharge unavailable and legacy fallback disabled — skipping client Invoice write"
+            )
         } else {
             // Legacy client path: persist the Invoice directly via Parse.
             await invoiceService.addInvoice(invoice)
