@@ -62,6 +62,55 @@ function resolveSellOrderKey(order) {
   return String(order.id || order.objectId || order.orderId || '').trim();
 }
 
+function findSellOrderByKey(tradeLike, sellOrderId) {
+  const key = String(sellOrderId || '').trim();
+  if (!key) return null;
+  return getOrderArrayFromTradeLike(tradeLike).find((o) => resolveSellOrderKey(o) === key) || null;
+}
+
+function orderMatchesBelegLeg(order, { grossAmount, quantity } = {}) {
+  const gross = round2(Number(grossAmount) || 0);
+  const qty = round2(Number(quantity) || 0);
+  const orderGross = resolveSellOrderGrossAmount(order);
+  const orderQty = round2(Number(order.quantity || order.executedQuantity || 0));
+  if (gross > 0 && orderGross > 0 && Math.abs(orderGross - gross) > 0.02) return false;
+  if (qty > 0 && orderQty > 0 && Math.abs(orderQty - qty) > 0.001) return false;
+  return true;
+}
+
+/**
+ * Resolve the sell order leg for one trader TSC beleg (backfill / repair).
+ * Prefers persisted sellOrderId when it matches amount/qty; else unique gross or quantity match.
+ */
+function findSellOrderForBelegLeg(tradeLike, { sellOrderId, grossAmount, quantity } = {}) {
+  const byKey = findSellOrderByKey(tradeLike, sellOrderId);
+  if (byKey && orderMatchesBelegLeg(byKey, { grossAmount, quantity })) {
+    return byKey;
+  }
+
+  const orders = getOrderArrayFromTradeLike(tradeLike);
+  const gross = round2(Number(grossAmount) || 0);
+  const qty = round2(Number(quantity) || 0);
+
+  if (gross > 0) {
+    const byGross = orders.filter((o) => {
+      const og = resolveSellOrderGrossAmount(o);
+      return og > 0 && Math.abs(og - gross) <= 0.02;
+    });
+    if (byGross.length === 1) return byGross[0];
+  }
+
+  if (qty > 0) {
+    const byQty = orders.filter((o) => {
+      const oq = round2(Number(o.quantity || o.executedQuantity || 0));
+      return oq > 0 && Math.abs(oq - qty) <= 0.001;
+    });
+    if (byQty.length === 1) return byQty[0];
+  }
+
+  return null;
+}
+
 function computeTradingFees(trade) {
   return computeTradingFeesWithBreakdown(trade).totalFees;
 }
@@ -103,4 +152,6 @@ module.exports = {
   resolveSellOrderGrossAmount,
   resolveSellOrderNetCashAmount,
   resolveSellOrderKey,
+  findSellOrderByKey,
+  findSellOrderForBelegLeg,
 };

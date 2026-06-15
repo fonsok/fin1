@@ -81,7 +81,44 @@ beforeEach(() => {
         return [];
       }
       get(objectId) {
-        if (this.className !== 'Trade' || objectId !== 'trade-33') {
+        if (this.className !== 'Trade') {
+          return Promise.reject(new Error('Trade not found'));
+        }
+        if (objectId === 'trade-partial-sell') {
+          return Promise.resolve({
+            get(k) {
+              const trade = {
+                quantity: 1200,
+                feeConfig: {},
+                tradeNumber: 140,
+                symbol: 'CI4YLSD',
+                status: 'completed',
+                buyOrder: {
+                  price: 1.86,
+                  quantity: 1200,
+                  wkn: 'CI4YLSD',
+                  createdAt: new Date('2026-05-15T14:30:00.000Z'),
+                },
+                sellOrders: [
+                  {
+                    id: 'sell-1',
+                    quantity: 400,
+                    totalAmount: 1600,
+                    createdAt: '2026-06-15T12:45:00.000Z',
+                  },
+                  {
+                    id: 'sell-2',
+                    quantity: 800,
+                    totalAmount: 2400,
+                    createdAt: '2026-06-15T12:47:00.000Z',
+                  },
+                ],
+              };
+              return trade[k];
+            },
+          });
+        }
+        if (objectId !== 'trade-33') {
           return Promise.reject(new Error('Trade not found'));
         }
         return Promise.resolve({
@@ -148,6 +185,69 @@ describe('buildPersistedTraderBelegFields', () => {
     expect(out.metadata.belegSchemaVersion).toBe(1);
     expect(out.accountingSummaryText).toContain('Ordervolumen');
     expect(out.accountingSummaryText).toContain('TBC-2026-0000033');
+  });
+
+  test('sell backfill resolves leg by sellOrderId when consistent', async () => {
+    mockEnrich.mockResolvedValue({
+      amount: 2400,
+      quantity: 800,
+      executionType: 'sell',
+      belegLabel: 'Verkaufsabrechnung',
+      tradeNumber: 140,
+      fees: { totalFees: 7.5, orderFee: 5, exchangeFee: 1, foreignCosts: 1.5 },
+    });
+    mockLoadInvoice.mockResolvedValue(null);
+
+    const doc = mockDoc({
+      id: 'doc-sell-2',
+      accountingDocumentNumber: 'TSC-2026-0000141',
+      tradeId: 'trade-partial-sell',
+      tradeNumber: 140,
+      metadata: {
+        amount: 2400,
+        quantity: 800,
+        executionType: 'sell',
+        sellOrderId: 'sell-2',
+      },
+    });
+    const out = await buildPersistedTraderBelegFields(doc);
+
+    expect(out.rebuildSource).toBe('snapshot');
+    expect(out.metadata.partialSell.eventIndex).toBe(2);
+    expect(out.metadata.partialSell.orderQuantity).toBe(800);
+    expect(out.metadata.sellOrderId).toBe('sell-2');
+    expect(out.accountingSummaryText).toContain('Teilverkauf 2 von 2');
+  });
+
+  test('sell backfill ignores stale sellOrderId when gross amount points to another leg', async () => {
+    mockEnrich.mockResolvedValue({
+      amount: 2400,
+      quantity: 400,
+      executionType: 'sell',
+      belegLabel: 'Verkaufsabrechnung',
+      tradeNumber: 140,
+      fees: { totalFees: 7.5, orderFee: 5, exchangeFee: 1, foreignCosts: 1.5 },
+    });
+    mockLoadInvoice.mockResolvedValue(null);
+
+    const doc = mockDoc({
+      id: 'doc-sell-2-stale',
+      accountingDocumentNumber: 'TSC-2026-0000141',
+      tradeId: 'trade-partial-sell',
+      tradeNumber: 140,
+      metadata: {
+        amount: 2400,
+        quantity: 400,
+        executionType: 'sell',
+        sellOrderId: 'sell-1',
+      },
+    });
+    const out = await buildPersistedTraderBelegFields(doc);
+
+    expect(out.metadata.partialSell.eventIndex).toBe(2);
+    expect(out.metadata.partialSell.orderQuantity).toBe(800);
+    expect(out.metadata.sellOrderId).toBe('sell-2');
+    expect(out.metadata.quantity).toBe(800);
   });
 });
 

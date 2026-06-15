@@ -12,6 +12,7 @@ const {
   resolveSellOrderGrossAmount,
   resolveSellOrderNetCashAmount,
   resolveSellOrderKey,
+  findSellOrderForBelegLeg,
 } = require('../settlementTradeMath');
 
 function tradeFrom(attrs) {
@@ -150,6 +151,31 @@ describe('settlementTradeMath', () => {
         sellOrder: { totalAmount: 400 },
       });
       expect(computeTradingFees(t)).toBe(computeTradingFeesWithBreakdown(t).totalFees);
+    });
+  });
+
+  describe('findSellOrderForBelegLeg', () => {
+    const trade = tradeFrom({
+      sellOrders: [
+        { id: 'sell-1', quantity: 400, totalAmount: 1600 },
+        { id: 'sell-2', quantity: 800, totalAmount: 2400 },
+      ],
+    });
+
+    test('uses sellOrderId when amount matches', () => {
+      expect(findSellOrderForBelegLeg(trade, {
+        sellOrderId: 'sell-1',
+        grossAmount: 1600,
+        quantity: 400,
+      })).toMatchObject({ id: 'sell-1' });
+    });
+
+    test('ignores stale sellOrderId when gross amount belongs to another leg', () => {
+      expect(findSellOrderForBelegLeg(trade, {
+        sellOrderId: 'sell-1',
+        grossAmount: 2400,
+        quantity: 400,
+      })).toMatchObject({ id: 'sell-2', quantity: 800 });
     });
   });
 });

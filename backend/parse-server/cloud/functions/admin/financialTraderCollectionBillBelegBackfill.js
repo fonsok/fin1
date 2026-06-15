@@ -15,6 +15,7 @@ const {
 } = require('../../utils/accountingHelper/traderCollectionBillBelegSnapshot');
 const { enrichTraderDocumentMetadata, loadTradeInvoice } = require('./reports/documentBelegEnrichment');
 const { resolveTraderDisplayNameForBeleg } = require('../../utils/traderDisplayNameForBeleg');
+const { findSellOrderForBelegLeg } = require('../../utils/accountingHelper/settlementTradeMath');
 
 const TRADER_DOC_TYPES = ['traderCollectionBill', 'trade_execution_document'];
 
@@ -49,8 +50,19 @@ async function buildPersistedTraderBelegFields(doc) {
       const trade = await new Parse.Query('Trade').get(tradeId, { useMasterKey: true });
       const invoice = await loadTradeInvoice(tradeId, executionType);
       const traderParty = await resolveTraderDisplayNameForBeleg(doc.get('userId'));
+      const storedMeta = doc.get('metadata') || {};
+      const sellOrder = executionType === 'sell'
+        ? findSellOrderForBelegLeg(trade, {
+          sellOrderId: storedMeta.sellOrderId
+            || storedMeta.partialSell?.sellOrderId
+            || enriched.sellOrderId,
+          grossAmount: gross,
+          quantity: enriched.quantity ?? storedMeta.quantity,
+        })
+        : null;
       const snapshot = buildTraderCollectionBillBelegSnapshot({
         trade,
+        order: sellOrder,
         executionType,
         grossAmount: gross,
         feeConfig: trade.get('feeConfig') || {},
