@@ -58,14 +58,43 @@ function resolveSettlementLegPrices(poolTrade, traderTrade) {
   return { tradeBuyPrice, tradeSellPrice };
 }
 
+function weightedAvgSellPriceFromOrders(orders) {
+  let qtySum = 0;
+  let amtSum = 0;
+  for (const o of orders) {
+    if (!o || typeof o !== 'object') continue;
+    const qty = Number(o.quantity || 0);
+    const total = Number(o.totalAmount || 0);
+    if (qty > 0 && total > 0) {
+      qtySum += qty;
+      amtSum += total;
+      continue;
+    }
+    const px = Number(o.price || o.limitPrice || o.averagePrice || 0);
+    if (qty > 0 && px > 0) {
+      qtySum += qty;
+      amtSum += qty * px;
+    }
+  }
+  if (qtySum > 0 && amtSum > 0) return round2(amtSum / qtySum);
+  return 0;
+}
+
 function resolveTradeSellPrice(trade) {
   if (!trade || typeof trade.get !== 'function') return 0;
-  const direct = Number(trade.get('exitPrice') || trade.get('sellPrice') || 0);
-  if (Number.isFinite(direct) && direct > 0) return direct;
 
   const sellOrders = trade.get('sellOrders') || [];
   const sellOne = trade.get('sellOrder');
   const orders = sellOrders.length > 0 ? sellOrders : (sellOne ? [sellOne] : []);
+  const status = String(trade.get('status') || '').toLowerCase();
+
+  if (status === 'completed' && orders.length > 1) {
+    const vwap = weightedAvgSellPriceFromOrders(orders);
+    if (vwap > 0) return vwap;
+  }
+
+  const direct = Number(trade.get('exitPrice') || trade.get('sellPrice') || 0);
+  if (Number.isFinite(direct) && direct > 0) return direct;
 
   for (const o of orders) {
     if (!o || typeof o !== 'object') continue;
@@ -88,5 +117,6 @@ module.exports = {
   generateShortHash,
   resolveTradeBuyPrice,
   resolveTradeSellPrice,
+  weightedAvgSellPriceFromOrders,
   resolveSettlementLegPrices,
 };

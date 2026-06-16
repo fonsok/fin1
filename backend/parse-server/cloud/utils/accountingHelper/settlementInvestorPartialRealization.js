@@ -24,6 +24,7 @@ const {
   resolvePoolContextForTraderSell,
   computeInvestorPartialSellDelta,
 } = require('../poolMirrorEconomics');
+const { normalizeSellPriceFromOrder } = require('../poolMirrorInvestorDelta');
 const { getOrderArrayFromTradeLike } = require('./settlementTradeMath');
 
 function sortSellOrdersChronologically(orders) {
@@ -206,7 +207,10 @@ async function bookInvestorPartialRealizationForSellOrderDelta({
   const config = await loadConfig();
   const feeConfig = config.financial || {};
   const tradeBuyPrice = resolveTradeBuyPrice(poolTrade);
-  const tradeSellPrice = resolveTradeSellPrice(traderTrade);
+  const tradeSellPrice = sellOrder
+    ? normalizeSellPriceFromOrder(sellOrder)
+    : resolveTradeSellPrice(traderTrade);
+  if (!(tradeSellPrice > 0)) return [];
   const costBasisPerShare = resolveTradeCostBasisPerShare(traderTrade, feeConfig)
     || resolveTradeCostBasisPerShare(poolTrade, feeConfig)
     || null;
