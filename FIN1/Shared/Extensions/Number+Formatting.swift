@@ -86,6 +86,8 @@ extension Numeric {
             doubleValue = Double(value)
         case let value as CGFloat:
             doubleValue = Double(value)
+        case let value as Decimal:
+            doubleValue = NSDecimalNumber(decimal: value).doubleValue
         default:
             // Fallback: use string conversion
             if let nsNumber = self as? NSNumber {
@@ -98,6 +100,15 @@ extension Numeric {
         let formattedNumber = NumberFormatter.roiPercentageFormatter.string(for: doubleValue) ?? String(format: "%.2f", doubleValue)
         let sign = includeSign && doubleValue > 0 ? "+" : ""
         return "\(sign)\(formattedNumber)%"
+    }
+}
+
+extension Decimal {
+    func formattedAsLocalizedCurrency() -> String {
+        let formattedNumber = NumberFormatter.localizedCurrencyFormatter.string(
+            for: NSDecimalNumber(decimal: self)
+        ) ?? "\(self)"
+        return "\(formattedNumber) €"
     }
 }
 

@@ -196,8 +196,9 @@ struct InvestmentsPartialSellDetailSheetView: View {
                             .foregroundColor(AppTheme.secondaryText)
                     }
                     if let meta = bill.metadata {
-                        let gross = meta.grossProfit ?? 0
-                        let net = meta.netProfit ?? ((meta.grossProfit ?? 0) - (meta.commission ?? 0))
+                        let gross = meta.grossProfit?.doubleValue ?? 0
+                        let net = meta.netProfit?.doubleValue
+                            ?? ((meta.grossProfit?.doubleValue ?? 0) - (meta.commission?.doubleValue ?? 0))
                         Text("Brutto \(gross.formattedAsLocalizedCurrency()) · Netto \(net.formattedAsLocalizedCurrency())")
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.secondaryText)

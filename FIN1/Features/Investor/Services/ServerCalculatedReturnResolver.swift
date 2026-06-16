@@ -49,17 +49,17 @@ enum ServerCalculatedReturnResolver {
 
             billCount += 1
 
-            let grossProfit = metadata.grossProfit ?? 0.0
-            let commission = metadata.commission ?? 0.0
-            let netProfit = metadata.netProfit ?? (grossProfit - commission)
+            let grossProfit = metadata.grossProfit?.doubleValue ?? 0.0
+            let commission = metadata.commission?.doubleValue ?? 0.0
+            let netProfit = metadata.netProfit?.doubleValue ?? (grossProfit - commission)
             grossProfitSum += grossProfit
             commissionSum += commission
             netProfitSum += netProfit
 
-            let buyAmount = metadata.buyLeg?.amount ?? 0.0
-            let buyFees = metadata.buyLeg?.fees?.totalFees ?? 0.0
+            let buyAmount = metadata.buyLeg?.amount?.doubleValue ?? 0.0
+            let buyFees = metadata.buyLeg?.fees?.totalFees?.doubleValue ?? 0.0
             let investedFromLeg = buyAmount + buyFees
-            let bookedTotalBuyCost = metadata.totalBuyCost ?? 0.0
+            let bookedTotalBuyCost = metadata.totalBuyCost?.doubleValue ?? 0.0
             let investedDerived = (investedFromLeg == 0 && returnPercentage != 0)
                 ? netProfit / (returnPercentage / 100.0)
                 : 0
@@ -68,7 +68,7 @@ enum ServerCalculatedReturnResolver {
             } else {
                 totalBuyCostSum += (investedFromLeg > 0 ? investedFromLeg : investedDerived)
             }
-            if let bookedNetSell = metadata.netSellAmount {
+            if let bookedNetSell = metadata.netSellAmount?.doubleValue {
                 netSellAmountSum += bookedNetSell
             }
 

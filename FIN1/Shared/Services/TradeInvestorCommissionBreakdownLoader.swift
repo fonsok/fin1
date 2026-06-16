@@ -109,8 +109,8 @@ enum TradeInvestorCommissionBreakdownLoader {
                 return nil
             }
 
-            let commission = metadata.commission ?? 0
-            let gross = metadata.grossProfit ?? 0
+            let commission = metadata.commission?.doubleValue ?? 0
+            let gross = metadata.grossProfit?.doubleValue ?? 0
             guard commission > 0 || gross > 0 else { return nil }
 
             lines.append(TradeInvestorCommissionLine(

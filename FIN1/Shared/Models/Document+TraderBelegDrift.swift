@@ -46,13 +46,13 @@ extension Document {
         if meta.isBuy && !snapIsBuy && snapIsSell { drifts.append(.executionType) }
 
         if let snapAmount = Self.traderBelegEuroAmount(fromSnapshotText: text, label: "Kurswert"),
-           let metaAmount = meta.amount,
+           let metaAmount = meta.amount?.doubleValue,
            abs(snapAmount - metaAmount) > 0.02 {
             drifts.append(.amount)
         }
 
         if let snapTotal = Self.traderBelegSigmaTotal(fromSnapshotText: text),
-           let metaTotal = meta.totalWithFees,
+           let metaTotal = meta.totalWithFees?.doubleValue,
            abs(snapTotal - metaTotal) > 0.02 {
             drifts.append(.totalWithFees)
         }

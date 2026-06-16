@@ -393,16 +393,16 @@ final class InvestorCollectionBillCalculationService: InvestorCollectionBillCalc
 
         let buyQty = buyLeg.quantity ?? 0
         let buyPrice = buyLeg.price ?? input.buyPrice
-        let buyAmt = buyLeg.amount ?? (buyQty * buyPrice)
-        let buyFeesTotal = buyLeg.fees?.totalFees ?? 0
-        let residual = meta.residualAmount ?? buyLeg.residualAmount ?? 0
+        let buyAmt = buyLeg.amount?.doubleValue ?? (buyQty * buyPrice)
+        let buyFeesTotal = buyLeg.fees?.totalFees?.doubleValue ?? 0
+        let residual = meta.residualAmount?.doubleValue ?? buyLeg.residualAmount?.doubleValue ?? 0
 
         let buyFeeDetails = self.buildFeeDetailsFromBreakdown(buyLeg.fees)
 
         let sellQty = meta.sellLeg?.quantity ?? 0
         let sellPrice = meta.sellLeg?.price ?? 0
-        let sellAmt = meta.sellLeg?.amount ?? (sellQty * sellPrice)
-        let sellFeesMagnitude = meta.sellLeg?.fees?.totalFees ?? 0
+        let sellAmt = meta.sellLeg?.amount?.doubleValue ?? (sellQty * sellPrice)
+        let sellFeesMagnitude = meta.sellLeg?.fees?.totalFees?.doubleValue ?? 0
         let sellFeeDetails = self.buildFeeDetailsFromBreakdown(meta.sellLeg?.fees)
 
         let ledger = InvestorCollectionBillLedger.fromBackendLegs(
@@ -436,9 +436,9 @@ final class InvestorCollectionBillCalculationService: InvestorCollectionBillCalc
             grossProfit: reconciliation.displayGrossProfit,
             roiGrossProfit: roiGrossProfit,
             roiInvestedAmount: roiInvestedAmount,
-            bookedCommission: meta.commission,
-            bookedNetProfit: meta.netProfit,
-            bookedTransferAmount: meta.transferAmount,
+            bookedCommission: meta.commission?.doubleValue,
+            bookedNetProfit: meta.netProfit?.doubleValue,
+            bookedTransferAmount: meta.transferAmount?.doubleValue,
             accountingDocumentNumber: bill.accountingDocumentNumber,
             belegInconsistencyMessage: reconciliation.inconsistencyMessage,
             dataSource: reconciliation.isConsistent ? .backendBeleg : .backendBelegInconsistent
@@ -498,13 +498,13 @@ final class InvestorCollectionBillCalculationService: InvestorCollectionBillCalc
     private func buildFeeDetailsFromBreakdown(_ fees: BackendFeeBreakdown?) -> [InvestorFeeDetail] {
         guard let fees else { return [] }
         var details: [InvestorFeeDetail] = []
-        if let v = fees.orderFee, abs(v) > 0.0001 {
+        if let v = fees.orderFee?.doubleValue, abs(v) > 0.0001 {
             details.append(InvestorFeeDetail(label: "Ordergebühr", amount: v))
         }
-        if let v = fees.exchangeFee, abs(v) > 0.0001 {
+        if let v = fees.exchangeFee?.doubleValue, abs(v) > 0.0001 {
             details.append(InvestorFeeDetail(label: "Börsenplatzgebühr", amount: v))
         }
-        if let v = fees.foreignCosts, abs(v) > 0.0001 {
+        if let v = fees.foreignCosts?.doubleValue, abs(v) > 0.0001 {
             details.append(InvestorFeeDetail(label: "Fremdkostenpauschale", amount: v))
         }
         return details

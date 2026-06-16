@@ -88,14 +88,14 @@ struct InvestorCollectionBillBelegTotals: Equatable, Sendable {
 
     static func from(metadata: BackendCollectionBillMetadata) -> InvestorCollectionBillBelegTotals {
         InvestorCollectionBillBelegTotals(
-            grossProfit: metadata.grossProfit,
-            commission: metadata.commission,
-            netProfit: metadata.netProfit,
-            totalBuyCost: metadata.totalBuyCost,
-            netSellAmount: metadata.netSellAmount,
-            transferAmount: metadata.transferAmount,
-            residualAmount: metadata.residualAmount
-                ?? metadata.buyLeg?.residualAmount
+            grossProfit: metadata.grossProfit?.doubleValue,
+            commission: metadata.commission?.doubleValue,
+            netProfit: metadata.netProfit?.doubleValue,
+            totalBuyCost: metadata.totalBuyCost?.doubleValue,
+            netSellAmount: metadata.netSellAmount?.doubleValue,
+            transferAmount: metadata.transferAmount?.doubleValue,
+            residualAmount: metadata.residualAmount?.doubleValue
+                ?? metadata.buyLeg?.residualAmount?.doubleValue
         )
     }
 }
@@ -158,7 +158,7 @@ struct InvestorCollectionBillBelegReconciliation: Equatable, Sendable {
         }
         if let residual = beleg.residualAmount,
            let buyCost = beleg.totalBuyCost,
-           let nominal = metadata.investmentNominal, nominal > 0 {
+           let nominal = metadata.investmentNominal?.doubleValue, nominal > 0 {
             if abs(nominal - (buyCost + residual)) > tol {
                 driftParts.append(
                     String(format: "Nominal %.2f ≠ Total Buy Cost + Residual (Beleg)", nominal)

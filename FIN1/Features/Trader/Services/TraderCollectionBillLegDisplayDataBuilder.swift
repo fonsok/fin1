@@ -10,17 +10,17 @@ enum TraderCollectionBillLegDisplayDataBuilder {
         belegNumber: String?
     ) -> TradeStatementDisplayData {
         let qty = metadata.quantity ?? 0
-        let gross = metadata.amount ?? 0
+        let gross = metadata.amount?.doubleValue ?? 0
         let fees = metadata.fees ?? TraderCollectionBillBelegMetadata.Fees(
-            orderFee: 0,
-            exchangeFee: 0,
-            foreignCosts: 0,
-            totalFees: 0
+            orderFee: nil,
+            exchangeFee: nil,
+            foreignCosts: nil,
+            totalFees: nil
         )
-        let orderFee = fees.orderFee ?? 0
-        let exchangeFee = fees.exchangeFee ?? 0
-        let foreignCosts = fees.foreignCosts ?? 0
-        let totalWithFees = metadata.totalWithFees ?? gross
+        let orderFee = fees.orderFee?.doubleValue ?? 0
+        let exchangeFee = fees.exchangeFee?.doubleValue ?? 0
+        let foreignCosts = fees.foreignCosts?.doubleValue ?? 0
+        let totalWithFees = metadata.totalWithFees?.doubleValue ?? gross
 
         let orderVolume = self.formatQuantity(qty)
         let price = self.formatPrice(metadata.price ?? (qty > 0 ? gross / qty : 0))

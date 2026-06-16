@@ -6,29 +6,39 @@ final class InvestorCollectionBillLedgerTests: XCTestCase {
     func testBelegReconciliationConsistentWhenMetadataMatchesLegs() {
         let metadata = BackendCollectionBillMetadata(
             ownershipPercentage: 100,
-            grossProfit: 295.67,
-            commission: 29.57,
-            netProfit: 266.10,
-            transferAmount: 1_265.90,
-            residualAmount: 0,
-            investmentNominal: 999.80,
-            poolTradingAmount: 999.80,
-            totalBuyCost: 999.80,
-            netSellAmount: 1_295.47,
+            grossProfit: BelegEURMoney(euro: 295.67),
+            commission: BelegEURMoney(euro: 29.57),
+            netProfit: BelegEURMoney(euro: 266.10),
+            transferAmount: BelegEURMoney(euro: 1_265.90),
+            residualAmount: BelegEURMoney(euro: 0),
+            investmentNominal: BelegEURMoney(euro: 999.80),
+            poolTradingAmount: BelegEURMoney(euro: 999.80),
+            totalBuyCost: BelegEURMoney(euro: 999.80),
+            netSellAmount: BelegEURMoney(euro: 1_295.47),
             returnPercentage: 29.92,
             commissionRate: 0.10,
             buyLeg: BackendCollectionBillLeg(
                 quantity: 261,
                 price: 3.80,
-                amount: 991.80,
-                fees: BackendFeeBreakdown(orderFee: 5, exchangeFee: 0.5, foreignCosts: 2.5, totalFees: 8),
-                residualAmount: 0
+                amount: BelegEURMoney(euro: 991.80),
+                fees: BackendFeeBreakdown(
+                    orderFee: BelegEURMoney(euro: 5),
+                    exchangeFee: BelegEURMoney(euro: 0.5),
+                    foreignCosts: BelegEURMoney(euro: 2.5),
+                    totalFees: BelegEURMoney(euro: 8)
+                ),
+                residualAmount: BelegEURMoney(euro: 0)
             ),
             sellLeg: BackendCollectionBillLeg(
                 quantity: 261,
                 price: 5.00,
-                amount: 1_305.00,
-                fees: BackendFeeBreakdown(orderFee: 6.53, exchangeFee: 0.5, foreignCosts: 2.5, totalFees: 9.53),
+                amount: BelegEURMoney(euro: 1_305.00),
+                fees: BackendFeeBreakdown(
+                    orderFee: BelegEURMoney(euro: 6.53),
+                    exchangeFee: BelegEURMoney(euro: 0.5),
+                    foreignCosts: BelegEURMoney(euro: 2.5),
+                    totalFees: BelegEURMoney(euro: 9.53)
+                ),
                 residualAmount: nil
             )
         )
@@ -50,7 +60,7 @@ final class InvestorCollectionBillLedgerTests: XCTestCase {
     func testBelegReconciliationFlagsGrossProfitDrift() {
         let metadata = BackendCollectionBillMetadata(
             ownershipPercentage: nil,
-            grossProfit: 999,
+            grossProfit: BelegEURMoney(euro: 999),
             commission: nil,
             netProfit: nil,
             transferAmount: nil,
@@ -64,15 +74,25 @@ final class InvestorCollectionBillLedgerTests: XCTestCase {
             buyLeg: BackendCollectionBillLeg(
                 quantity: 261,
                 price: 3.80,
-                amount: 991.80,
-                fees: BackendFeeBreakdown(orderFee: nil, exchangeFee: nil, foreignCosts: nil, totalFees: 8),
+                amount: BelegEURMoney(euro: 991.80),
+                fees: BackendFeeBreakdown(
+                    orderFee: nil,
+                    exchangeFee: nil,
+                    foreignCosts: nil,
+                    totalFees: BelegEURMoney(euro: 8)
+                ),
                 residualAmount: nil
             ),
             sellLeg: BackendCollectionBillLeg(
                 quantity: 261,
                 price: 5.00,
-                amount: 1_305.00,
-                fees: BackendFeeBreakdown(orderFee: nil, exchangeFee: nil, foreignCosts: nil, totalFees: 9.53),
+                amount: BelegEURMoney(euro: 1_305.00),
+                fees: BackendFeeBreakdown(
+                    orderFee: nil,
+                    exchangeFee: nil,
+                    foreignCosts: nil,
+                    totalFees: BelegEURMoney(euro: 9.53)
+                ),
                 residualAmount: nil
             )
         )

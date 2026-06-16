@@ -234,10 +234,10 @@ struct BackendInvoiceMetadata: Decodable {
 }
 
 struct BackendFeeBreakdown: Decodable {
-    let orderFee: Double?
-    let exchangeFee: Double?
-    let foreignCosts: Double?
-    let totalFees: Double?
+    let orderFee: BelegEURMoney?
+    let exchangeFee: BelegEURMoney?
+    let foreignCosts: BelegEURMoney?
+    let totalFees: BelegEURMoney?
 }
 
 struct BackendInvoice: Decodable, Identifiable {
@@ -325,25 +325,25 @@ struct BackendInvoiceListResponse: Decodable {
 struct BackendCollectionBillLeg: Decodable {
     let quantity: Double?
     let price: Double?
-    let amount: Double?
+    let amount: BelegEURMoney?
     let fees: BackendFeeBreakdown?
-    let residualAmount: Double?
+    let residualAmount: BelegEURMoney?
 }
 
 struct BackendCollectionBillMetadata: Decodable {
     let ownershipPercentage: Double?
-    let grossProfit: Double?
-    let commission: Double?
-    let netProfit: Double?
+    let grossProfit: BelegEURMoney?
+    let commission: BelegEURMoney?
+    let netProfit: BelegEURMoney?
     /// Auszahlung an den Investor: Net Sell Amount − Commission.
-    let transferAmount: Double?
+    let transferAmount: BelegEURMoney?
     /// GoB booked residual (`nominal − totalBuyCost`).
-    let residualAmount: Double?
-    let investmentNominal: Double?
-    let poolTradingAmount: Double?
+    let residualAmount: BelegEURMoney?
+    let investmentNominal: BelegEURMoney?
+    let poolTradingAmount: BelegEURMoney?
     /// Booked totals (GoB Beleg — same identity as `deriveMirrorTradeBasis` on server).
-    let totalBuyCost: Double?
-    let netSellAmount: Double?
+    let totalBuyCost: BelegEURMoney?
+    let netSellAmount: BelegEURMoney?
     let returnPercentage: Double?
     let commissionRate: Double?
     let buyLeg: BackendCollectionBillLeg?

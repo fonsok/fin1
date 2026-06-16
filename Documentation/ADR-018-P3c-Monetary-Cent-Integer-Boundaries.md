@@ -207,6 +207,8 @@ Reihenfolge der Implementierung:
 
 **Status P3c-2a:** Implemented 2026-06-16 (`belegMetadataMoney.js` — cent-normalize `amount`/`fees`/`totalWithFees` on trader + investor Beleg metadata persist; `tradeExecution.js`, `collectionBill.js`, snapshot builders).
 
+**Status P3c-3:** Implemented 2026-06-16 (`BelegEURMoney.swift`, `TraderCollectionBillBelegMetadata`, `BackendCollectionBillMetadata` — `Decimal` decode for Beleg display; no client booking math).
+
 ---
 
 ## Ops & Drift
@@ -257,6 +259,7 @@ Reihenfolge der Implementierung:
 | Beleg metadata cent guard (P3c-2a) | `belegMetadataMoney.js` |
 | iOS Gate P3b | `FIN1/Shared/Services/InvoiceLocalSynthesisGate.swift` |
 | iOS Beleg DTO | `FIN1/Shared/Models/TraderCollectionBillBelegMetadata.swift` |
+| iOS Beleg EUR decode (P3c-3) | `FIN1/Shared/Models/BelegEURMoney.swift` |
 
 ---
 
