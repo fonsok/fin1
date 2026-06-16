@@ -100,6 +100,26 @@ describe('traderCollectionBillBelegSnapshot/belegDriftInspect', () => {
     expect(parsePartialSellEventIndexFromSummary('Reihenfolge: Teilverkauf 2 von 2')).toBe(2);
   });
 
+  test('accepts high-precision execution price when amount equals round2(qty * price)', () => {
+    const drifts = inspectPartialSellMetadataInternalDrift({
+      amount: 2465.64,
+      quantity: 1000,
+      price: 2.465642613502255,
+      sellOrderId: 'sell-2',
+      partialSell: {
+        isPartialSell: true,
+        sellOrderId: 'sell-2',
+        orderQuantity: 1000,
+        eventIndex: 2,
+        totalSellEvents: 2,
+        buyQuantity: 1500,
+        cumulativeSoldQuantity: 1500,
+        remainingQuantity: 0,
+      },
+    });
+    expect(drifts.filter((d) => d.code === 'partial_sell_amount_quantity_price_mismatch')).toHaveLength(0);
+  });
+
   test('detects partial-sell amount/qty/price inconsistency without Trade', () => {
     const drifts = inspectPartialSellMetadataInternalDrift({
       amount: 2400,

@@ -100,14 +100,15 @@ function inspectPartialSellMetadataInternalDrift(meta, storedSummary = '') {
     });
   }
 
-  const price = round2(Number(meta.price) || 0);
+  const price = Number(meta.price) || 0;
   const amount = round2(Number(meta.amount) || 0);
-  if (metaQty > 0 && price > 0 && amount > 0 && amountsDiffer(round2(metaQty * price), amount)) {
+  const expectedGross = round2(metaQty * price);
+  if (metaQty > 0 && price > 0 && amount > 0 && amountsDiffer(expectedGross, amount)) {
     drifts.push({
       field: 'amount',
       code: 'partial_sell_amount_quantity_price_mismatch',
       metadata: amount,
-      expected: round2(metaQty * price),
+      expected: expectedGross,
       quantity: metaQty,
       price,
     });
