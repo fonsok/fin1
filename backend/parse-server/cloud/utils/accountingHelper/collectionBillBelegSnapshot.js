@@ -5,7 +5,11 @@
  * One canonical snapshot per bill; invariants enforced fail-closed before persist.
  */
 
-const { round2 } = require('./shared');
+const { round2, TOLERANCE_CENTS } = require('./shared');
+const {
+  euroToCents,
+  withinCentsTolerance,
+} = require('./moneyCents');
 const {
   deriveMirrorTradeBasis,
   computeCollectionBillTransferAmount,
@@ -15,7 +19,7 @@ const {
   enrichSellLegWithPriceMetrics,
 } = require('./legPriceMetrics');
 
-const TOLERANCE = 0.02;
+const TOLERANCE = TOLERANCE_CENTS / 100;
 
 function assertNear(label, actual, expected, context = {}) {
   if (!Number.isFinite(actual) || !Number.isFinite(expected)) {
@@ -24,7 +28,7 @@ function assertNear(label, actual, expected, context = {}) {
       + JSON.stringify(context),
     );
   }
-  if (Math.abs(round2(actual) - round2(expected)) > TOLERANCE) {
+  if (!withinCentsTolerance(euroToCents(actual), euroToCents(expected), TOLERANCE_CENTS)) {
     throw new Error(
       `Collection bill invariant "${label}": ${round2(actual)} ≠ ${round2(expected)} `
       + JSON.stringify(context),
@@ -80,7 +84,11 @@ function buildCollectionBillBelegSnapshot({
   const poolTradingAmount = totalBuyCost;
 
   const legBuyCost = round2((buyLeg.amount || 0) + ((buyLeg.fees && buyLeg.fees.totalFees) || 0));
-  if (Math.abs(legBuyCost - totalBuyCost) > TOLERANCE) {
+  if (!withinCentsTolerance(
+    euroToCents(legBuyCost),
+    euroToCents(totalBuyCost),
+    TOLERANCE_CENTS,
+  )) {
     console.warn(
       `⚠️ Collection bill: buyLeg line sum €${legBuyCost} ≠ booked totalBuyCost €${totalBuyCost} `
       + `(nominal €${investmentNominal} − residual €${residualAmount}); Beleg uses booked totals`,

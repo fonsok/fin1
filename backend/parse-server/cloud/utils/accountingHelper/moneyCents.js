@@ -75,6 +75,28 @@ function multiplyEuroByRatio(euro, ratio) {
   return round2Euro(Number(euro) * Number(ratio));
 }
 
+/**
+ * Fee line: one ratio round + min/max clamp, cent-normalized EUR (P3c-1b).
+ * @param {number|string} grossEuro
+ * @param {number|string} rate
+ * @param {number|string} minEuro
+ * @param {number|string} maxEuro
+ */
+function feeFromRatioEuro(grossEuro, rate, minEuro, maxEuro) {
+  let fee = multiplyEuroByRatio(grossEuro, rate);
+  fee = Math.max(Number(minEuro), Math.min(fee, Number(maxEuro)));
+  return centsToEuro(euroToCents(fee));
+}
+
+/** Sum fee components in cent space; returns cent-aligned EUR. */
+function sumEuroComponents(...components) {
+  let totalCents = 0;
+  for (const component of components) {
+    totalCents = addCents(totalCents, euroToCents(component));
+  }
+  return centsToEuro(totalCents);
+}
+
 function centsEqual(a, b) {
   return Number(a) === Number(b);
 }
@@ -112,6 +134,8 @@ module.exports = {
   addCents,
   subtractCents,
   multiplyEuroByRatio,
+  feeFromRatioEuro,
+  sumEuroComponents,
   centsEqual,
   withinCentsTolerance,
   assertCentAlignedEuro,

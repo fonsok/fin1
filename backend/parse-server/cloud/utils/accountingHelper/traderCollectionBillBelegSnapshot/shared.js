@@ -1,9 +1,9 @@
 'use strict';
 
-const { round2 } = require('../shared');
+const { round2, TOLERANCE_CENTS } = require('../shared');
 
 const TRADER_COLLECTION_BILL_SCHEMA_VERSION = 1;
-const TOLERANCE = 0.02;
+const TOLERANCE = TOLERANCE_CENTS / 100;
 
 /** Klartext vorhanden und plausibel (Admin/iOS/Backfill). */
 function isUsableTraderBelegSummaryText(text) {

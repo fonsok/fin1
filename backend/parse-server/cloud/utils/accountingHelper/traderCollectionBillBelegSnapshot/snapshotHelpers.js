@@ -1,7 +1,7 @@
 'use strict';
 
 const { round2 } = require('../shared');
-const { TOLERANCE } = require('./shared');
+const { TOLERANCE_CENTS, euroToCents, withinCentsTolerance } = require('../moneyCents');
 
 function formatInstrumentLine(instrument) {
   const parts = [];
@@ -35,7 +35,11 @@ function assertTotalWithFees(executionType, grossAmount, fees, totalWithFees, co
   const expected = executionType === 'buy'
     ? round2(grossAmount + (fees.totalFees || 0))
     : round2(Math.max(0, grossAmount - (fees.totalFees || 0)));
-  if (Math.abs(round2(totalWithFees) - expected) > TOLERANCE) {
+  if (!withinCentsTolerance(
+    euroToCents(totalWithFees),
+    euroToCents(expected),
+    TOLERANCE_CENTS,
+  )) {
     throw new Error(
       `Trader collection bill invariant totalWithFees: ${totalWithFees} ≠ ${expected} `
       + JSON.stringify(context),

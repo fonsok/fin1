@@ -5,6 +5,13 @@
 
 'use strict';
 
+const {
+  feeFromRatioEuro,
+  sumEuroComponents,
+  centsToEuro,
+  euroToCents,
+} = require('./accountingHelper/moneyCents');
+
 // ============================================================================
 // SEQUENTIAL NUMBER GENERATION (P2: atomar via SequenceCounter + $inc)
 // ============================================================================
@@ -275,22 +282,15 @@ function calculateOrderFees(orderAmount, isForeign = false, config = {}) {
   const exchangeFeeMax = pick('exchangeFeeMax', D.exchangeFeeMax);
   const foreignCosts = pick('foreignCosts', D.foreignCosts);
 
-  // Order fee
-  let orderFee = orderAmount * orderFeeRate;
-  orderFee = Math.max(orderFeeMin, Math.min(orderFee, orderFeeMax));
-
-  // Exchange fee
-  let exchangeFee = orderAmount * exchangeFeeRate;
-  exchangeFee = Math.max(exchangeFeeMin, Math.min(exchangeFee, exchangeFeeMax));
-
-  // Foreign costs
-  const foreign = isForeign ? foreignCosts : 0;
+  const orderFee = feeFromRatioEuro(orderAmount, orderFeeRate, orderFeeMin, orderFeeMax);
+  const exchangeFee = feeFromRatioEuro(orderAmount, exchangeFeeRate, exchangeFeeMin, exchangeFeeMax);
+  const foreign = isForeign ? centsToEuro(euroToCents(foreignCosts)) : 0;
 
   return {
-    orderFee: Math.round(orderFee * 100) / 100,
-    exchangeFee: Math.round(exchangeFee * 100) / 100,
+    orderFee,
+    exchangeFee,
     foreignCosts: foreign,
-    totalFees: Math.round((orderFee + exchangeFee + foreign) * 100) / 100
+    totalFees: sumEuroComponents(orderFee, exchangeFee, foreign),
   };
 }
 

@@ -202,6 +202,8 @@ Reihenfolge der Implementierung:
 
 **Status P3c-1:** Implemented 2026-06-15 (`journal.js`, `userCashBalanceAtomic.js`, `accountStatementWriter.js`).
 
+**Status P3c-1b:** Implemented 2026-06-16 (`helpers.js::calculateOrderFees`, `collectionBillBelegSnapshot.js`, `traderCollectionBillBelegSnapshot/*` invariants via `withinCentsTolerance`).
+
 ---
 
 ## Ops & Drift

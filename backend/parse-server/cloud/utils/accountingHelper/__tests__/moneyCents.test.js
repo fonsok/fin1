@@ -10,13 +10,18 @@ const {
   addCents,
   subtractCents,
   multiplyEuroByRatio,
+  feeFromRatioEuro,
+  sumEuroComponents,
   centsEqual,
   withinCentsTolerance,
   assertCentAlignedEuro,
   normalizeEuro,
 } = require('../moneyCents');
+const { DEFAULT_CONFIG } = require('../../configHelper/defaultConfig');
 
 describe('moneyCents (P3c-0)', () => {
+  const D = DEFAULT_CONFIG.financial;
+
   describe('round2Euro ≡ legacy round2', () => {
     const samples = [
       0, 0.01, 0.1, 0.2, 0.1 + 0.2, 1.005, 1.004, 1.995, -1.995,
@@ -62,6 +67,16 @@ describe('moneyCents (P3c-0)', () => {
       const gross = 1600;
       const rate = 0.005;
       expect(multiplyEuroByRatio(gross, rate)).toBe(legacyRound2(gross * rate));
+    });
+
+    test('feeFromRatioEuro clamps then cent-normalizes', () => {
+      expect(feeFromRatioEuro(0, D.orderFeeRate, D.orderFeeMin, D.orderFeeMax)).toBe(D.orderFeeMin);
+      expect(assertCentAlignedEuro(feeFromRatioEuro(10000, D.orderFeeRate, D.orderFeeMin, D.orderFeeMax)))
+        .toBe(D.orderFeeMax);
+    });
+
+    test('sumEuroComponents adds in cent space', () => {
+      expect(sumEuroComponents(12.33, 0.5, 2.5)).toBe(15.33);
     });
   });
 
