@@ -219,6 +219,7 @@ describe('settleNewParticipation', () => {
     expect(out).toEqual({
       investorId: 'inv-user-1',
       investmentId: 'inv-post-1',
+      investorName: null,
       grossProfit: 200,
       commission: 20,
       traderCommission: 20,

@@ -2,18 +2,21 @@
 import XCTest
 
 final class TermsAcceptanceServiceDeviceConsentTests: XCTestCase {
-    private let suiteName = "TermsAcceptanceServiceDeviceConsentTests"
-    private var defaults: UserDefaults!
-
     override func setUp() {
         super.setUp()
-        self.defaults = UserDefaults(suiteName: self.suiteName)!
-        self.defaults.removePersistentDomain(forName: self.suiteName)
+        self.clearDeviceLegalConsentStore()
     }
 
     override func tearDown() {
-        self.defaults.removePersistentDomain(forName: self.suiteName)
+        self.clearDeviceLegalConsentStore()
         super.tearDown()
+    }
+
+    private func clearDeviceLegalConsentStore() {
+        let defaults = UserDefaults.standard
+        for key in defaults.dictionaryRepresentation().keys where key.hasPrefix("FIN1.deviceLegalConsent") {
+            defaults.removeObject(forKey: key)
+        }
     }
 
     func testFreshInstallRequiresDeviceAcknowledgementEvenWhenAccountVersionMatches() {

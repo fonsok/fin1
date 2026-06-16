@@ -365,8 +365,14 @@ describe('runFinanceConsistencySmoke (admin observability)', () => {
       Cloud: {
         define(name, fn) { cloudFunctions[name] = fn; },
         async run(name) {
+          if (name === 'getFinanceIntegrityStatus') {
+            return { overall: 'healthy', issues: [], checks: [] };
+          }
           if (name === 'getMirrorBasisDriftStatus') return { overall: 'unknown', hasSnapshot: false };
           if (name === 'getTradeSettlementConsistencyStatus') return { overall: 'healthy', mismatchCount: 0 };
+          if (name === 'getTraderCollectionBillBelegDriftStatus') {
+            return { overall: 'healthy', driftedDocuments: 0, needsBackfillDocuments: 0 };
+          }
           throw new Error(`unexpected cloud run: ${name}`);
         },
       },

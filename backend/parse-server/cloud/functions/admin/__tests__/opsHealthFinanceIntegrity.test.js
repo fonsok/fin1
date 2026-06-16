@@ -126,6 +126,28 @@ describe('getFinanceIntegrityStatus (admin observability)', () => {
         accountStatementIndexes: { missing: [] },
       })),
     }));
+    const healthyLiveCheck = jest.fn(async () => ({ overall: 'healthy' }));
+    jest.doMock('../opsHealthPairedOrderStatusIntegrity', () => ({
+      handleGetPairedOrderStatusIntegrityStatus: healthyLiveCheck,
+    }));
+    jest.doMock('../opsHealthTraderMirrorBookingIntegrity', () => ({
+      handleGetTraderMirrorBookingIntegrityStatus: healthyLiveCheck,
+    }));
+    jest.doMock('../opsHealthTradeSettlementConsistency', () => ({
+      handleGetTradeSettlementConsistencyStatus: healthyLiveCheck,
+    }));
+    jest.doMock('../opsHealthPairedSellInvestorChain', () => ({
+      handleGetPairedSellInvestorChainStatus: healthyLiveCheck,
+    }));
+    jest.doMock('../opsHealthTraderPoolBidAskContract', () => ({
+      handleGetTraderPoolBidAskContractStatus: healthyLiveCheck,
+    }));
+    jest.doMock('../opsHealthSettlementGLReconciliation', () => ({
+      handleGetSettlementGLReconciliationStatus: healthyLiveCheck,
+    }));
+    jest.doMock('../opsHealthTraderCollectionBillBelegDrift', () => ({
+      handleGetTraderCollectionBillBelegDriftStatus: healthyLiveCheck,
+    }));
 
     // eslint-disable-next-line global-require
     require('../opsHealth');
