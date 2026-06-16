@@ -65,6 +65,8 @@ function buildPartialSellEvents({
   poolTrade,
   poolMirrorSnap,
   participations = [],
+  participationsTruncated = false,
+  participationsTotal = 0,
   traderBelege,
   poolBelege,
   feeConfig = {},
@@ -93,7 +95,9 @@ function buildPartialSellEvents({
     },
     costBasisPerShare,
   });
-  const investorPieceRows = resolveInvestorPieceRowsForPoolSell(participations, poolPieces);
+  const investorPieceRows = participationsTruncated
+    ? []
+    : resolveInvestorPieceRowsForPoolSell(participations, poolPieces);
   const poolSellEvents = enumeratePoolSellEventsFromTraderOrders({
     investorPieceRows,
     traderSellOrders: sellOrders,
@@ -109,7 +113,9 @@ function buildPartialSellEvents({
   const events = [];
   for (const poolEvent of poolSellEvents) {
     const i = poolEvent.sourceOrderIndex;
-    const investorRealizations = participations.map((p) => {
+    const investorRealizations = participationsTruncated
+      ? []
+      : participations.map((p) => {
       const capital = Number(p.investmentCapital || 0);
       const legDelta = computeInvestorPartialSellDelta({
         investmentCapital: capital,
@@ -166,6 +172,8 @@ function buildPartialSellEvents({
       poolSellFeesTotal: poolEvent.poolSellFeesTotal,
       poolNetSellAmount: poolEvent.poolNetSellAmount,
       investorRealizations,
+      investorRealizationsTruncated: participationsTruncated,
+      investorRealizationsTotal: participationsTruncated ? participationsTotal : investorRealizations.length,
       traderSellBeleg: traderBelege?.sells?.[i] || null,
       poolMirrorSellBeleg: poolBelege?.traderExecution?.sells?.[i] || null,
       investorPartialSellBelege: investorBelegesByEvent[i] || [],

@@ -295,8 +295,9 @@ struct TradesTableRow: View {
                 HStack(spacing: ResponsiveDesign.spacing(2)) {
                     Text(self.trade.provision)
 
-                    // Info icon for commission breakdown (only show if commission > 0)
-                    if self.trade.provision != "-" {
+                    // Dev/QA only (`display.showCommissionBreakdownInCreditNote`); ops use Admin Summary Report.
+                    if self.trade.provision != "-",
+                       self.services.configurationService.showCommissionBreakdownInCreditNote {
                         Button(action: {
                             self.showCommissionInfo = true
                         }, label: {

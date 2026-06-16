@@ -12,7 +12,7 @@ const {
   loadTradesById,
   buildPairedLegSnapshotsForRow,
 } = require('./summaryReportPairedLegResolver');
-const { loadParticipationsByPoolTradeIds } = require('./summaryReportParticipationLoader');
+const { loadParticipationsBundleForSummaryReport } = require('./summaryReportParticipationLoader');
 
 function defaultRowContext(trade) {
   return {
@@ -53,20 +53,34 @@ async function prepareSummaryReportTradeBundle(tradeRows, feeConfig = {}, option
   }
   for (const t of tradeRows) poolTradeIds.add(t.id);
 
-  const participationsByPool = await loadParticipationsByPoolTradeIds([...poolTradeIds]);
+  const participationBundle = await loadParticipationsBundleForSummaryReport([...poolTradeIds]);
 
   return {
     contexts,
     snapshotCache,
     tradeById,
-    participationsByPool,
+    participationsByPool: participationBundle.participationsByPool,
+    participationCountsByPool: participationBundle.participationCountsByPool,
+    participationAggregatesByPool: participationBundle.participationAggregatesByPool,
+    participationsInlineMax: participationBundle.inlineMax,
     feeConfig,
   };
 }
 
-function mapResolvedToSummaryRow(item, trade, resolved, ctx) {
+function mapResolvedToSummaryRow(item, trade, resolved, ctx, bundleMeta = {}) {
   const { participations } = resolved;
-  const investorIdsFromPool = [...new Set(participations.map((p) => p.investorId).filter(Boolean))];
+  const poolTradeId = resolved.poolTradeId || ctx.poolTradeId || null;
+  const participationTotal = poolTradeId
+    ? (bundleMeta.participationCountsByPool?.get(poolTradeId) ?? participations.length)
+    : participations.length;
+  const aggregates = poolTradeId
+    ? bundleMeta.participationAggregatesByPool?.get(poolTradeId)
+    : null;
+  const inlineMax = bundleMeta.participationsInlineMax ?? participationTotal;
+  const participationsTruncated = participationTotal > inlineMax;
+  const investorIdsFromPool = participationsTruncated
+    ? []
+    : [...new Set(participations.map((p) => p.investorId).filter(Boolean))];
   const traderSnap = resolved.traderTrade;
   const buyAmount = traderSnap
     ? Number(traderSnap.totalBuyCost ?? traderSnap.buyAmount ?? 0)
@@ -88,9 +102,18 @@ function mapResolvedToSummaryRow(item, trade, resolved, ctx) {
     traderTrade: traderSnap,
     poolMirrorTrade: resolved.poolMirrorTrade,
     linkedTraderTrade: resolved.legKind === 'mirror_pool' ? traderSnap : null,
-    poolParticipations: participations,
+    poolParticipations: participationsTruncated ? [] : participations,
+    poolParticipationsTotal: participationTotal,
+    poolParticipationsTruncated: participationsTruncated,
+    poolParticipationsPoolTradeId: poolTradeId,
+    poolParticipationsAggregates: aggregates
+      ? {
+        totalCommission: aggregates.totalCommission,
+        totalProfitShare: aggregates.totalProfitShare,
+      }
+      : null,
     poolExecutionBelege: null,
-    hasPoolDetails: Boolean(resolved.poolMirrorTrade || participations.length > 0),
+    hasPoolDetails: Boolean(resolved.poolMirrorTrade || participationTotal > 0),
   };
 }
 
@@ -102,8 +125,13 @@ function buildSummaryRowFromBundle(item, trade, bundle) {
     bundle.tradeById,
     bundle.participationsByPool,
     bundle.snapshotCache,
+    bundle.participationCountsByPool,
   );
-  return mapResolvedToSummaryRow(item, trade, resolved, ctx);
+  return mapResolvedToSummaryRow(item, trade, resolved, ctx, {
+    participationCountsByPool: bundle.participationCountsByPool,
+    participationAggregatesByPool: bundle.participationAggregatesByPool,
+    participationsInlineMax: bundle.participationsInlineMax,
+  });
 }
 
 /**
@@ -125,8 +153,17 @@ async function applyMissingMirrorLinks(items, tradeRows, bundle) {
 
   const missingPoolIds = [...mirrorTradeIds].filter((id) => !bundle.participationsByPool.has(id));
   if (missingPoolIds.length) {
-    const extraParts = await loadParticipationsByPoolTradeIds(missingPoolIds);
-    for (const [id, parts] of extraParts) bundle.participationsByPool.set(id, parts);
+    const { loadParticipationsBundleForSummaryReport } = require('./summaryReportParticipationLoader');
+    const extraBundle = await loadParticipationsBundleForSummaryReport(missingPoolIds);
+    for (const [id, parts] of extraBundle.participationsByPool) {
+      bundle.participationsByPool.set(id, parts);
+    }
+    for (const [id, count] of extraBundle.participationCountsByPool) {
+      bundle.participationCountsByPool.set(id, count);
+    }
+    for (const [id, agg] of extraBundle.participationAggregatesByPool) {
+      bundle.participationAggregatesByPool.set(id, agg);
+    }
   }
 
   for (const i of rowIndices) {
@@ -144,6 +181,9 @@ async function applyMissingMirrorLinks(items, tradeRows, bundle) {
       );
     if (!snap) continue;
 
+    const participationTotal = bundle.participationCountsByPool.get(mirror.id)
+      ?? participations.length;
+    const participationsTruncated = participationTotal > bundle.participationsInlineMax;
     items[i] = {
       ...items[i],
       legKind: 'trader',
@@ -151,7 +191,11 @@ async function applyMissingMirrorLinks(items, tradeRows, bundle) {
       traderTrade: traderSnap,
       poolMirrorTrade: snap,
       linkedTraderTrade: traderSnap,
-      poolParticipations: participations.length ? participations : items[i].poolParticipations,
+      poolParticipations: participationsTruncated ? [] : (participations.length ? participations : items[i].poolParticipations),
+      poolParticipationsTotal: participationTotal,
+      poolParticipationsTruncated: participationsTruncated,
+      poolParticipationsPoolTradeId: mirror.id,
+      poolParticipationsAggregates: bundle.participationAggregatesByPool.get(mirror.id) || null,
       hasPoolDetails: true,
     };
   }

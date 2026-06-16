@@ -325,6 +325,7 @@ async function settleNewParticipation({
 
   return {
     investorId,
+    investorName: String(investment.get('investorName') || participation.get('investorName') || '').trim() || null,
     investmentId: investment.id,
     grossProfit: profitShare,
     commission,

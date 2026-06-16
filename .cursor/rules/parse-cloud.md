@@ -17,6 +17,7 @@ Gilt bei Arbeit an **Parse Cloud Functions**, **Triggers** und **`cloud/utils/**
 
 - `./scripts/check-parse-cloud-config-helper-shadow.sh` ausführen (scheitert, falls `cloud/utils/configHelper.js` existiert).
 - `./scripts/check-parse-cloud-naming-conventions.sh` ausführen (Datei-/Endpoint-Naming, Temp-/Legacy-Namen).
+- `./scripts/check-parse-cloud-aggregate-key-access.sh` ausführen (kein direkter `row._id`/`row.objectId` in Admin-Reports-Aggregates; nutze `summaryReportAggregateKey.js`).
 
 ## Deploy & Doku
 

@@ -24,6 +24,7 @@ echo "=== Parse Cloud deploy → ${REMOTE_USER}@${REMOTE_HOST} ==="
 echo ""
 
 "$SCRIPT_DIR/check-parse-cloud-config-helper-shadow.sh"
+"$SCRIPT_DIR/check-parse-cloud-aggregate-key-access.sh"
 
 echo "▸ sync shared/contracts → cloud/contracts (App-Ledger SSOT inside Parse mount) …"
 mkdir -p "$PROJECT_ROOT/backend/parse-server/cloud/contracts"

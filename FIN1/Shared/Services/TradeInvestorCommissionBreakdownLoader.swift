@@ -61,10 +61,11 @@ enum TradeInvestorCommissionBreakdownLoader {
             let gross = rows.compactMap(\.investorGrossProfit).reduce(0, +)
             guard commission > 0 || gross > 0 else { continue }
 
-            let investment = investments.first { $0.id == investmentId }
-            let name = investment?.investorName
-                ?? self.displayNameFromInvestorId(rows.first?.investorId)
-                ?? "Investor"
+            let name = TradeInvestorCommissionNameResolver.resolve(
+                investmentId: investmentId,
+                investorId: rows.first?.investorId,
+                investments: investments
+            )
             lines.append(TradeInvestorCommissionLine(
                 investmentId: investmentId,
                 investorName: name,
@@ -114,7 +115,11 @@ enum TradeInvestorCommissionBreakdownLoader {
 
             lines.append(TradeInvestorCommissionLine(
                 investmentId: investmentId,
-                investorName: investment.investorName,
+                investorName: TradeInvestorCommissionNameResolver.resolve(
+                    investmentId: investmentId,
+                    investorId: investment.investorId,
+                    investments: investments
+                ),
                 grossProfit: gross,
                 commission: commission
             ))
@@ -122,12 +127,5 @@ enum TradeInvestorCommissionBreakdownLoader {
 
         guard !lines.isEmpty else { return nil }
         return lines.sorted { $0.investorName < $1.investorName }
-    }
-
-    private static func displayNameFromInvestorId(_ investorId: String?) -> String? {
-        guard let investorId, investorId.hasPrefix("user:") else { return nil }
-        let raw = String(investorId.dropFirst("user:".count))
-        let base = raw.split(separator: "@").first.map(String.init) ?? raw
-        return base.replacingOccurrences(of: ".", with: " ")
     }
 }

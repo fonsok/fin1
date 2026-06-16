@@ -172,7 +172,18 @@ function buildTraderCreditNoteSections(meta, doc, enrichment = {}) {
     },
   ]);
   const breakdown = Array.isArray(meta.investorBreakdown) ? meta.investorBreakdown : [];
-  if (breakdown.length) {
+  if (meta.investorBreakdownTruncated) {
+    pushSection(sections, 'Investor-Aufschlüsselung', [
+      {
+        label: 'Investoren gesamt',
+        value: String(meta.investorCount || breakdown.length || '—'),
+      },
+      {
+        label: 'Hinweis',
+        value: 'Detail-Aufschlüsselung paginiert im Admin Summary Report (Pool-Mirror-Trade Investoren).',
+      },
+    ]);
+  } else if (breakdown.length) {
     pushSection(
       sections,
       'Investor-Aufschlüsselung',

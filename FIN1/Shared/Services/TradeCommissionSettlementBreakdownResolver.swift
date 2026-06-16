@@ -36,10 +36,12 @@ enum TradeCommissionSettlementBreakdownResolver {
             let commission = rows.compactMap(\.commissionAmount).reduce(0, +)
             guard commission > 0 else { continue }
             let gross = rows.compactMap(\.investorGrossProfit).reduce(0, +)
-            let investment = investments.first { $0.id == investmentId }
-            let name = investment?.investorName
-                ?? self.displayNameFromInvestorId(rows.first?.investorId)
-                ?? "Investor"
+            guard commission > 0 else { continue }
+            let name = TradeInvestorCommissionNameResolver.resolve(
+                investmentId: investmentId,
+                investorId: rows.first?.investorId,
+                investments: investments
+            )
             lines.append(TradeInvestorCommissionLine(
                 investmentId: investmentId,
                 investorName: name,
@@ -122,9 +124,12 @@ enum TradeCommissionSettlementBreakdownResolver {
             let gross = row.grossProfit ?? 0
             guard commission > 0 || gross > 0 else { return nil }
             let investmentId = row.investmentId ?? row.investorId ?? UUID().uuidString
-            let name = investments.first(where: { $0.id == row.investmentId })?.investorName
-                ?? self.displayNameFromInvestorId(row.investorId)
-                ?? "Investor"
+            let name = TradeInvestorCommissionNameResolver.resolve(
+                serverName: row.investorName,
+                investmentId: row.investmentId,
+                investorId: row.investorId,
+                investments: investments
+            )
             return TradeInvestorCommissionLine(
                 investmentId: investmentId,
                 investorName: name,
@@ -144,12 +149,5 @@ enum TradeCommissionSettlementBreakdownResolver {
             ?? creditNotes.first
         guard let gross = doc?.metadata?.grossProfit, gross > 0 else { return nil }
         return gross
-    }
-
-    private static func displayNameFromInvestorId(_ investorId: String?) -> String? {
-        guard let investorId, investorId.hasPrefix("user:") else { return nil }
-        let raw = String(investorId.dropFirst("user:".count))
-        let base = raw.split(separator: "@").first.map(String.init) ?? raw
-        return base.replacingOccurrences(of: ".", with: " ")
     }
 }

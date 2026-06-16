@@ -6,6 +6,27 @@ const mockLoadDocumentsByTradeIds = jest.fn();
 
 jest.mock('../summaryReportParticipationLoader', () => ({
   loadParticipationsByPoolTradeIds: (...args) => mockLoadParticipationsByPoolTradeIds(...args),
+  loadParticipationsBundleForSummaryReport: async (ids) => {
+    const participationsByPool = await mockLoadParticipationsByPoolTradeIds(ids);
+    const participationCountsByPool = new Map();
+    const participationAggregatesByPool = new Map();
+    for (const id of ids) {
+      const rows = participationsByPool.get(id) || [];
+      participationCountsByPool.set(id, rows.length);
+      participationAggregatesByPool.set(id, {
+        count: rows.length,
+        totalCommission: rows.reduce((s, r) => s + (r.commissionAmount || 0), 0),
+        totalProfitShare: rows.reduce((s, r) => s + (r.profitShare || 0), 0),
+      });
+      if (!participationsByPool.has(id)) participationsByPool.set(id, []);
+    }
+    return {
+      participationsByPool,
+      participationCountsByPool,
+      participationAggregatesByPool,
+      inlineMax: 50,
+    };
+  },
   enrichParticipationDisplayFields: (rows) => rows,
 }));
 
@@ -115,11 +136,24 @@ describe('summaryReportTradeBundle link fallbacks', () => {
 
   function makeBundle(contexts, tradeById, participationsByPool = new Map()) {
     const { createTradeLegSnapshotCache } = require('../summaryReportTradeSnapshotCache');
+    const participationCountsByPool = new Map();
+    const participationAggregatesByPool = new Map();
+    for (const [id, rows] of participationsByPool) {
+      participationCountsByPool.set(id, rows.length);
+      participationAggregatesByPool.set(id, {
+        count: rows.length,
+        totalCommission: 0,
+        totalProfitShare: 0,
+      });
+    }
     return {
       contexts,
       snapshotCache: createTradeLegSnapshotCache({}),
       tradeById,
       participationsByPool,
+      participationCountsByPool,
+      participationAggregatesByPool,
+      participationsInlineMax: 50,
       feeConfig: {},
     };
   }

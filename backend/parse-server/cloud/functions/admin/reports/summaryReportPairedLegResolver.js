@@ -45,28 +45,33 @@ function resolveLegObjects(tradeRow, ctx, tradeById) {
   };
 }
 
-function resolvePoolParticipationsForRow(tradeRow, ctx, participationsByPool) {
+function resolvePoolParticipationsForRow(tradeRow, ctx, participationsByPool, participationCountsByPool = null) {
   const candidates = [
+    ctx.mirrorTradeId,
     ctx.poolTradeId,
     tradeRow.id,
-    ctx.mirrorTradeId,
   ].filter(Boolean);
   for (const tid of candidates) {
     const parts = participationsByPool.get(tid);
     if (parts?.length) return { poolTradeId: tid, participations: parts };
   }
-  return { poolTradeId: ctx.poolTradeId || tradeRow.id, participations: [] };
+  for (const tid of candidates) {
+    const count = participationCountsByPool?.get(tid) ?? 0;
+    if (count > 0) return { poolTradeId: tid, participations: participationsByPool.get(tid) || [] };
+  }
+  return { poolTradeId: ctx.mirrorTradeId || ctx.poolTradeId || tradeRow.id, participations: [] };
 }
 
 /**
  * Ein Snapshot-Aufruf pro Leg/Kontext (Phase 2.1 — Request-Cache).
  */
-function buildPairedLegSnapshotsForRow(tradeRow, ctx, tradeById, participationsByPool, cache) {
+function buildPairedLegSnapshotsForRow(tradeRow, ctx, tradeById, participationsByPool, cache, participationCountsByPool = null) {
   let { legKind, traderObj, poolObj } = resolveLegObjects(tradeRow, ctx, tradeById);
   const { poolTradeId: effectivePoolId, participations } = resolvePoolParticipationsForRow(
     tradeRow,
     ctx,
     participationsByPool,
+    participationCountsByPool,
   );
 
   const poolObjEffective =

@@ -43,6 +43,8 @@ export interface SummaryReportPartialSellEvent {
   poolSellFeesTotal?: number;
   poolNetSellAmount?: number;
   investorRealizations: SummaryReportPartialSellInvestorRealization[];
+  investorRealizationsTruncated?: boolean;
+  investorRealizationsTotal?: number;
   traderSellBeleg: SummaryReportTradeBelegLink | null;
   poolMirrorSellBeleg: SummaryReportTradeBelegLink | null;
   investorPartialSellBelege: SummaryReportTradeBelegLink[];
@@ -168,6 +170,13 @@ export interface SummaryReportTradeRow {
   poolMirrorTrade?: SummaryReportTradeEconomics | null;
   linkedTraderTrade?: SummaryReportTradeEconomics | null;
   poolParticipations: SummaryReportPoolParticipation[];
+  poolParticipationsTotal?: number;
+  poolParticipationsTruncated?: boolean;
+  poolParticipationsPoolTradeId?: string | null;
+  poolParticipationsAggregates?: {
+    totalCommission: number;
+    totalProfitShare: number;
+  } | null;
   /** @deprecated Nutze traderBelege / poolBelege — nur noch Kompatibilität. */
   poolExecutionBelege?: {
     buy: SummaryReportTradeBelegLink | null;

@@ -38,6 +38,7 @@ const {
   attachPartialSellEventsToSummaryRows,
   resolvePairedLegContextsByTradeId,
 } = require('./summaryReportTradePoolEnrichment');
+const { handleGetSummaryReportTradeParticipationsPage } = require('./summaryReportParticipationsPage');
 
 async function handleGetSummaryReport(request) {
   const { dateFrom, dateTo, investorId, traderId } = request.params || {};
@@ -168,6 +169,11 @@ function registerSummaryReportFunctions() {
     return handleGetSummaryReportTradesPage(request);
   });
 
+  Parse.Cloud.define('getSummaryReportTradeParticipationsPage', async (request) => {
+    requirePermission(request, 'getFinancialDashboard');
+    return handleGetSummaryReportTradeParticipationsPage(request);
+  });
+
   Parse.Cloud.define('getAdminListSearchHealth', async (request) => {
     return handleGetAdminListSearchHealth(request);
   });
@@ -180,4 +186,5 @@ function registerSummaryReportFunctions() {
 module.exports = {
   registerSummaryReportFunctions,
   handleGetSummaryReportTradesPage,
+  handleGetSummaryReportTradeParticipationsPage,
 };

@@ -80,6 +80,8 @@ async function attachPartialSellEventsToSummaryRows(items, tradeRows) {
     const partialSellEvents = buildPartialSellEvents({
       traderTrade: traderParse, poolTrade: poolParse,
       poolMirrorSnap: row.poolMirrorTrade, participations: row.poolParticipations || [],
+      participationsTruncated: Boolean(row.poolParticipationsTruncated),
+      participationsTotal: Number(row.poolParticipationsTotal || row.poolParticipations?.length || 0),
       traderBelege: row.traderBelege, poolBelege: row.poolBelege, feeConfig, commissionRate,
     });
     return { ...row, partialSellEvents };

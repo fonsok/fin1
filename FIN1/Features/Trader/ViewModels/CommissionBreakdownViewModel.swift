@@ -30,6 +30,7 @@ final class CommissionBreakdownViewModel: ObservableObject {
     private let poolTradeParticipationService: any PoolTradeParticipationServiceProtocol
     private let configurationService: any ConfigurationServiceProtocol
     private let investmentService: any InvestmentServiceProtocol
+    private let userService: any UserServiceProtocol
     private let investorGrossProfitService: any InvestorGrossProfitServiceProtocol
     private let commissionCalculationService: any CommissionCalculationServiceProtocol
     private let settlementAPIService: (any SettlementAPIServiceProtocol)?
@@ -61,6 +62,7 @@ final class CommissionBreakdownViewModel: ObservableObject {
         poolTradeParticipationService: any PoolTradeParticipationServiceProtocol,
         configurationService: any ConfigurationServiceProtocol,
         investmentService: any InvestmentServiceProtocol,
+        userService: any UserServiceProtocol,
         investorGrossProfitService: any InvestorGrossProfitServiceProtocol,
         commissionCalculationService: any CommissionCalculationServiceProtocol,
         settlementAPIService: (any SettlementAPIServiceProtocol)?
@@ -69,6 +71,7 @@ final class CommissionBreakdownViewModel: ObservableObject {
         self.poolTradeParticipationService = poolTradeParticipationService
         self.configurationService = configurationService
         self.investmentService = investmentService
+        self.userService = userService
         self.investorGrossProfitService = investorGrossProfitService
         self.commissionCalculationService = commissionCalculationService
         self.settlementAPIService = settlementAPIService
@@ -81,6 +84,7 @@ final class CommissionBreakdownViewModel: ObservableObject {
             poolTradeParticipationService: services.poolTradeParticipationService,
             configurationService: services.configurationService,
             investmentService: services.investmentService,
+            userService: services.userService,
             investorGrossProfitService: services.investorGrossProfitService,
             commissionCalculationService: services.commissionCalculationService,
             settlementAPIService: services.settlementAPIService
@@ -94,11 +98,15 @@ final class CommissionBreakdownViewModel: ObservableObject {
         self.errorMessage = nil
         self.showError = false
 
+        if let user = self.userService.currentUser, user.role == .trader {
+            await self.investmentService.fetchFromBackendForTrader(user: user)
+        }
+
+        let investments = self.investmentsForNameLookup()
         let participations = self.poolTradeParticipationService.getParticipations(forTradeId: self.tradeId)
-        let allInvestments = self.investmentService.investments
 
         if participations.isEmpty {
-            await self.loadSettlementAggregateBreakdown()
+            await self.loadSettlementAggregateBreakdown(investments: investments)
             self.isLoading = false
             return
         }
@@ -109,7 +117,7 @@ final class CommissionBreakdownViewModel: ObservableObject {
            let serverLines = await TradeInvestorCommissionBreakdownLoader.load(
                tradeId: tradeId,
                investmentIds: investmentIds,
-               investments: allInvestments,
+               investments: investments,
                settlementAPIService: api
            ) {
             self.apply(lines: serverLines)
@@ -129,13 +137,31 @@ final class CommissionBreakdownViewModel: ObservableObject {
         let localLines = await TradeInvestorCommissionBreakdownLoader.loadLocalEstimate(
             tradeId: self.tradeId,
             investmentIds: investmentIds,
-            investments: allInvestments,
+            investments: investments,
             investorGrossProfitService: self.investorGrossProfitService,
             commissionCalculationService: self.commissionCalculationService,
             commissionRate: self.commissionRate
         )
         self.apply(lines: localLines)
         self.isLoading = false
+    }
+
+    private func investmentsForNameLookup() -> [Investment] {
+        guard let user = self.userService.currentUser else {
+            return self.investmentService.investments
+        }
+        let forTrader = self.investmentService.getInvestments(forTrader: user.id)
+        if forTrader.isEmpty {
+            return self.investmentService.investments
+        }
+        var byId: [String: Investment] = [:]
+        for investment in self.investmentService.investments {
+            byId[investment.id] = investment
+        }
+        for investment in forTrader {
+            byId[investment.id] = investment
+        }
+        return Array(byId.values)
     }
 
     private func apply(lines: [TradeInvestorCommissionLine]) {
@@ -151,7 +177,7 @@ final class CommissionBreakdownViewModel: ObservableObject {
     }
 
     /// Aggregate breakdown when no local participations (settlement commissions only).
-    private func loadSettlementAggregateBreakdown() async {
+    private func loadSettlementAggregateBreakdown(investments: [Investment]) async {
         guard let settlementAPIService else {
             self.breakdownItems = []
             self.totalCommission = 0
@@ -161,7 +187,7 @@ final class CommissionBreakdownViewModel: ObservableObject {
         guard let resolved = await TradeCommissionSettlementBreakdownResolver.resolve(
             tradeId: tradeId,
             creditNoteDocumentId: nil,
-            investments: investmentService.investments,
+            investments: investments,
             settlementAPIService: settlementAPIService
         ) else {
             self.breakdownItems = []

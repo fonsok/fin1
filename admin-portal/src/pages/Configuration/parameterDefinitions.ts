@@ -230,9 +230,9 @@ export const PARAMETER_DEFINITIONS: Record<string, Omit<ConfigurationParameter, 
   },
   showCommissionBreakdownInCreditNote: {
     key: 'showCommissionBreakdownInCreditNote',
-    displayName: 'Gutschrift: Commission Calculation Breakdown',
+    displayName: 'Trader: Commission Breakdown (Dev/QA)',
     description:
-      'Steuert in der Trader-App, ob in der Gutschrift (CN-) der Bereich „Commission Calculation Breakdown“ mit der Investor-Aufschlüsselung angezeigt wird (`display.showCommissionBreakdownInCreditNote`). Standard: deaktiviert.',
+      'Steuert in der Trader-App den Commission-Breakdown: Info-Icon in der Trade-Tabelle sowie Aufschlüsselung in der Gutschrift (CN-) (`display.showCommissionBreakdownInCreditNote`). In Production deaktiviert lassen — Ops-SSOT ist Admin Summary Report → Pool-Mirror-Trade Investoren (Spalten Gewinn-Anteil / Provision).',
     type: 'boolean',
     category: 'display',
     isCritical: true,

@@ -4,6 +4,7 @@ const { generateSequentialNumber } = require('../../helpers');
 const { round2, formatDateCompact, generateShortHash } = require('../shared');
 const { resolveTraderDisplayNameForBeleg } = require('../../traderDisplayNameForBeleg');
 const { applyBusinessCaseIdToDocument } = require('./shared');
+const { buildCreditNoteInvestorBreakdownMetadata } = require('./creditNoteBreakdown');
 
 async function createCreditNoteDocument({
   traderId,
@@ -22,6 +23,8 @@ async function createCreditNoteDocument({
   const hash = generateShortHash();
   const traderParty = await resolveTraderDisplayNameForBeleg(traderId);
 
+  const breakdownMeta = buildCreditNoteInvestorBreakdownMetadata(investorBreakdown);
+
   const Document = Parse.Object.extend('Document');
   const doc = new Document();
   doc.set('userId', traderParty.traderId || traderId);
@@ -39,13 +42,7 @@ async function createCreditNoteDocument({
     commissionRate,
     grossProfit: round2(grossProfit),
     netProfit: round2(netProfit),
-    investorBreakdown: investorBreakdown.map((b) => ({
-      investorId: b.investorId,
-      investmentId: b.investmentId,
-      grossProfit: round2(b.grossProfit),
-      commission: round2(b.commission),
-      taxWithheld: round2(b.taxWithheld || 0),
-    })),
+    ...breakdownMeta,
     taxBreakdown: taxBreakdown || null,
     generatedAt: new Date().toISOString(),
   });

@@ -10,6 +10,7 @@ const {
   expandLedgerAccountFilter,
   normalizeClientLiabilityAccount,
 } = require('../../../utils/accountingHelper/clientLiabilityAccounts');
+const { readAggregateGroupPayload } = require('./summaryReportAggregateKey');
 
 function deriveBusinessReferenceFromMetadata(metadata) {
   const businessReference = String(metadata?.businessReference || '').trim();
@@ -232,8 +233,9 @@ async function aggregateTotalsAndCount({
 
   const totals = {};
   for (const row of grouped || []) {
-    const accountCode = normalizeClientLiabilityAccount(row?.objectId?.account);
-    const side = row?.objectId?.side;
+    const groupedBy = readAggregateGroupPayload(row);
+    const accountCode = normalizeClientLiabilityAccount(groupedBy?.account);
+    const side = groupedBy?.side;
     const totalAmount = Number(row?.totalAmount || 0);
     if (!accountCode || !side) continue;
     if (!totals[accountCode]) totals[accountCode] = { credit: 0, debit: 0, net: 0 };

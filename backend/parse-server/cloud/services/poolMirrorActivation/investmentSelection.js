@@ -1,6 +1,12 @@
 'use strict';
 
-const MAX_INVESTMENTS_PER_ACTIVATION_QUERY = 2000;
+const { DEFAULT_MAX_INVESTORS_PER_MIRROR_TRADE } = require('./poolMirrorLimits');
+
+/** Must load enough candidate splits for one investor per cap (poolMirrorLimits). */
+const MAX_INVESTMENTS_PER_ACTIVATION_QUERY = Math.max(
+  5000,
+  DEFAULT_MAX_INVESTORS_PER_MIRROR_TRADE + 500,
+);
 const PARTICIPATION_LOOKUP_CHUNK = 100;
 
 async function resolveTraderUser(traderId) {

@@ -17,6 +17,14 @@ function InvestorRealizationsTable({
   isDark: boolean;
 }): JSX.Element | null {
   const rows = event.investorRealizations ?? [];
+  if (event.investorRealizationsTruncated) {
+    return (
+      <p className={clsx('text-xs', adminMuted(isDark))}>
+        Investor-Realisierungen ({event.investorRealizationsTotal ?? '—'} gesamt) — paginiert unter
+        Pool-Mirror-Trade Investoren.
+      </p>
+    );
+  }
   if (!rows.length) return null;
 
   return (

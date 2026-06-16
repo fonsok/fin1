@@ -135,7 +135,15 @@ export function TradeExpandPanel({
 
               <PartialSellEventsSection events={trade.partialSellEvents} isDark={isDark} />
 
-              <PoolParticipationsSection participations={participations} isDark={isDark} />
+              <PoolParticipationsSection
+                participations={participations}
+                isDark={isDark}
+                poolTradeId={trade.poolParticipationsPoolTradeId ?? poolSnap?.tradeId ?? trade.poolTradeId}
+                participationsTotal={trade.poolParticipationsTotal}
+                participationsTruncated={trade.poolParticipationsTruncated}
+                participationsAggregates={trade.poolParticipationsAggregates}
+                costBasisPerShare={poolSnap?.costBasisPerShare ?? traderSnap?.costBasisPerShare ?? 0}
+              />
             </div>
           )}
         </div>

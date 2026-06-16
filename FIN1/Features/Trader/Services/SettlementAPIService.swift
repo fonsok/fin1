@@ -163,6 +163,7 @@ struct BackendSettlementDocument: Decodable, Identifiable {
 struct BackendDocumentMetadataInvestorLine: Decodable {
     let investorId: String?
     let investmentId: String?
+    let investorName: String?
     let grossProfit: Double?
     let commission: Double?
     let taxWithheld: Double?
