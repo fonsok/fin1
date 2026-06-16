@@ -19,6 +19,7 @@ const {
 } = require('./snapshotHelpers');
 const { formatTraderCollectionBillSummaryText } = require('./summaryText');
 const { buildTraderStatementCustomerDisplay } = require('../traderStatementCustomerDisplay');
+const { finalizeTraderBelegMetadata } = require('../belegMetadataMoney');
 
 /**
  * @param {object} params
@@ -121,7 +122,7 @@ function buildTraderCollectionBillBelegSnapshot({
     : { isPartialSell: false, partialSell: null };
   const isPartialSell = partialSellContext.isPartialSell;
 
-  const metadata = {
+  const metadata = finalizeTraderBelegMetadata({
     belegSchemaVersion: TRADER_COLLECTION_BILL_SCHEMA_VERSION,
     belegKind: 'traderCollectionBill',
     belegLabel: label,
@@ -146,7 +147,7 @@ function buildTraderCollectionBillBelegSnapshot({
     tradeStatus: tradeStatus || null,
     generatedAt: new Date().toISOString(),
     ...(partialSellContext.partialSell ? { partialSell: partialSellContext.partialSell } : {}),
-  };
+  }, { tradeId: trade.id, tradeNumber, docNumber, executionType: ex });
 
   const accountingSummaryText = formatTraderCollectionBillSummaryText({
     label,

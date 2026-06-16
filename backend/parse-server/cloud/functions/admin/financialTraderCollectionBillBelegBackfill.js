@@ -16,6 +16,7 @@ const {
 const { enrichTraderDocumentMetadata, loadTradeInvoice } = require('./reports/documentBelegEnrichment');
 const { resolveTraderDisplayNameForBeleg } = require('../../utils/traderDisplayNameForBeleg');
 const { findSellOrderForBelegLeg } = require('../../utils/accountingHelper/settlementTradeMath');
+const { finalizeTraderBelegMetadata } = require('../../utils/accountingHelper/belegMetadataMoney');
 
 const TRADER_DOC_TYPES = ['traderCollectionBill', 'trade_execution_document'];
 
@@ -94,7 +95,11 @@ async function buildPersistedTraderBelegFields(doc) {
   });
 
   return {
-    metadata: enriched,
+    metadata: finalizeTraderBelegMetadata(enriched, {
+      documentId: doc.id,
+      tradeId,
+      rebuildSource: 'enriched',
+    }),
     accountingSummaryText,
     rebuildSource: 'enriched',
   };

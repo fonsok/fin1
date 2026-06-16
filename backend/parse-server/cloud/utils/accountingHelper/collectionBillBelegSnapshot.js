@@ -10,6 +10,7 @@ const {
   euroToCents,
   withinCentsTolerance,
 } = require('./moneyCents');
+const { finalizeInvestorBelegMetadata } = require('./belegMetadataMoney');
 const {
   deriveMirrorTradeBasis,
   computeCollectionBillTransferAmount,
@@ -127,7 +128,7 @@ function buildCollectionBillBelegSnapshot({
   }));
   const normalizedSellLeg = enrichSellLegWithPriceMetrics(sellLeg);
 
-  const metadata = {
+  const metadata = finalizeInvestorBelegMetadata({
     ownershipPercentage: round2(ownershipPercentage),
     investmentNominal,
     grossProfit: bookedGross,
@@ -149,7 +150,10 @@ function buildCollectionBillBelegSnapshot({
     taxBreakdown: taxBreakdown || null,
     belegSchemaVersion: 2,
     generatedAt: new Date().toISOString(),
-  };
+  }, {
+    investmentCapital: investmentNominal,
+    ownershipPercentage,
+  });
 
   return {
     metadata,

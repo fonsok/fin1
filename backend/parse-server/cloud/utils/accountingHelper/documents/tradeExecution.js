@@ -9,6 +9,7 @@ const {
 const { resolveTraderDisplayNameForBeleg } = require('../../traderDisplayNameForBeleg');
 const { applyBusinessCaseIdToDocument } = require('./shared');
 const { customerDisplayFromPersistedBelegMetadata } = require('../traderStatementCustomerDisplay');
+const { finalizeBelegMetadataForPersist } = require('../belegMetadataMoney');
 
 async function loadTradeInvoiceForBeleg(tradeId, executionType) {
   const q = new Parse.Query('Invoice');
@@ -142,12 +143,19 @@ async function createTradeExecutionDocument({
   doc.set('tradeNumber', tradeNumber);
   doc.set('accountingDocumentNumber', docNumber);
   doc.set('source', 'backend');
-  const metadata = Object.assign({}, snapshot.metadata, {
-    executionType: String(executionType).toLowerCase(),
-    ...(String(executionType).toLowerCase() === 'sell' && resolvedSellOrderId
-      ? { sellOrderId: resolvedSellOrderId }
-      : {}),
-  });
+  const metadata = finalizeBelegMetadataForPersist(
+    Object.assign({}, snapshot.metadata, {
+      executionType: String(executionType).toLowerCase(),
+      ...(String(executionType).toLowerCase() === 'sell' && resolvedSellOrderId
+        ? { sellOrderId: resolvedSellOrderId }
+        : {}),
+    }),
+    {
+      kind: snapshot.metadata?.belegKind || 'traderCollectionBill',
+      tradeId: trade.id,
+      documentNumber: docNumber,
+    },
+  );
   doc.set('metadata', metadata);
   doc.set('accountingSummaryText', snapshot.accountingSummaryText);
   doc.set('size', Buffer.byteLength(snapshot.accountingSummaryText, 'utf8'));

@@ -4,6 +4,7 @@ const { generateSequentialNumber } = require('../../helpers');
 const { round2, formatDateCompact, generateShortHash } = require('../shared');
 const { buildCollectionBillBelegSnapshot } = require('../collectionBillBelegSnapshot');
 const { applyBusinessCaseIdToDocument } = require('./shared');
+const { finalizeInvestorBelegMetadata } = require('../belegMetadataMoney');
 
 function collectionBillFileURL(docNumber) {
   const no = String(docNumber || '').trim();
@@ -108,7 +109,10 @@ async function createCollectionBillDocument({
       });
       existing.set('userId', investorId);
       existing.set('tradeNumber', tradeNumber);
-      existing.set('metadata', metadata);
+      existing.set('metadata', finalizeInvestorBelegMetadata(metadata, {
+        tradeId: trade.id,
+        investmentId,
+      }));
       applyCollectionBillPresentationFields(
         existing,
         existing.get('accountingDocumentNumber'),
@@ -169,7 +173,10 @@ async function createCollectionBillDocument({
     netProfit,
     returnPercentage,
   });
-  doc.set('metadata', metadata);
+  doc.set('metadata', finalizeInvestorBelegMetadata(metadata, {
+    tradeId: trade.id,
+    investmentId,
+  }));
 
   applyBusinessCaseIdToDocument(
     doc,

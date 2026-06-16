@@ -6,6 +6,7 @@ const {
   TOLERANCE,
   formatEuroDe,
 } = require('./shared');
+const { finalizeTraderBelegMetadata } = require('../belegMetadataMoney');
 
 /**
  * GoB companion for `trading_fees` ledger rows — not a Kauf-/Verkaufs-TBC/TSC.
@@ -37,7 +38,7 @@ function buildTradingFeesBelegSnapshot({
     );
   }
 
-  const metadata = {
+  const metadata = finalizeTraderBelegMetadata({
     belegSchemaVersion: TRADER_COLLECTION_BILL_SCHEMA_VERSION,
     belegKind: 'traderTradingFees',
     belegLabel: label,
@@ -48,7 +49,7 @@ function buildTradingFeesBelegSnapshot({
     totalWithFees: total,
     tradeNumber,
     generatedAt: new Date().toISOString(),
-  };
+  }, { tradeId: trade.id, tradeNumber, docNumber, executionType: 'fees' });
 
   const lines = [
     label,
