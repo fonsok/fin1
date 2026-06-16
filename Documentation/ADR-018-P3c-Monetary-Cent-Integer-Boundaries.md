@@ -137,6 +137,7 @@ let amount: Decimal  // decode from JSON Number oder String "2400.00"
 | **P3c-1b** | `calculateOrderFees`, Beleg-Snapshots (`collectionBill*`, `traderCollectionBill*`) | Snapshot-Invarianten in Cent; `assertNear` nutzt `withinCentsTolerance` |
 | **P3c-2** | API-Ingress + optional `amountCents` in neuer Schema-Version | Drift-Monitor: non-cent-aligned writes = 0 |
 | **P3c-2a** | Beleg-`metadata` cent-normalize at persist (`belegMetadataMoney.js`) | Trader TBC/TSC + Investor CB metadata cent-aligned on write |
+| **P3c-2b-lite** | Dual-write `*Cents` on Beleg persist + drift guard | New belege carry `amountCents` etc.; iOS trader prefers cents |
 | **P3c-3** | iOS Anzeige-DTOs (`Decimal`) | Trader + Investor Beleg-Detail ohne `Double`-Geldfelder in SSOT-Pfad |
 | **P3c-4** | Optional: `UserCashBalance.currentBalanceCents` | Migrations-Backfill; EUR-Feld deprecated |
 
@@ -206,6 +207,8 @@ Reihenfolge der Implementierung:
 **Status P3c-1b:** Implemented 2026-06-16 (`helpers.js::calculateOrderFees`, `collectionBillBelegSnapshot.js`, `traderCollectionBillBelegSnapshot/*` invariants via `withinCentsTolerance`).
 
 **Status P3c-2a:** Implemented 2026-06-16 (`belegMetadataMoney.js` — cent-normalize `amount`/`fees`/`totalWithFees` on trader + investor Beleg metadata persist; `tradeExecution.js`, `collectionBill.js`, snapshot builders).
+
+**Status P3c-2b-lite:** Implemented 2026-06-16 (`belegMetadataMoney.js` — dual-write `*Cents` alongside EUR on persist; drift guard when incoming cents disagree with normalized EUR; iOS trader reads `amountCents`/`totalWithFeesCents` via `BelegEURMoney.resolving`).
 
 **Status P3c-3:** Implemented 2026-06-16 (`BelegEURMoney.swift`, `TraderCollectionBillBelegMetadata`, `BackendCollectionBillMetadata` — `Decimal` decode for Beleg display; no client booking math).
 

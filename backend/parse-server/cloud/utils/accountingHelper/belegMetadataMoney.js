@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * P3c-2a: cent-normalize monetary fields in Beleg metadata at persist boundaries.
+ * P3c-2a/2b-lite: cent-normalize + dual-write *Cents on Beleg metadata persist boundaries.
  * See Documentation/ADR-018-P3c-Monetary-Cent-Integer-Boundaries.md
  */
 
@@ -52,6 +52,34 @@ function formatContext(context) {
   }
 }
 
+function centsFieldName(euroFieldName) {
+  return `${euroFieldName}Cents`;
+}
+
+/**
+ * @param {object} target
+ * @param {string} euroField
+ * @param {number|null|undefined} normalizedEuro
+ * @param {string} fieldPath
+ * @param {object} [context]
+ */
+function dualWriteCentsField(target, euroField, normalizedEuro, fieldPath, context = {}) {
+  const centsKey = centsFieldName(euroField);
+  if (normalizedEuro == null) {
+    delete target[centsKey];
+    return;
+  }
+  const expectedCents = euroToCents(normalizedEuro);
+  if (target[centsKey] != null && target[centsKey] !== expectedCents) {
+    throw new Error(
+      `belegMetadataMoney: ${fieldPath} cents drift `
+      + `(incoming ${target[centsKey]} vs expected ${expectedCents} from EUR ${normalizedEuro}) `
+      + `${formatContext(context)}`,
+    );
+  }
+  target[centsKey] = expectedCents;
+}
+
 /**
  * @param {number|string|null|undefined} value
  * @param {string} fieldPath
@@ -69,13 +97,27 @@ function normalizeMoneyField(value, fieldPath, context = {}) {
   return centsToEuro(euroToCents(n));
 }
 
+/**
+ * @param {object} target
+ * @param {string} euroField
+ * @param {string} fieldPath
+ * @param {object} [context]
+ */
+function normalizeAndDualWriteMoneyField(target, euroField, fieldPath, context = {}) {
+  if (target[euroField] == null) {
+    dualWriteCentsField(target, euroField, null, fieldPath, context);
+    return;
+  }
+  const normalized = normalizeMoneyField(target[euroField], fieldPath, context);
+  target[euroField] = normalized;
+  dualWriteCentsField(target, euroField, normalized, fieldPath, context);
+}
+
 function normalizeFeesObject(fees, fieldPrefix, context = {}) {
   if (!fees || typeof fees !== 'object') return fees;
   const out = Object.assign({}, fees);
   for (const key of FEE_LINE_KEYS) {
-    if (out[key] != null) {
-      out[key] = normalizeMoneyField(out[key], `${fieldPrefix}.${key}`, context);
-    }
+    normalizeAndDualWriteMoneyField(out, key, `${fieldPrefix}.${key}`, context);
   }
   return out;
 }
@@ -95,9 +137,7 @@ function normalizeLegMoney(leg, fieldPrefix, context = {}) {
   if (!leg || typeof leg !== 'object') return leg;
   const out = Object.assign({}, leg);
   for (const key of LEG_MONEY_KEYS) {
-    if (out[key] != null) {
-      out[key] = normalizeMoneyField(out[key], `${fieldPrefix}.${key}`, context);
-    }
+    normalizeAndDualWriteMoneyField(out, key, `${fieldPrefix}.${key}`, context);
   }
   if (out.fees) {
     out.fees = normalizeFeesObject(out.fees, `${fieldPrefix}.fees`, context);
@@ -124,9 +164,7 @@ function finalizeTraderBelegMetadata(metadata, context = {}) {
   const out = Object.assign({}, metadata);
 
   for (const key of TRADER_TOP_LEVEL_MONEY) {
-    if (out[key] != null) {
-      out[key] = normalizeMoneyField(out[key], key, context);
-    }
+    normalizeAndDualWriteMoneyField(out, key, key, context);
   }
   if (out.fees) {
     out.fees = normalizeFeesObject(out.fees, 'fees', context);
@@ -147,9 +185,7 @@ function finalizeInvestorBelegMetadata(metadata, context = {}) {
   const out = Object.assign({}, metadata);
 
   for (const key of INVESTOR_TOP_LEVEL_MONEY) {
-    if (out[key] != null) {
-      out[key] = normalizeMoneyField(out[key], key, context);
-    }
+    normalizeAndDualWriteMoneyField(out, key, key, context);
   }
   if (out.buyLeg) {
     out.buyLeg = normalizeLegMoney(out.buyLeg, 'buyLeg', context);
@@ -189,7 +225,10 @@ module.exports = {
   FEE_LINE_KEYS,
   TRADER_TOP_LEVEL_MONEY,
   INVESTOR_TOP_LEVEL_MONEY,
+  centsFieldName,
   normalizeMoneyField,
+  dualWriteCentsField,
+  normalizeAndDualWriteMoneyField,
   normalizeFeesObject,
   finalizeTraderBelegMetadata,
   finalizeInvestorBelegMetadata,

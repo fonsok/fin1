@@ -9,7 +9,7 @@ const {
 } = require('../belegMetadataMoney');
 const { euroToCents } = require('../moneyCents');
 
-describe('belegMetadataMoney (P3c-2a)', () => {
+describe('belegMetadataMoney (P3c-2a / P3c-2b-lite)', () => {
   test('finalizeTraderBelegMetadata cent-normalizes amount, fees, totalWithFees', () => {
     const out = finalizeTraderBelegMetadata({
       belegKind: 'traderCollectionBill',
@@ -26,12 +26,25 @@ describe('belegMetadataMoney (P3c-2a)', () => {
     }, { tradeId: 'trade-1' });
 
     expect(out.amount).toBe(1095.42);
+    expect(out.amountCents).toBe(109542);
     expect(out.totalWithFees).toBe(1087.92);
+    expect(out.totalWithFeesCents).toBe(108792);
     expect(out.fees.totalFees).toBe(7.5);
+    expect(out.fees.totalFeesCents).toBe(750);
+    expect(out.fees.orderFeeCents).toBe(500);
     expect(out.quantity).toBe(400);
     expect(out.price).toBe(2.73855);
     expect(isCentAlignedEuro(out.amount)).toBe(true);
     expect(isCentAlignedEuro(out.fees.orderFee)).toBe(true);
+  });
+
+  test('finalizeTraderBelegMetadata rejects incoming cents drift', () => {
+    expect(() => finalizeTraderBelegMetadata({
+      amount: 100,
+      amountCents: 9999,
+      fees: { totalFees: 1 },
+      totalWithFees: 99,
+    })).toThrow(/amount cents drift/);
   });
 
   test('finalizeTraderBelegMetadata throws on non-finite amount', () => {
@@ -65,9 +78,13 @@ describe('belegMetadataMoney (P3c-2a)', () => {
     });
 
     expect(out.grossProfit).toBe(528.76);
+    expect(out.grossProfitCents).toBe(52876);
     expect(out.buyLeg.amount).toBe(999.94);
+    expect(out.buyLeg.amountCents).toBe(99994);
     expect(out.buyLeg.fees.totalFees).toBe(7.5);
+    expect(out.buyLeg.fees.totalFeesCents).toBe(750);
     expect(out.sellLeg.amount).toBe(1500);
+    expect(out.sellLeg.amountCents).toBe(150000);
     expect(out.taxBreakdown.totalTax).toBe(12.34);
     expect(euroToCents(out.commission)).toBe(5288);
   });
