@@ -75,6 +75,23 @@ const REPAIR_CATALOG = [
     relatedChecks: ['mirror_basis_drift'],
   },
   {
+    id: 'user_cash_balance_drift',
+    layer: 'detection',
+    cloudFunction: 'checkUserCashBalanceDrift',
+    defaultParams: { limitUsers: 500, previewLimit: 50 },
+    relatedChecks: ['settlement_consistency'],
+    notes: 'Compare UserCashBalance.currentBalance vs customer merge timeline (ADR-019 Phase 3b)',
+  },
+  {
+    id: 'user_cash_balance_backfill',
+    layer: 'repair',
+    cloudFunction: 'backfillUserCashBalanceFromStatements',
+    defaultParams: { dryRun: true, limitUsers: 500 },
+    applyParams: { dryRun: false, limitUsers: 500 },
+    relatedChecks: ['user_cash_balance_drift'],
+    notes: 'Reconcile UserCashBalance to customer timeline closing balance',
+  },
+  {
     id: 'pool_mirror_buy_quantity_drift',
     layer: 'repair',
     cloudFunction: 'repairMirrorPoolBuyQuantity',

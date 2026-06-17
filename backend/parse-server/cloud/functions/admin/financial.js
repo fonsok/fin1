@@ -29,6 +29,7 @@ const { handleCleanupLegacyDocumentsAllUsers } = require('./financialCleanupLega
 const { handleReconcileAccountStatementDocumentReferences } = require('./financialReconcileStatementRefs');
 const { handleVerifyAccountStatementChain } = require('./financialVerifyAccountStatementChain');
 const { handleBackfillUserCashBalanceFromStatements } = require('./financialUserCashBalanceBackfill');
+const { handleInspectUserCashBalanceDrift } = require('./financialUserCashBalanceDrift');
 const { handleBackfillTraderCollectionBillBeleg } = require('./financialTraderCollectionBillBelegBackfill');
 const { handleInspectTraderCollectionBillBelegDrift } = require('./financialTraderCollectionBillBelegDrift');
 const { handleBackfillPoolMirrorExecutionEigenbeleg } = require('./financialPoolMirrorExecutionEigenbelegBackfill');
@@ -166,6 +167,13 @@ Parse.Cloud.define('backfillUserCashBalanceFromStatements', async (request) => {
     requireAdminRole(request);
   }
   return handleBackfillUserCashBalanceFromStatements(request);
+});
+
+Parse.Cloud.define('checkUserCashBalanceDrift', async (request) => {
+  if (!request.master) {
+    requireAdminRole(request);
+  }
+  return handleInspectUserCashBalanceDrift(request);
 });
 
 Parse.Cloud.define('backfillTraderCollectionBillBeleg', async (request) => {
