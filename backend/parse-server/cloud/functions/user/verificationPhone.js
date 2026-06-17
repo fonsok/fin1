@@ -1,6 +1,7 @@
 'use strict';
 
 const crypto = require('crypto');
+const { isDevOnboardingOtpBypass } = require('../../utils/onboardingDevOtpBypass');
 let smsService;
 try {
   smsService = require('../../utils/smsService');
@@ -76,6 +77,27 @@ Parse.Cloud.define('verifyPhoneCode', async (request) => {
   const { code } = request.params;
   if (!code || code.length !== 6) {
     throw new Parse.Error(Parse.Error.INVALID_VALUE, 'Invalid code format');
+  }
+
+  const isDevBypass = isDevOnboardingOtpBypass(code);
+  if (isDevBypass) {
+    const phone = user.get('phoneNumber') || '';
+    user.set('isPhoneVerified', true);
+    user.set('phoneVerifiedAt', new Date());
+    if (phone) user.set('phoneNumber', phone);
+    await user.save(null, { useMasterKey: true });
+
+    const OnboardingAudit = Parse.Object.extend('OnboardingAudit');
+    const audit = new OnboardingAudit();
+    audit.set('userId', user.id);
+    audit.set('step', 'phoneVerification');
+    audit.set('completedAt', new Date());
+    audit.set('answers', { phone, method: 'dev_bypass' });
+    audit.save(null, { useMasterKey: true }).catch(err => {
+      console.error(`[OnboardingAudit] phone verification audit failed: ${err.message}`);
+    });
+
+    return { success: true, verified: true };
   }
 
   const hashedCode = crypto.createHash('sha256').update(code).digest('hex');

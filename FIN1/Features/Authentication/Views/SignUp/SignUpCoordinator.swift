@@ -169,6 +169,11 @@ final class SignUpCoordinator: ObservableObject {
         self.shouldDismiss = true
     }
 
+    /// Dismisses signup and returns to the landing page.
+    func requestReturnToLanding() {
+        self.requestDismissal()
+    }
+
     // MARK: - Early Account Creation (after Contact step)
 
     /// Creates the account on the backend after Contact step,
@@ -184,67 +189,15 @@ final class SignUpCoordinator: ObservableObject {
         self.accountCreationError = nil
 
         do {
-            try await userService.signUp(userData: User(
-                id: UUID().uuidString,
-                customerNumber: data.customerNumber,
-                accountType: data.accountType,
-                email: data.email,
-                username: data.username,
-                phoneNumber: data.phoneNumber,
-                password: data.password,
-                salutation: data.salutation,
-                academicTitle: "",
-                firstName: "",
-                lastName: "",
-                streetAndNumber: "",
-                postalCode: "",
-                city: "",
-                state: "",
-                country: "Deutschland",
-                dateOfBirth: Date(),
-                placeOfBirth: "",
-                countryOfBirth: "Deutschland",
-                role: data.userRole,
-                employmentStatus: .employed,
-                income: 0,
-                incomeRange: .low,
-                riskTolerance: 0,
-                address: "",
-                nationality: "",
-                additionalNationalities: "",
-                taxNumber: "",
-                additionalTaxResidences: "",
-                isNotUSCitizen: true,
-                identificationType: .passport,
-                passportFrontImageURL: nil,
-                passportBackImageURL: nil,
-                idCardFrontImageURL: nil,
-                idCardBackImageURL: nil,
-                identificationConfirmed: false,
-                addressConfirmed: false,
-                addressVerificationDocumentURL: nil,
-                leveragedProductsExperience: false,
-                financialProductsExperience: false,
-                investmentExperience: 0,
-                tradingFrequency: 0,
-                investmentKnowledge: 0,
-                desiredReturn: .atLeastTenPercent,
-                insiderTradingOptions: [:],
-                moneyLaunderingDeclaration: false,
-                assetType: .privateAssets,
-                profileImageURL: nil,
-                isEmailVerified: false,
-                isKYCCompleted: false,
-                acceptedTerms: false,
-                acceptedPrivacyPolicy: false,
-                acceptedMarketingConsent: false,
-                lastLoginDate: nil,
-                createdAt: Date(),
-                updatedAt: Date()
-            ))
+            let user = try data.createEarlyAccountUser()
+            try await userService.signUp(userData: user, isEarlyAccount: true)
 
             self.isLoading = false
             self.advanceFromContact()
+        } catch let error as UserCreationError {
+            self.isLoading = false
+            self.accountCreationError = error.localizedDescription
+            self.showError("Account creation failed: \(error.localizedDescription ?? "Validation error")")
         } catch {
             self.isLoading = false
             self.accountCreationError = error.localizedDescription

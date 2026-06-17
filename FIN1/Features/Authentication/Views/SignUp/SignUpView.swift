@@ -76,6 +76,16 @@ struct SignUpView: View {
                     }
                     .foregroundColor(AppTheme.accentLightBlue)
                 }
+                #if DEBUG
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Test Data") {
+                        self.applyDebugTestPrefill(force: true)
+                    }
+                    .font(.caption)
+                    .foregroundColor(AppTheme.accentLightBlue)
+                    .accessibilityIdentifier("SignUpPrefillTestDataButton")
+                }
+                #endif
             }
         }
         .alert("Registration Error", isPresented: self.$coordinator.showAlert) {
@@ -112,6 +122,9 @@ struct SignUpView: View {
             )
             Task {
                 await self.coordinator.resumeOnboarding()
+                #if DEBUG
+                self.applyDebugTestPrefill(force: false)
+                #endif
                 self.coordinator.startInactivityTimer()
             }
         }
@@ -119,11 +132,17 @@ struct SignUpView: View {
             self.coordinator.setUserRole(newRole)
         }
         .onChange(of: self.coordinator.currentStep) { _, newStep in
+            #if DEBUG
+            if newStep == .emailVerification || newStep == .phoneVerification {
+                self.coordinator.handleDebugVerificationStepEntered(newStep)
+            }
+            #else
             if newStep == .emailVerification {
                 self.coordinator.sendVerificationCode()
             } else if newStep == .phoneVerification {
                 self.coordinator.sendPhoneVerificationCode()
             }
+            #endif
         }
         .onChange(of: self.coordinator.shouldDismiss) { _, newValue in
             if newValue {
@@ -272,7 +291,11 @@ struct SignUpView: View {
                 otherAssets: self.$signUpData.otherAssets
             )
         case .desiredReturn:
-            DesiredReturnStep(desiredReturn: self.$signUpData.desiredReturn)
+            DesiredReturnStep(
+                desiredReturn: self.$signUpData.desiredReturn,
+                leveragedProductsKnowledgeTestAnswers: self.$signUpData.leveragedProductsKnowledgeTestAnswers,
+                leveragedProductsTotalLossRiskAcknowledged: self.$signUpData.leveragedProductsTotalLossRiskAcknowledged
+            )
         case .nonInsiderDeclaration:
             NonInsiderDeclarationStep(insiderTradingOptions: self.$signUpData.insiderTradingOptions)
         case .moneyLaunderingDeclaration:
@@ -294,6 +317,16 @@ struct SignUpView: View {
             RiskClass7ConfirmationStep(signUpData: self.signUpData, coordinator: self.coordinator)
         }
     }
+
+    #if DEBUG
+    private func applyDebugTestPrefill(force: Bool) {
+        self.coordinator.applyDebugTestPrefillIfNeeded(
+            to: self.signUpData,
+            testModeService: self.appServices.testModeService,
+            force: force
+        )
+    }
+    #endif
 
     private func completeRegistration() {
         self.coordinator.isLoading = true

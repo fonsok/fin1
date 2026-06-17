@@ -91,7 +91,8 @@ struct DefaultStepValidation: StepValidation {
             return true // Multi-field step, always proceed
 
         case .desiredReturn:
-            return true // Always proceed (has default value)
+            return data.hasAnsweredAllLeveragedProductsKnowledgeTestQuestions
+                && data.leveragedProductsTotalLossRiskAcknowledged != nil
 
         case .nonInsiderDeclaration:
             return data.insiderTradingOptions["None of the above"] == true
@@ -223,7 +224,13 @@ struct DefaultStepValidation: StepValidation {
             return nil // Multi-field step, always proceed
 
         case .desiredReturn:
-            return nil // Always proceed (has default value)
+            if !data.hasAnsweredAllLeveragedProductsKnowledgeTestQuestions {
+                return "Bitte beantworten Sie alle Fragen im Wissenstest"
+            }
+            if data.leveragedProductsTotalLossRiskAcknowledged == nil {
+                return "Bitte wählen Sie „Ja“ oder „Nein“"
+            }
+            return nil
 
         case .nonInsiderDeclaration:
             return data.insiderTradingOptions["None of the above"] != true ? "Please select 'None of the above' to proceed" : nil

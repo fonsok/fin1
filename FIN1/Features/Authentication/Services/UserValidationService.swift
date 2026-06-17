@@ -46,7 +46,24 @@ struct UserValidationService {
 
     // MARK: - Sign Up Validation
 
+    /// Contact-step account creation (step 2): name fields are collected later in onboarding.
+    static func validateEarlySignUp(userData: User) throws {
+        try self.validateSignUpContactFields(userData)
+    }
+
     static func validateSignUp(userData: User) throws {
+        try self.validateSignUpContactFields(userData)
+
+        guard !userData.firstName.isEmpty else {
+            throw AppError.validationError("First name is required")
+        }
+
+        guard !userData.lastName.isEmpty else {
+            throw AppError.validationError("Last name is required")
+        }
+    }
+
+    private static func validateSignUpContactFields(_ userData: User) throws {
         guard !userData.email.isEmpty else {
             throw AppError.validationError("Email is required")
         }
@@ -63,12 +80,13 @@ struct UserValidationService {
             throw AppError.validationError("Password must be at least 8 characters")
         }
 
-        guard !userData.firstName.isEmpty else {
-            throw AppError.validationError("First name is required")
+        guard !userData.username.isEmpty else {
+            throw AppError.validationError("Username is required")
         }
 
-        guard !userData.lastName.isEmpty else {
-            throw AppError.validationError("Last name is required")
+        let usernameRegex = "^[A-Za-z0-9]{4,10}$"
+        guard userData.username.range(of: usernameRegex, options: .regularExpression) != nil else {
+            throw AppError.validationError("Username must be 4-10 characters and contain only letters and numbers")
         }
     }
 

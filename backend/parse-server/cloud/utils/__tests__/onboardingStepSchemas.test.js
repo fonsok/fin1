@@ -44,4 +44,31 @@ describe('onboardingStepSchemas', () => {
   test('unknown step returns valid for complete', () => {
     expect(validateStepData('unknownStep', { foo: 1 })).toEqual({ valid: true });
   });
+
+  test('complete risk requires knowledge test answers but allows incorrect answers', () => {
+    const payload = {
+      leveragedProductsTotalLossRiskAcknowledged: true,
+      leveragedProductsKnowledgeTestAnswers: { put_dow_jones_falling: 'C' },
+      leveragedProductsKnowledgeTestPassed: false,
+    };
+    expect(validateStepData('risk', payload)).toEqual({ valid: true });
+  });
+
+  test('complete risk rejects missing knowledge test answers', () => {
+    const r = validateStepData('risk', {
+      leveragedProductsTotalLossRiskAcknowledged: true,
+      leveragedProductsKnowledgeTestAnswers: {},
+    });
+    expect(r.valid).toBe(false);
+    expect(r.message).toMatch(/put_dow_jones_falling/i);
+  });
+
+  test('complete risk accepts answer D as a valid option id', () => {
+    const payload = {
+      leveragedProductsTotalLossRiskAcknowledged: true,
+      leveragedProductsKnowledgeTestAnswers: { put_dow_jones_falling: 'D' },
+      leveragedProductsKnowledgeTestPassed: false,
+    };
+    expect(validateStepData('risk', payload)).toEqual({ valid: true });
+  });
 });

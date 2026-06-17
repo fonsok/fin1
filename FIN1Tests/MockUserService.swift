@@ -113,7 +113,7 @@ final class MockUserService: UserServiceProtocol, @unchecked Sendable {
         }
     }
 
-    func signUp(userData: User) async throws {
+    func signUp(userData: User, isEarlyAccount: Bool) async throws {
         if let handler = signUpHandler {
             try await handler(userData)
         } else {

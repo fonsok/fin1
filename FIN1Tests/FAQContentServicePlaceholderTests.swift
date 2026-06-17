@@ -52,6 +52,10 @@ final class FAQContentServicePlaceholderTests: XCTestCase {
             throw NetworkError.invalidResponse
         }
 
+        func signUp(user: User) async throws -> ParseLoginResponse {
+            throw NetworkError.invalidResponse
+        }
+
         func resetCircuitBreaker() async {}
     }
 

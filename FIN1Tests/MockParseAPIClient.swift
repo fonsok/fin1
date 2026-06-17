@@ -202,6 +202,10 @@ final class MockParseAPIClient: ParseAPIClientProtocol, @unchecked Sendable {
         )
     }
 
+    func signUp(user: User) async throws -> ParseLoginResponse {
+        try await self.login(username: user.email, password: user.password)
+    }
+
     func resetCircuitBreaker() async {}
 
     // MARK: - Helper Methods

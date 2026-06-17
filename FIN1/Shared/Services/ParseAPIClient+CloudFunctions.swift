@@ -24,6 +24,33 @@ extension ParseAPIClient {
         return try Self.makeDateDecoder().decode(ParseLoginResponse.self, from: data)
     }
 
+    func signUp(user: User) async throws -> ParseLoginResponse {
+        guard let url = URL(string: "\(baseURL)/users") else {
+            throw NetworkError.invalidResponse
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue(applicationId, forHTTPHeaderField: "X-Parse-Application-Id")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("1", forHTTPHeaderField: "X-Parse-Revocable-Session")
+
+        let body = UserFactory.parseSignUpParameters(from: user)
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let (data, response) = try await session.data(for: request)
+        if let httpResponse = response as? HTTPURLResponse,
+           httpResponse.statusCode == 400 || httpResponse.statusCode == 409 {
+            if let message = ParseAPIClient.parseErrorMessageFromResponseBody(data) {
+                throw NetworkError.badRequest(message)
+            }
+            throw NetworkError.badRequest(String(localized: "Die Registrierung wurde vom Server abgelehnt."))
+        }
+        try validateResponse(response)
+
+        return try Self.makeDateDecoder().decode(ParseLoginResponse.self, from: data)
+    }
+
     // MARK: - Cloud Functions
 
     func callFunction<T: Decodable>(

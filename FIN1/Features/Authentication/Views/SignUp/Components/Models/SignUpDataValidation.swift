@@ -135,7 +135,8 @@ extension SignUpData {
         case .experience:
             return self.isInvestmentExperienceValid
         case .desiredReturn:
-            return true // Selection step
+            return self.hasAnsweredAllLeveragedProductsKnowledgeTestQuestions
+                && self.leveragedProductsTotalLossRiskAcknowledged != nil
         case .nonInsiderDeclaration:
             return insiderTradingOptions.values.contains(true)
         case .moneyLaunderingDeclaration:

@@ -45,8 +45,7 @@ struct WelcomePage: View {
             // Action button
             VStack(spacing: ResponsiveDesign.spacing(16)) {
                 Button("Zur Startseite") {
-                    // Request complete dismissal to return to LandingView
-                    self.coordinator.requestDismissal()
+                    self.coordinator.requestReturnToLanding()
                 }
                 .font(ResponsiveDesign.headlineFont())
                 .foregroundColor(AppTheme.fontColor)

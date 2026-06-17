@@ -77,13 +77,28 @@ struct SummaryStep: View {
                     }
                     
                     // Risk Assessment Section
-                    SummarySection(title: "Risk Assessment") {
+                    SummarySection(title: "Rendite & Risiko") {
+                        SummaryRow(
+                            label: "Gewünschte Rendite",
+                            value: self.signUpData.desiredReturn.displayName,
+                            icon: "percent"
+                        )
+                        SummaryRow(
+                            label: "Wissenstest",
+                            value: self.knowledgeTestSummaryLabel,
+                            icon: "book.fill"
+                        )
+                        SummaryRow(
+                            label: "Totalverlustrisiko (Hebelprodukte)",
+                            value: self.totalLossRiskSummaryLabel,
+                            icon: "checkmark.shield.fill"
+                        )
                         RiskClassSummaryRow(signUpData: self.signUpData)
                     }
                 }
             }
             .onAppear {
-                // calculatedRiskClass is now a computed property, no need to set it manually
+                self.signUpData.applyConservativeRiskClassIfNeeded()
             }
             
             // Final Confirmation
@@ -117,6 +132,27 @@ struct SummaryStep: View {
             // for Risk Class 7 users, which will trigger the welcome page
         }
         // Note: Welcome page is now handled by SignUpView for Risk Class 7 users
+    }
+
+    private var knowledgeTestSummaryLabel: String {
+        if !self.signUpData.hasAnsweredAllLeveragedProductsKnowledgeTestQuestions {
+            return "—"
+        }
+        if self.signUpData.hasPassedLeveragedProductsKnowledgeTest {
+            return "Bestanden"
+        }
+        return "Nicht bestanden — Zuordnung Risikoklasse 1"
+    }
+
+    private var totalLossRiskSummaryLabel: String {
+        switch self.signUpData.leveragedProductsTotalLossRiskAcknowledged {
+        case true:
+            return "Ja"
+        case false:
+            return "Nein — Zuordnung Risikoklasse 1"
+        case nil:
+            return "—"
+        }
     }
 }
 

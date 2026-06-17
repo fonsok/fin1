@@ -3,6 +3,27 @@ import Foundation
 // MARK: - SignUp Data User Creation Extensions
 
 extension SignUpData {
+    /// Builds a user from contact-step data (step 2). Personal/KYC fields may still be empty.
+    func createEarlyAccountUser() throws -> User {
+        guard !email.isEmpty else {
+            throw UserCreationError.missingEmail
+        }
+
+        guard !password.isEmpty else {
+            throw UserCreationError.missingPassword
+        }
+
+        guard !username.isEmpty else {
+            throw UserCreationError.missingUsername
+        }
+
+        guard self.isUsernameValid else {
+            throw UserCreationError.invalidUsername
+        }
+
+        return self.makeUser()
+    }
+
     // MARK: - User Creation
     func createUser() throws -> User {
         // Validate required fields
@@ -32,7 +53,11 @@ extension SignUpData {
             throw UserCreationError.privacyPolicyNotAccepted
         }
 
-        return User(
+        return self.makeUser()
+    }
+
+    private func makeUser() -> User {
+        User(
             id: UUID().uuidString,
             customerNumber: customerNumber,
             accountType: accountType,
@@ -228,6 +253,10 @@ extension SignUpData {
             derivativesHoldingPeriod: derivativesHoldingPeriod.rawValue,
             otherAssets: otherAssets,
             desiredReturn: desiredReturn.rawValue,
+            leveragedProductsTotalLossRiskAcknowledged: leveragedProductsTotalLossRiskAcknowledged,
+            leveragedProductsKnowledgeTestAnswers: leveragedProductsKnowledgeTestAnswers,
+            leveragedProductsKnowledgeTestVersion: LeveragedProductsKnowledgeTest.version,
+            leveragedProductsKnowledgeTestPassed: hasPassedLeveragedProductsKnowledgeTest,
             calculatedRiskClass: calculatedRiskClass.rawValue,
             finalRiskClass: finalRiskClass.rawValue,
             insiderTradingOptions: insiderTradingOptions,
@@ -273,6 +302,8 @@ extension SignUpData {
 
 enum UserCreationError: LocalizedError {
     case missingEmail
+    case missingUsername
+    case invalidUsername
     case missingFirstName
     case missingLastName
     case missingPassword
@@ -284,6 +315,10 @@ enum UserCreationError: LocalizedError {
         switch self {
         case .missingEmail:
             return "Email address is required"
+        case .missingUsername:
+            return "Username is required"
+        case .invalidUsername:
+            return "Username must be 4-10 characters and contain only letters and numbers"
         case .missingFirstName:
             return "First name is required"
         case .missingLastName:

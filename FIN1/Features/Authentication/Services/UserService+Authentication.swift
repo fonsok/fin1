@@ -72,18 +72,55 @@ extension UserService {
         }
     }
 
-    func signUp(userData: User) async throws {
-        try UserValidationService.validateSignUp(userData: userData)
+    func signUp(userData: User, isEarlyAccount: Bool = false) async throws {
+        if isEarlyAccount {
+            try UserValidationService.validateEarlySignUp(userData: userData)
+        } else {
+            try UserValidationService.validateSignUp(userData: userData)
+        }
 
         await MainActor.run { [weak self] in
             self?.isLoading = true
         }
 
+        if let apiClient = parseAPIClient {
+            do {
+                var builtUser = userData
+                let signUpResponse = try await apiClient.signUp(user: userData)
+                UserFactory.applyLoginResponse(signUpResponse, to: &builtUser)
+
+                await MainActor.run { [weak self] in
+                    self?._sessionToken = signUpResponse.sessionToken
+                }
+
+                do {
+                    let me: ParseUserMeResponse = try await apiClient.callFunction("getUserMe", parameters: nil)
+                    UserFactory.applyUserMeResponse(me, to: &builtUser)
+                } catch {
+                    print("⚠️ UserService: getUserMe after signUp failed (\(error.localizedDescription))")
+                }
+
+                await MainActor.run { [weak self] in
+                    self?.currentUser = builtUser
+                    self?.isAuthenticated = true
+                    self?.isLoading = false
+                    NotificationCenter.default.post(name: .userDidSignIn, object: nil)
+                }
+                return
+            } catch {
+                print("⚠️ UserService: Parse signUp failed (\(error.localizedDescription))")
+                throw error
+            }
+        }
+
         try await Task.sleep(nanoseconds: 2_000_000_000)
         try UserValidationService.checkForSignUpErrors(userData: userData)
 
+        let token = self.generateFallbackSessionToken(for: userData)
+
         await MainActor.run { [weak self] in
             self?.currentUser = userData
+            self?._sessionToken = token
             self?.isAuthenticated = true
             self?.isLoading = false
         }

@@ -69,6 +69,10 @@ struct SavedOnboardingData: Codable, Sendable {
 
     // Risk & Return
     let desiredReturn: String?
+    let leveragedProductsTotalLossRiskAcknowledged: Bool?
+    let leveragedProductsKnowledgeTestAnswers: [String: String]?
+    let leveragedProductsKnowledgeTestVersion: String?
+    let leveragedProductsKnowledgeTestPassed: Bool?
     let calculatedRiskClass: Int?
     let finalRiskClass: Int?
 

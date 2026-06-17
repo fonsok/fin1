@@ -13,7 +13,39 @@ extension SignUpData {
     }
 
     var finalRiskClass: RiskClass {
+        if self.requiresConservativeRiskClassFromOnboarding {
+            return .riskClass1
+        }
         return userSelectedRiskClass ?? self.calculatedRiskClass
+    }
+
+    /// Persists conservative risk class when onboarding risk gates require it.
+    func applyConservativeRiskClassIfNeeded() {
+        guard self.requiresConservativeRiskClassFromOnboarding else { return }
+        self.userSelectedRiskClass = .riskClass1
+    }
+
+    /// Backward-compatible alias.
+    func applyFinalRiskClassFromTotalLossAcknowledgement() {
+        self.applyConservativeRiskClassIfNeeded()
+    }
+
+    /// User chose a higher risk class than the questionnaire calculated.
+    var hasUserManuallyIncreasedRiskClass: Bool {
+        guard let selected = userSelectedRiskClass else { return false }
+        return selected.rawValue > self.calculatedRiskClass.rawValue
+    }
+
+    /// Whether step 22 should send the user back to the landing page instead of continuing onboarding.
+    var shouldReturnToLandingAtRiskNote: Bool {
+        switch self.finalRiskClass {
+        case .riskClass1, .riskClass2, .riskClass3, .riskClass4:
+            return true
+        case .riskClass5, .riskClass6:
+            return !self.hasUserManuallyIncreasedRiskClass
+        case .riskClass7:
+            return false
+        }
     }
 
     // MARK: - Risk Class Calculation (Legacy - kept for backward compatibility)

@@ -20,7 +20,7 @@ extension SignUpCoordinator {
     func verifyCode() {
         guard let onboardingAPI = onboardingAPIService else { return }
         let code = verificationCode
-        guard code.count == 6 else { return }
+        guard code.count == 6, !isVerifyingCode else { return }
 
         isVerifyingCode = true
         verificationError = nil
@@ -69,12 +69,14 @@ extension SignUpCoordinator {
         resendTimer = nil
     }
 
-    func sendPhoneVerificationCode() {
+    func sendPhoneVerificationCode(resetInput: Bool = true) {
         guard let onboardingAPI = onboardingAPIService,
               let phone = signUpData?.phoneNumber, !phone.isEmpty else { return }
 
         phoneVerificationError = nil
-        phoneVerificationCode = ""
+        if resetInput {
+            phoneVerificationCode = ""
+        }
 
         Task {
             do {
@@ -89,7 +91,7 @@ extension SignUpCoordinator {
     func verifyPhoneCode() {
         guard let onboardingAPI = onboardingAPIService else { return }
         let code = phoneVerificationCode.trimmingCharacters(in: .whitespaces)
-        guard code.count == 6 else { return }
+        guard code.count == 6, !isVerifyingPhone else { return }
 
         isVerifyingPhone = true
         phoneVerificationError = nil

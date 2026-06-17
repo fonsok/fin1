@@ -110,6 +110,20 @@ function buildCompleteSchemas(custom) {
   const risk = Joi.object({
     questionnaireVersion: Joi.string().max(64).optional(),
     desiredReturn: Joi.string().optional(),
+    leveragedProductsTotalLossRiskAcknowledged: Joi.boolean().strict().required(),
+    leveragedProductsKnowledgeTestVersion: Joi.string().max(16).optional(),
+    leveragedProductsKnowledgeTestAnswers: Joi.object()
+      .pattern(Joi.string(), Joi.string().valid('A', 'B', 'C', 'D'))
+      .required()
+      .custom((value, helpers) => {
+        const { hasAllKnowledgeTestAnswers } = require('./leveragedProductsKnowledgeTest');
+        const result = hasAllKnowledgeTestAnswers(value);
+        if (!result.valid) {
+          return helpers.message(result.message);
+        }
+        return value;
+      }),
+    leveragedProductsKnowledgeTestPassed: Joi.boolean().strict().optional(),
     calculatedRiskClass: Joi.number().integer().min(0).optional().allow(null),
     finalRiskClass: Joi.number().integer().min(0).optional().allow(null),
     insiderTradingOptions: Joi.object().pattern(Joi.string(), Joi.boolean()).optional(),
@@ -184,6 +198,12 @@ function buildPartialSchemas(custom) {
   const risk = Joi.object({
     questionnaireVersion: Joi.string().max(64).optional(),
     desiredReturn: Joi.string().optional(),
+    leveragedProductsTotalLossRiskAcknowledged: Joi.boolean().strict().optional(),
+    leveragedProductsKnowledgeTestVersion: Joi.string().max(16).optional(),
+    leveragedProductsKnowledgeTestAnswers: Joi.object()
+      .pattern(Joi.string(), Joi.string().valid('A', 'B', 'C', 'D'))
+      .optional(),
+    leveragedProductsKnowledgeTestPassed: Joi.boolean().strict().optional(),
     calculatedRiskClass: Joi.number().integer().min(0).optional().allow(null),
     finalRiskClass: Joi.number().integer().min(0).optional().allow(null),
     insiderTradingOptions: Joi.object().pattern(Joi.string(), Joi.boolean()).optional(),

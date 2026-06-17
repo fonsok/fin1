@@ -49,6 +49,9 @@ protocol ParseAPIClientProtocol: Sendable {
     /// Logs in a user via Parse REST API and returns session data
     func login(username: String, password: String) async throws -> ParseLoginResponse
 
+    /// Registers a new user via Parse REST API (`POST /users`) and returns session data
+    func signUp(user: User) async throws -> ParseLoginResponse
+
     /// Resets the circuit breaker to allow requests again (used after health check recovery)
     func resetCircuitBreaker() async
 }

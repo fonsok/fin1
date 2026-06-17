@@ -14,7 +14,7 @@ protocol UserServiceProtocol: ObservableObject, Sendable {
 
     // MARK: - Authentication
     func signIn(email: String, password: String) async throws
-    func signUp(userData: User) async throws
+    func signUp(userData: User, isEarlyAccount: Bool) async throws
     func signOut() async
 
     // MARK: - User Management
@@ -32,6 +32,12 @@ protocol UserServiceProtocol: ObservableObject, Sendable {
     var userRole: UserRole? { get }
     var isInvestor: Bool { get }
     var isTrader: Bool { get }
+}
+
+extension UserServiceProtocol {
+    func signUp(userData: User) async throws {
+        try await self.signUp(userData: userData, isEarlyAccount: false)
+    }
 }
 
 // MARK: - User Service Implementation

@@ -1,6 +1,7 @@
 'use strict';
 
 const crypto = require('crypto');
+const { isDevOnboardingOtpBypass } = require('../../utils/onboardingDevOtpBypass');
 let emailService;
 try {
   emailService = require('../../utils/emailService');
@@ -89,6 +90,25 @@ Parse.Cloud.define('verifyEmailCode', async (request) => {
   const { code } = request.params;
   if (!code || code.length !== 6) {
     throw new Parse.Error(Parse.Error.INVALID_VALUE, 'Invalid code format');
+  }
+
+  const isDevBypass = isDevOnboardingOtpBypass(code);
+  if (isDevBypass) {
+    user.set('isEmailVerified', true);
+    user.set('emailVerifiedAt', new Date());
+    await user.save(null, { useMasterKey: true });
+
+    const OnboardingAudit = Parse.Object.extend('OnboardingAudit');
+    const audit = new OnboardingAudit();
+    audit.set('userId', user.id);
+    audit.set('step', 'emailVerification');
+    audit.set('completedAt', new Date());
+    audit.set('answers', { email: user.get('email'), method: 'dev_bypass' });
+    audit.save(null, { useMasterKey: true }).catch(err => {
+      console.error(`[OnboardingAudit] email verification audit failed: ${err.message}`);
+    });
+
+    return { success: true, verified: true };
   }
 
   const hashedCode = crypto.createHash('sha256').update(code).digest('hex');

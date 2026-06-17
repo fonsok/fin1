@@ -96,6 +96,10 @@ final class SignUpData: ObservableObject {
 
     // MARK: - Step 14: Desired Return
     @Published var desiredReturn: DesiredReturn = .atLeastTenPercent
+    /// Explicit Ja/Nein on step 17 — `false` assigns risk class 1 at summary; either answer required to continue.
+    @Published var leveragedProductsTotalLossRiskAcknowledged: Bool?
+    /// Answers keyed by question id (e.g. `put_dow_jones_falling` → `A`).
+    @Published var leveragedProductsKnowledgeTestAnswers: [String: String] = [:]
 
     // MARK: - Step 15-16: Declarations
     @Published var insiderTradingOptions: [String: Bool] = [
@@ -158,16 +162,32 @@ final class SignUpData: ObservableObject {
     /// Hydrates form fields from data returned by `getOnboardingProgress`.
     /// Skips password / confirmPassword (never persisted) and UIImage fields.
     func restoreFromSavedData(_ data: SavedOnboardingData) {
-        // Account
+        self.restoreAccountFromSavedData(data)
+        self.restoreContactFromSavedData(data)
+        self.restorePersonalFromSavedData(data)
+        self.restoreCitizenshipAndTaxFromSavedData(data)
+        self.restoreIdentificationFromSavedData(data)
+        self.restoreFinancialFromSavedData(data)
+        self.restoreExperienceFromSavedData(data)
+        self.restoreRiskAndReturnFromSavedData(data)
+        self.restoreDeclarationsFromSavedData(data)
+        self.restoreTermsFromSavedData(data)
+        self.restoreMetaFromSavedData(data)
+    }
+
+    private func restoreAccountFromSavedData(_ data: SavedOnboardingData) {
         if let v = data.accountType, let e = AccountType(rawValue: v) { self.accountType = e }
         if let v = data.userRole, let e = UserRole(rawValue: v) { self.userRole = e }
+    }
 
-        // Contact (password intentionally omitted — never sent to backend)
+    private func restoreContactFromSavedData(_ data: SavedOnboardingData) {
+        // Password intentionally omitted — never sent to backend
         if let v = data.email, !v.isEmpty { self.email = v }
         if let v = data.phoneNumber, !v.isEmpty { self.phoneNumber = v }
         if let v = data.username, !v.isEmpty { self.username = v }
+    }
 
-        // Personal
+    private func restorePersonalFromSavedData(_ data: SavedOnboardingData) {
         if let v = data.salutation, let e = Salutation(rawValue: v) { self.salutation = e }
         if let v = data.academicTitle { self.academicTitle = v }
         if let v = data.firstName, !v.isEmpty { self.firstName = v }
@@ -180,72 +200,174 @@ final class SignUpData: ObservableObject {
         if let v = data.placeOfBirth, !v.isEmpty { self.placeOfBirth = v }
         if let v = data.countryOfBirth, !v.isEmpty { self.countryOfBirth = v }
         if let v = data.dateOfBirth, let d = ISO8601DateFormatter().date(from: v) { self.dateOfBirth = d }
+    }
 
-        // Citizenship & Tax
+    private func restoreCitizenshipAndTaxFromSavedData(_ data: SavedOnboardingData) {
         if let v = data.isNotUSCitizen { self.isNotUSCitizen = v }
         if let v = data.nationality, !v.isEmpty { self.nationality = v }
         if let v = data.additionalNationalities { self.additionalNationalities = v }
         if let v = data.address { self.address = v }
         if let v = data.taxNumber, !v.isEmpty { self.taxNumber = v }
         if let v = data.additionalResidenceCountry { self.additionalResidenceCountry = v }
+    }
 
-        // Identification (images excluded)
-        if let v = data.identificationType, let e = IdentificationType(rawValue: v) { self.identificationType = e }
+    private func restoreIdentificationFromSavedData(_ data: SavedOnboardingData) {
+        if let v = data.identificationType, let e = IdentificationType(rawValue: v) {
+            self.identificationType = e
+        }
+    }
 
-        // Financial
+    private func restoreFinancialFromSavedData(_ data: SavedOnboardingData) {
         if let v = data.employmentStatus, let e = EmploymentStatus(rawValue: v) { self.employmentStatus = e }
         if let v = data.income { self.income = v }
         if let v = data.incomeRange, let e = IncomeRange(rawValue: v) { self.incomeRange = e }
         if let v = data.incomeSources { self.incomeSources = v }
         if let v = data.otherIncomeSource { self.otherIncomeSource = v }
         if let v = data.cashAndLiquidAssets, let e = CashAndLiquidAssets(rawValue: v) { self.cashAndLiquidAssets = e }
+    }
 
-        // Experience
-        if let v = data.stocksTransactionsCount, let e = StocksTransactionCount(rawValue: v) { self.stocksTransactionsCount = e }
-        if let v = data.stocksInvestmentAmount, let e = InvestmentAmount(rawValue: v) { self.stocksInvestmentAmount = e }
-        if let v = data.etfsTransactionsCount, let e = ETFsTransactionCount(rawValue: v) { self.etfsTransactionsCount = e }
-        if let v = data.etfsInvestmentAmount, let e = InvestmentAmount(rawValue: v) { self.etfsInvestmentAmount = e }
-        if let v = data.derivativesTransactionsCount, let e = DerivativesTransactionCount(rawValue: v) { self.derivativesTransactionsCount = e }
-        if let v = data.derivativesInvestmentAmount, let e = DerivativesInvestmentAmount(rawValue: v) { self.derivativesInvestmentAmount = e }
-        if let v = data.derivativesHoldingPeriod, let e = HoldingPeriod(rawValue: v) { self.derivativesHoldingPeriod = e }
+    private func restoreExperienceFromSavedData(_ data: SavedOnboardingData) {
+        if let v = data.stocksTransactionsCount, let e = StocksTransactionCount(rawValue: v) {
+            self.stocksTransactionsCount = e
+        }
+        if let v = data.stocksInvestmentAmount, let e = InvestmentAmount(rawValue: v) {
+            self.stocksInvestmentAmount = e
+        }
+        if let v = data.etfsTransactionsCount, let e = ETFsTransactionCount(rawValue: v) {
+            self.etfsTransactionsCount = e
+        }
+        if let v = data.etfsInvestmentAmount, let e = InvestmentAmount(rawValue: v) {
+            self.etfsInvestmentAmount = e
+        }
+        if let v = data.derivativesTransactionsCount, let e = DerivativesTransactionCount(rawValue: v) {
+            self.derivativesTransactionsCount = e
+        }
+        if let v = data.derivativesInvestmentAmount, let e = DerivativesInvestmentAmount(rawValue: v) {
+            self.derivativesInvestmentAmount = e
+        }
+        if let v = data.derivativesHoldingPeriod, let e = HoldingPeriod(rawValue: v) {
+            self.derivativesHoldingPeriod = e
+        }
         if let v = data.otherAssets { self.otherAssets = v }
+    }
 
-        // Risk & Return
+    private func restoreRiskAndReturnFromSavedData(_ data: SavedOnboardingData) {
         if let v = data.desiredReturn, let e = DesiredReturn(rawValue: v) { self.desiredReturn = e }
+        if let v = data.leveragedProductsTotalLossRiskAcknowledged {
+            self.leveragedProductsTotalLossRiskAcknowledged = v
+        }
+        if let v = data.leveragedProductsKnowledgeTestAnswers {
+            self.leveragedProductsKnowledgeTestAnswers = v
+        }
         if let v = data.finalRiskClass, let e = RiskClass(rawValue: v) { self.userSelectedRiskClass = e }
+    }
 
-        // Declarations
+    private func restoreDeclarationsFromSavedData(_ data: SavedOnboardingData) {
         if let v = data.insiderTradingOptions { self.insiderTradingOptions = v }
         if let v = data.moneyLaunderingDeclaration { self.moneyLaunderingDeclaration = v }
         if let v = data.assetType, let e = AssetType(rawValue: v) { self.assetType = e }
         if let v = data.leveragedProductsExperience { self.leveragedProductsExperience = v }
         if let v = data.financialProductsExperience { self.financialProductsExperience = v }
+    }
 
-        // Terms
+    private func restoreTermsFromSavedData(_ data: SavedOnboardingData) {
         if let v = data.acceptedTerms { self.acceptedTerms = v }
         if let v = data.acceptedPrivacyPolicy { self.acceptedPrivacyPolicy = v }
         if let v = data.acceptedMarketingConsent { self.acceptedMarketingConsent = v }
+    }
 
-        // Meta
+    private func restoreMetaFromSavedData(_ data: SavedOnboardingData) {
         if let v = data.customerNumber ?? data.customerId, !v.isEmpty { self.customerNumber = v }
     }
 
     // MARK: - Pre-fill with Test Data (DEBUG only)
     #if DEBUG
+    /// Fills all text fields and toggles needed to click through the 22-step Get Started flow.
     func prefillTestData() {
-        self.email = "test@example.com"
-        self.phoneNumber = "+49123456789"
-        self.username = "testuser"
+        let name = TestConstants.investorNames[0]
+
+        self.accountType = .individual
+        self.userRole = .investor
+        self.email = TestConstants.signupTestEmail()
+        self.phoneNumber = TestConstants.signupTestPhone
+        self.username = TestConstants.signupTestUsername()
         self.password = TestConstants.password
         self.confirmPassword = TestConstants.password
-        self.firstName = "Max"
-        self.lastName = "Mustermann"
-        self.streetAndNumber = "Musterstraße 123"
-        self.postalCode = "12345"
-        self.city = "Musterstadt"
-        self.state = "Bayern"
-        self.placeOfBirth = "München"
-        self.taxNumber = "12345678901"
+
+        self.salutation = .mr
+        self.academicTitle = ""
+        self.firstName = name.first
+        self.lastName = name.last
+        self.streetAndNumber = TestConstants.signupTestStreet
+        self.postalCode = TestConstants.signupTestPostalCode
+        self.city = TestConstants.signupTestCity
+        self.state = TestConstants.signupTestState
+        self.country = TestConstants.signupTestCountry
+        self.placeOfBirth = TestConstants.signupTestCity
+        self.countryOfBirth = TestConstants.signupTestCountry
+        self.dateOfBirth = Calendar.current.date(byAdding: .year, value: -35, to: Date()) ?? Date()
+
+        self.isNotUSCitizen = true
+        self.nationality = TestConstants.signupTestCountry
+        self.additionalNationalities = ""
+        self.address = "\(TestConstants.signupTestStreet), \(TestConstants.signupTestPostalCode) \(TestConstants.signupTestCity)"
+        self.taxNumber = TestConstants.signupTestTaxNumber
+        self.additionalResidenceCountry = ""
+        self.additionalTaxNumber = ""
+        self.showAdditionalFields = false
+
+        self.identificationType = .passport
+        self.identificationConfirmed = true
+
+        self.addressConfirmed = true
+
+        self.employmentStatus = .employed
+        self.income = "75000"
+        self.incomeRange = .middle
+        self.incomeSources = [
+            "Settlement": false,
+            "Inheritance": false,
+            "Savings": false,
+            "Financial contributions to family": false,
+            "Salary": true,
+            "Pension": false,
+            "Assets": false,
+            "Other (please specify)": false
+        ]
+        self.otherIncomeSource = ""
+        self.cashAndLiquidAssets = .tenKToFiftyK
+
+        self.stocksTransactionsCount = .oneToTen
+        self.stocksInvestmentAmount = .tenThousandToHundredThousand
+        self.etfsTransactionsCount = .oneToTen
+        self.etfsInvestmentAmount = .tenThousandToHundredThousand
+        self.derivativesTransactionsCount = .none
+        self.derivativesInvestmentAmount = .zeroToThousand
+        self.derivativesHoldingPeriod = .monthsToYears
+        self.otherAssets = [
+            "Real estate": false,
+            "Gold, silver": false,
+            "No": true
+        ]
+
+        self.desiredReturn = .atLeastTenPercent
+
+        self.insiderTradingOptions = [
+            "Brokerage or Stock Exchange Employee": false,
+            "Director or 10% Shareholder": false,
+            "High-Ranking Official": false,
+            "None of the above": true
+        ]
+        self.moneyLaunderingDeclaration = true
+        self.assetType = .privateAssets
+        self.leveragedProductsExperience = false
+        self.financialProductsExperience = true
+
+        self.acceptedTerms = true
+        self.acceptedPrivacyPolicy = true
+        self.acceptedMarketingConsent = false
+
+        self.generateCustomerNumber()
     }
     #endif
 }

@@ -68,6 +68,10 @@ function buildAuditAnswers(step, data) {
       return {
         questionnaireVersion: data.questionnaireVersion,
         desiredReturn: data.desiredReturn,
+        leveragedProductsTotalLossRiskAcknowledged: data.leveragedProductsTotalLossRiskAcknowledged,
+        leveragedProductsKnowledgeTestVersion: data.leveragedProductsKnowledgeTestVersion,
+        leveragedProductsKnowledgeTestAnswers: data.leveragedProductsKnowledgeTestAnswers,
+        leveragedProductsKnowledgeTestPassed: data.leveragedProductsKnowledgeTestPassed,
         calculatedRiskClass: data.calculatedRiskClass,
         finalRiskClass: data.finalRiskClass,
         insiderTradingOptions: data.insiderTradingOptions,

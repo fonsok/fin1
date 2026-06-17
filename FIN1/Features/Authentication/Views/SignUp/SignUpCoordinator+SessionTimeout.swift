@@ -56,7 +56,7 @@ extension SignUpCoordinator {
         ])
 
         self.clearSensitiveData()
-        requestDismissal()
+        requestReturnToLanding()
     }
 
     func clearSensitiveData() {
