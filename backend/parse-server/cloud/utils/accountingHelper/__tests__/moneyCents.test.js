@@ -91,6 +91,13 @@ describe('moneyCents (P3c-0)', () => {
       expect(assertCentAlignedEuro(988.5)).toBe(988.5);
       expect(() => assertCentAlignedEuro(988.501)).toThrow(/cent-aligned/);
     });
+
+    test('isCentAlignedEuro is non-throwing guard', () => {
+      const { isCentAlignedEuro } = require('../moneyCents');
+      expect(isCentAlignedEuro(100.5)).toBe(true);
+      expect(isCentAlignedEuro(100.501)).toBe(false);
+      expect(isCentAlignedEuro(Number.NaN)).toBe(false);
+    });
   });
 
   describe('normalizeEuro', () => {

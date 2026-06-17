@@ -27,6 +27,7 @@ run_check() {
 
 run_check "UserCashBalance drift" "$SCRIPT_DIR/check-user-cash-balance-drift.sh"
 run_check "Settlement GL outbox" "$SCRIPT_DIR/check-settlement-gl-outbox-health.sh"
+run_check "AccountStatement cent alignment" "$SCRIPT_DIR/check-account-statement-cent-alignment.sh"
 
 if [ "$FAILED" -ne 0 ]; then
   echo "=== Monetary SSOT health: FAILED ==="

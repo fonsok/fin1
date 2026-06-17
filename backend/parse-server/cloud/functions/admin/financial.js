@@ -30,6 +30,7 @@ const { handleReconcileAccountStatementDocumentReferences } = require('./financi
 const { handleVerifyAccountStatementChain } = require('./financialVerifyAccountStatementChain');
 const { handleBackfillUserCashBalanceFromStatements } = require('./financialUserCashBalanceBackfill');
 const { handleInspectUserCashBalanceDrift } = require('./financialUserCashBalanceDrift');
+const { handleInspectAccountStatementCentAlignment } = require('./financialAccountStatementCentAlignment');
 const { handleBackfillTraderCollectionBillBeleg } = require('./financialTraderCollectionBillBelegBackfill');
 const { handleInspectTraderCollectionBillBelegDrift } = require('./financialTraderCollectionBillBelegDrift');
 const { handleBackfillPoolMirrorExecutionEigenbeleg } = require('./financialPoolMirrorExecutionEigenbelegBackfill');
@@ -174,6 +175,13 @@ Parse.Cloud.define('checkUserCashBalanceDrift', async (request) => {
     requireAdminRole(request);
   }
   return handleInspectUserCashBalanceDrift(request);
+});
+
+Parse.Cloud.define('checkAccountStatementCentAlignment', async (request) => {
+  if (!request.master) {
+    requireAdminRole(request);
+  }
+  return handleInspectAccountStatementCentAlignment(request);
 });
 
 Parse.Cloud.define('backfillTraderCollectionBillBeleg', async (request) => {

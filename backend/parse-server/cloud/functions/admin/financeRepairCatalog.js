@@ -92,6 +92,14 @@ const REPAIR_CATALOG = [
     notes: 'Reconcile UserCashBalance to customer timeline closing balance',
   },
   {
+    id: 'account_statement_cent_alignment',
+    layer: 'detection',
+    cloudFunction: 'checkAccountStatementCentAlignment',
+    defaultParams: { limitRows: 500, previewLimit: 25 },
+    relatedChecks: ['settlement_consistency'],
+    notes: 'ADR-018 P3c: sample AccountStatement amount/balance fields for cent alignment',
+  },
+  {
     id: 'pool_mirror_buy_quantity_drift',
     layer: 'repair',
     cloudFunction: 'repairMirrorPoolBuyQuantity',

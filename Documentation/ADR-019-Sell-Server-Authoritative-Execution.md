@@ -39,8 +39,6 @@ Analog **P3b** (`InvoiceLocalSynthesisGate`):
 3. **Prod-Call-Sites:** ViewModels, `InvestmentCashDistributor`, `ProfitDistributionService`, `OrderLifecycleCoordinator+Settlement` (Credit Note) ohne lokale Monetary-Fallbacks.
 4. **Listen/Detail:** `canonicalSummaries` / `summarizeInvestmentFromServer` statt lokaler Aggregator-Summaries.
 
-Offen (Phase 5+): ADR-018 optional follow-ups (`nonCentAlignedMonetaryWrites` audit).
-
 ### Phase 3a — Saldo-Anzeige iOS (implemented 2026-06-17)
 
 1. **iOS customer display:** Closing balance aus `getAccountStatement` merge — identisch Admin „Kundensicht“.
@@ -52,16 +50,15 @@ Offen (Phase 5+): ADR-018 optional follow-ups (`nonCentAlignedMonetaryWrites` au
 2. **`getUserCashBalance`:** `source: customer_timeline`; Drift-Audit vs. Mongo-Counter.
 3. **Seed + Backfill:** `ensureUserCashBalanceSeeded` / `backfillUserCashBalanceFromStatements` auf Kundensicht.
 
-Offen (Phase 5+): ADR-018 optional follow-ups (`nonCentAlignedMonetaryWrites` audit).
-
 ### Phase 6 — ADR-009 `collectionBillServerLegs` (implemented 2026-06-17)
 
 1. Config `display.collectionBillServerLegs` (default `true`) — Admin + iOS.
 2. iOS `calculateCollectionBillWithBackend`: reads `metadata.buyLeg`/`sellLeg`; incomplete → `serverLegsPending` (not local recompute).
 3. Local `calculateCollectionBill` remains test-only (`InvestorCollectionBillLocalCalculationGate`).
 
-Dual-write integer cents on `UserCashBalance` Mongo `$inc`; backfill sets `currentBalanceCents`; drift inspect flags missing/mismatch.
+### Phase 7 — ADR-018 cent-alignment ops audit (implemented 2026-06-17)
 
+`checkAccountStatementCentAlignment` + `scripts/check-account-statement-cent-alignment.sh` (in `check-monetary-ssot-health.sh`).
 
 ### Phase 3b ops — Drift inspect (implemented 2026-06-17)
 

@@ -120,6 +120,13 @@ function assertCentAlignedEuro(euro, context = {}) {
   return normalized;
 }
 
+/** Non-throwing cent-alignment check for ops audits (ADR-018 P3c). */
+function isCentAlignedEuro(euro) {
+  const n = Number(euro);
+  if (!Number.isFinite(n)) return false;
+  return Math.abs(legacyRound2Euro(n) - n) <= 1e-9;
+}
+
 /** Normalize arbitrary euro input to cent-aligned EUR for Parse persist. */
 function normalizeEuro(euro) {
   return round2Euro(euro);
@@ -139,5 +146,6 @@ module.exports = {
   centsEqual,
   withinCentsTolerance,
   assertCentAlignedEuro,
+  isCentAlignedEuro,
   normalizeEuro,
 };

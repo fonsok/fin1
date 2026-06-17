@@ -143,6 +143,8 @@ let amount: Decimal  // decode from JSON Number oder String "2400.00"
 
 **Status P3c-4:** Implemented 2026-06-17 (`userCashBalanceAtomic.js` dual-write `$inc` on `currentBalanceCents`; backfill + drift inspect; schema `gob_user_cash_balance_cents_v1`).
 
+**Status P3c-ops:** Implemented 2026-06-17 (`checkAccountStatementCentAlignment` + `scripts/check-account-statement-cent-alignment.sh`; included in `check-monetary-ssot-health.sh`).
+
 **Abhängigkeit:** P3c-1 **blockiert nicht** auf ADR-009 Investor-Leg-Read; umgekehrt soll Investor-SSOT keine neuen Client-Recalc-Pfade einführen.
 
 ---
@@ -270,6 +272,5 @@ Reihenfolge der Implementierung:
 
 **Nächster Schritt (nach Acceptance dieses ADR)**
 
-1. ~~Review ADR-018~~ — P3c-0 through P3c-4 implemented.
-2. Optional: `nonCentAlignedMonetaryWrites` health audit on recent `AccountStatement` rows.
-3. Langfristig: `currentBalance` EUR-Feld deprecaten wenn alle Leser `currentBalanceCents` nutzen.
+1. ~~Review ADR-018~~ — P3c-0 through P3c-4 + cent-alignment ops audit implemented.
+2. Langfristig: `currentBalance` EUR-Feld deprecaten wenn alle Leser `currentBalanceCents` nutzen.
