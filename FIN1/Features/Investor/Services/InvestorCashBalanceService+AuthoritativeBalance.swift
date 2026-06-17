@@ -6,14 +6,16 @@ extension InvestorCashBalanceService {
         self.settlementAPIService = settlementAPIService
     }
 
-    /// Refreshes display balance from server `UserCashBalance` when monetary server-only is enabled.
+    /// Refreshes display balance from server customer timeline (`getAccountStatement` merge).
     func syncAuthoritativeBalance(for investorId: String) async {
         guard self.configurationService.investorMonetaryServerOnly,
-              let settlementAPIService else {
+              let settlementAPIService,
+              let user = userService?.currentUser,
+              user.id == investorId else {
             return
         }
 
-        guard let balance = await UserCashBalanceResolver.fetchCurrentBalance(
+        guard let balance = await InvestorCustomerClosingBalanceResolver.fetchClosingBalance(
             settlementAPIService: settlementAPIService
         ) else {
             return

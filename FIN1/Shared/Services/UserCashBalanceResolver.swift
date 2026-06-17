@@ -9,7 +9,7 @@ struct BackendUserCashBalanceResponse: Decodable {
 }
 
 enum UserCashBalanceResolver {
-    /// Fetches authoritative `UserCashBalance.currentBalance` for the logged-in user.
+    /// Fetches `UserCashBalance.currentBalance` (booking counter — ops/reconciliation; customer UI uses `getAccountStatement` merge).
     static func fetchCurrentBalance(
         settlementAPIService: any SettlementAPIServiceProtocol
     ) async -> Double? {

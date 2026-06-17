@@ -6,81 +6,114 @@ struct InvestorAccountStatementSnapshot {
     let closingBalance: Double
 }
 
+private struct InvestorBackendStatementFetch {
+    let entries: [AccountStatementEntry]
+    let timelineTruncated: Bool
+}
+
 enum InvestorAccountStatementBuilder {
     /// Builds an investor account statement snapshot including wallet transactions.
-    /// Uses backend `AccountStatement` entries and `UserCashBalance` for closing balance when configured.
+    /// Closing balance follows the server merge timeline (`getAccountStatement`) — same as Admin „Kundensicht“.
     @MainActor
     static func buildSnapshotWithWallet(
         for user: User?,
-        investorCashBalanceService: any InvestorCashBalanceServiceProtocol,
+        investorCashBalanceService _: any InvestorCashBalanceServiceProtocol,
         paymentService: (any PaymentServiceProtocol)?,
         settlementAPIService: (any SettlementAPIServiceProtocol)? = nil,
         configurationService: (any ConfigurationServiceProtocol)? = nil
     ) async -> InvestorAccountStatementSnapshot {
+        let openingBalance = configurationService?.initialAccountBalance
+            ?? CalculationConstants.Account.initialInvestorBalance
+
         guard let user else {
-            let initialBalance = configurationService?.initialAccountBalance
-                ?? CalculationConstants.Account.initialInvestorBalance
             return InvestorAccountStatementSnapshot(
                 entries: [],
-                openingBalance: initialBalance,
-                closingBalance: initialBalance
+                openingBalance: openingBalance,
+                closingBalance: openingBalance
             )
         }
 
         let serverOnly = configurationService?.investorStatementServerOnly ?? true
-        let walletEntries = await loadWalletEntries(for: user, paymentService: paymentService)
 
-        let investmentEntries: [AccountStatementEntry]
-        if let settlementService = settlementAPIService {
-            investmentEntries = await self.loadBackendEntries(
-                for: user,
-                settlementAPIService: settlementService,
-                monetaryServerOnly: serverOnly
+        guard let settlementService = settlementAPIService else {
+            let walletEntries = await loadWalletEntries(for: user, paymentService: paymentService)
+            let recalculated = self.recalculateBalanceAfter(entries: walletEntries, openingBalance: openingBalance)
+            let sorted = AccountStatementEntry.sortedForChronologicalDisplay(recalculated)
+            return InvestorAccountStatementSnapshot(
+                entries: sorted,
+                openingBalance: openingBalance,
+                closingBalance: sorted.last?.balanceAfter ?? openingBalance
             )
-        } else {
-            investmentEntries = []
         }
 
-        let allEntries = investmentEntries + walletEntries
-        let openingBalance = configurationService?.initialAccountBalance
-            ?? CalculationConstants.Account.initialInvestorBalance
-        let recalculatedEntries = self.recalculateBalanceAfter(entries: allEntries, openingBalance: openingBalance)
+        let fetchResult = await self.fetchBackendStatement(
+            settlementAPIService: settlementService,
+            monetaryServerOnly: serverOnly
+        )
 
-        let closingBalance: Double
-        if let settlementAPIService,
-           let serverBalance = await UserCashBalanceResolver.fetchCurrentBalance(
-               settlementAPIService: settlementAPIService
-           ) {
-            closingBalance = serverBalance
-        } else {
-            closingBalance = recalculatedEntries.last?.balanceAfter ?? openingBalance
+        guard !fetchResult.entries.isEmpty else {
+            return InvestorAccountStatementSnapshot(
+                entries: [],
+                openingBalance: openingBalance,
+                closingBalance: openingBalance
+            )
         }
 
+        let backendSorted = AccountStatementEntry.sortedForChronologicalDisplay(fetchResult.entries)
+        let backendIncludesWallet = backendSorted.contains {
+            $0.category == .walletDeposit || $0.category == .walletWithdrawal
+        }
+
+        if backendIncludesWallet {
+            return InvestorAccountStatementSnapshot(
+                entries: backendSorted,
+                openingBalance: openingBalance,
+                closingBalance: backendSorted.last?.balanceAfter ?? openingBalance
+            )
+        }
+
+        let walletEntries = await loadWalletEntries(for: user, paymentService: paymentService)
+        guard !walletEntries.isEmpty else {
+            return InvestorAccountStatementSnapshot(
+                entries: backendSorted,
+                openingBalance: openingBalance,
+                closingBalance: backendSorted.last?.balanceAfter ?? openingBalance
+            )
+        }
+
+        let recalculated = self.recalculateBalanceAfter(
+            entries: backendSorted + walletEntries,
+            openingBalance: openingBalance
+        )
+        let sorted = AccountStatementEntry.sortedForChronologicalDisplay(recalculated)
         return InvestorAccountStatementSnapshot(
-            entries: AccountStatementEntry.sortedForChronologicalDisplay(recalculatedEntries),
+            entries: sorted,
             openingBalance: openingBalance,
-            closingBalance: closingBalance
+            closingBalance: sorted.last?.balanceAfter ?? openingBalance
         )
     }
 
     // MARK: - Backend Integration
 
-    /// Fetches investor account statement entries from the backend and converts them
-    /// to `AccountStatementEntry` objects.
     @MainActor
-    private static func loadBackendEntries(
-        for _: User,
+    private static func fetchBackendStatement(
         settlementAPIService: any SettlementAPIServiceProtocol,
         monetaryServerOnly: Bool
-    ) async -> [AccountStatementEntry] {
+    ) async -> InvestorBackendStatementFetch {
         do {
             var allBackendEntries: [BackendAccountEntry] = []
             var skip = 0
             let pageSize = 200
+            var timelineTruncated = false
             repeat {
                 let response = try await settlementAPIService.fetchAccountStatement(
-                    limit: pageSize, skip: skip, entryType: nil
+                    limit: pageSize,
+                    skip: skip,
+                    entryType: nil
                 )
+                if response.timelineTruncated == true {
+                    timelineTruncated = true
+                }
                 allBackendEntries.append(contentsOf: response.entries)
                 skip += response.entries.count
                 if !response.hasMore || response.entries.isEmpty { break }
@@ -90,16 +123,18 @@ enum InvestorAccountStatementBuilder {
                 if monetaryServerOnly {
                     InvestorCollectionBillLog.warning(InvestorMonetaryMessages.accountStatementUnavailable)
                 }
-                return []
+                return InvestorBackendStatementFetch(entries: [], timelineTruncated: timelineTruncated)
             }
-            return allBackendEntries.compactMap { self.convertBackendEntry($0) }
+
+            let converted = allBackendEntries.compactMap { self.convertBackendEntry($0) }
+            return InvestorBackendStatementFetch(entries: converted, timelineTruncated: timelineTruncated)
         } catch {
             if monetaryServerOnly {
                 InvestorCollectionBillLog.warning(
                     "InvestorAccountStatementBuilder: \(InvestorMonetaryMessages.accountStatementUnavailable) — \(error.localizedDescription)"
                 )
             }
-            return []
+            return InvestorBackendStatementFetch(entries: [], timelineTruncated: false)
         }
     }
 
@@ -223,11 +258,7 @@ enum InvestorAccountStatementBuilder {
         }
     }
 
-    /// Recalculates balanceAfter for all entries in chronological order
-    /// - Parameters:
-    ///   - entries: All account statement entries
-    ///   - openingBalance: Opening balance to start from
-    /// - Returns: Array of entries with recalculated balanceAfter values
+    /// Recalculates balanceAfter for supplemental wallet rows only (backend rows keep server `balanceAfter`).
     private static func recalculateBalanceAfter(
         entries: [AccountStatementEntry],
         openingBalance: Double
@@ -237,10 +268,8 @@ enum InvestorAccountStatementBuilder {
         var recalculatedEntries: [AccountStatementEntry] = []
 
         for entry in sortedEntries {
-            // Update running balance
             runningBalance += entry.signedAmount
 
-            // Create new entry with recalculated balanceAfter
             let recalculatedEntry = AccountStatementEntry(
                 id: entry.id,
                 title: entry.title,

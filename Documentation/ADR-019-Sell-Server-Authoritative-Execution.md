@@ -44,7 +44,7 @@ Offen (Phase 4+): `settlementGLOutboxEnabled` in Prod, ADR-018 P3c Decimal an Mo
 ### Phase 3 — Saldo SSOT (implemented 2026-06-17)
 
 1. **`getUserCashBalance` CF:** liest `UserCashBalance.currentBalance` (mit Seed aus letztem `AccountStatement`).
-2. **iOS `UserCashBalanceResolver`:** Dashboard, Kontoauszug und Wallet-Closing-Balance aus Server-Saldo.
+2. **iOS customer display:** Closing balance from `getAccountStatement` merge (`balanceAfter` der letzten Zeile) — identisch Admin „Kundensicht“. `UserCashBalance` nur für Buchungs-Counter/Ops.
 3. **`InvestorCashBalanceService.syncAuthoritativeBalance`:** Investment-Sheet und Quick-Stats nutzen Server-Saldo bei `investorMonetaryServerOnly`.
 4. **`InvestorAccountStatementBuilder`:** keine lokalen Ledger-Fallbacks mehr für Kontoauszugszeilen.
 
