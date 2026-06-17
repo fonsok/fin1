@@ -53,9 +53,17 @@ extension TraderAccountStatementBuilder {
             entries: allEntries,
             openingBalance: baseSnapshot.openingBalance
         )
-        let combinedClosingBalance = backendCoversWalletMovements
-            ? (recalculatedEntries.last?.balanceAfter ?? baseSnapshot.closingBalance)
-            : baseSnapshot.closingBalance + walletDelta
+        let combinedClosingBalance: Double
+        if let settlementAPIService,
+           let serverBalance = await UserCashBalanceResolver.fetchCurrentBalance(
+               settlementAPIService: settlementAPIService
+           ) {
+            combinedClosingBalance = serverBalance
+        } else {
+            combinedClosingBalance = backendCoversWalletMovements
+                ? (recalculatedEntries.last?.balanceAfter ?? baseSnapshot.closingBalance)
+                : baseSnapshot.closingBalance + walletDelta
+        }
 
         return TraderAccountStatementSnapshot(
             entries: AccountStatementEntry.sortedForChronologicalDisplay(recalculatedEntries),

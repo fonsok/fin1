@@ -206,6 +206,7 @@ final class DashboardStatsViewModel: ObservableObject {
         }
 
         Task { @MainActor in
+            await self.investorCashBalanceService.syncAuthoritativeBalance(for: currentUser.id)
             let snapshot = await InvestorAccountStatementBuilder.buildSnapshotWithWallet(
                 for: currentUser,
                 investorCashBalanceService: self.investorCashBalanceService,

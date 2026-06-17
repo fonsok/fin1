@@ -13,6 +13,9 @@ protocol SettlementAPIServiceProtocol: Sendable {
     /// Fetches paginated account statement entries for the current user.
     func fetchAccountStatement(limit: Int, skip: Int, entryType: String?) async throws -> BackendAccountStatementResponse
 
+    /// Fetches authoritative cash balance (`UserCashBalance.currentBalance`) for the current user.
+    func fetchUserCashBalance() async throws -> BackendUserCashBalanceResponse
+
     /// Fetches invoices for a specific trade from the backend.
     func fetchTradeInvoices(tradeId: String) async throws -> BackendInvoiceListResponse
 
@@ -410,6 +413,10 @@ final class SettlementAPIService: SettlementAPIServiceProtocol, @unchecked Senda
             "getAccountStatement",
             parameters: params
         )
+    }
+
+    func fetchUserCashBalance() async throws -> BackendUserCashBalanceResponse {
+        try await self.apiClient.callFunction("getUserCashBalance", parameters: [:])
     }
 
     func fetchTradeInvoices(tradeId: String) async throws -> BackendInvoiceListResponse {

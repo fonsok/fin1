@@ -1,6 +1,6 @@
 # ADR-019 – Sell: Server-Authoritative Execution (Symmetrie zu Paired Buy)
 
-- **Status:** Accepted (Phase 1a implemented 2026-06-17; Phase 1b implemented 2026-06-17; Phase 2 implemented 2026-06-17)
+- **Status:** Accepted (Phase 1a implemented 2026-06-17; Phase 1b implemented 2026-06-17; Phase 2 implemented 2026-06-17; Phase 3a implemented 2026-06-17)
 - **Datum:** 2026-06-17
 - **Bezug:** `BACKEND_CALCULATION_MIGRATION.md`, `executionPriceResolver.js`, `executePairedBuy`, ADR-018, Gap-Analyse Monetary SSOT (2026-06)
 
@@ -39,7 +39,16 @@ Analog **P3b** (`InvoiceLocalSynthesisGate`):
 3. **Prod-Call-Sites:** ViewModels, `InvestmentCashDistributor`, `ProfitDistributionService`, `OrderLifecycleCoordinator+Settlement` (Credit Note) ohne lokale Monetary-Fallbacks.
 4. **Listen/Detail:** `canonicalSummaries` / `summarizeInvestmentFromServer` statt lokaler Aggregator-Summaries.
 
-Offen (Phase 3+): ADR-009 `collectionBillServerLegs`, Saldo-UI an `UserCashBalance`, Outbox in Prod.
+Offen (Phase 4+): `settlementGLOutboxEnabled` in Prod, ADR-018 P3c Decimal an Mongo-Grenzen.
+
+### Phase 3 — Saldo SSOT (implemented 2026-06-17)
+
+1. **`getUserCashBalance` CF:** liest `UserCashBalance.currentBalance` (mit Seed aus letztem `AccountStatement`).
+2. **iOS `UserCashBalanceResolver`:** Dashboard, Kontoauszug und Wallet-Closing-Balance aus Server-Saldo.
+3. **`InvestorCashBalanceService.syncAuthoritativeBalance`:** Investment-Sheet und Quick-Stats nutzen Server-Saldo bei `investorMonetaryServerOnly`.
+4. **`InvestorAccountStatementBuilder`:** keine lokalen Ledger-Fallbacks mehr für Kontoauszugszeilen.
+
+Offen: ADR-009 `collectionBillServerLegs`, ADR-018 P3c `currentBalanceCents`.
 
 ### Phase 2 (ursprüngliche Roadmap-Notiz)
 

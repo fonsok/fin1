@@ -26,6 +26,7 @@ const {
   handleGetAccountStatement,
   handleGetTradeInvoices,
   handleGetUserInvoices,
+  handleGetUserCashBalance,
 } = require('./tradingSettlementReads');
 const { handleGetUserDocumentInbox } = require('./userDocumentInbox');
 
@@ -234,6 +235,8 @@ Parse.Cloud.define('getAccountStatement', handleGetAccountStatement);
 Parse.Cloud.define('getTradeInvoices', handleGetTradeInvoices);
 
 Parse.Cloud.define('getUserInvoices', handleGetUserInvoices);
+
+Parse.Cloud.define('getUserCashBalance', handleGetUserCashBalance);
 
 // Get holdings
 Parse.Cloud.define('getHoldings', async (request) => {

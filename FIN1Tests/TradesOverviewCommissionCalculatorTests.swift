@@ -245,6 +245,10 @@ private final class MockSettlementAPIServiceForCommission: SettlementAPIServiceP
         )
     }
 
+    func fetchUserCashBalance() async throws -> BackendUserCashBalanceResponse {
+        BackendUserCashBalanceResponse(userId: "test", currentBalance: 0, source: "UserCashBalance")
+    }
+
     func fetchTradeInvoices(tradeId: String) async throws -> BackendInvoiceListResponse {
         throw AppError.serviceError(.serviceUnavailable)
     }

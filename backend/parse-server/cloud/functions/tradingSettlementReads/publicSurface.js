@@ -4,6 +4,7 @@ const { handleGetTradeSettlement } = require('./getTradeSettlement');
 const { handleGetAccountStatement } = require('./getAccountStatement');
 const { handleGetTradeInvoices } = require('./getTradeInvoices');
 const { handleGetUserInvoices } = require('./getUserInvoices');
+const { handleGetUserCashBalance } = require('./getUserCashBalance');
 
 /** Tier 1 — registered Cloud Function handlers (stable read API). */
 const tier1ReadHandlers = {
@@ -11,6 +12,7 @@ const tier1ReadHandlers = {
   handleGetAccountStatement,
   handleGetTradeInvoices,
   handleGetUserInvoices,
+  handleGetUserCashBalance,
 };
 
 const publicSurface = { ...tier1ReadHandlers };

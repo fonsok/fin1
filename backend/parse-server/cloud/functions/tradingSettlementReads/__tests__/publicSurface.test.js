@@ -4,10 +4,11 @@ const facade = require('../../tradingSettlementReads');
 const { publicSurface, API_TIERS } = require('../publicSurface');
 
 describe('tradingSettlementReads public surface contract', () => {
-  it('facade exports four read handlers', () => {
+  it('facade exports five read handlers', () => {
     expect(Object.keys(facade).sort()).toEqual(API_TIERS.readHandlers.sort());
-    expect(API_TIERS.readHandlers).toHaveLength(4);
+    expect(API_TIERS.readHandlers).toHaveLength(5);
     expect(typeof facade.handleGetAccountStatement).toBe('function');
+    expect(typeof facade.handleGetUserCashBalance).toBe('function');
   });
 
   it('publicSurface matches facade', () => {

@@ -79,6 +79,12 @@ final class InvestmentSheetViewModel: ObservableObject {
         self.totalInvestmentAmount + self.appServiceCharge
     }
 
+    /// Refreshes cash balance from server `UserCashBalance` before validation/display.
+    func refreshAuthoritativeCashBalance() async {
+        guard let currentUser = currentUser else { return }
+        await self.investorCashBalanceService.syncAuthoritativeBalance(for: currentUser.id)
+    }
+
     /// Validates that cash balance after investment + fee will be >= minimum cash reserve
     var hasSufficientCashBalance: Bool {
         guard let currentUser = currentUser else { return false }

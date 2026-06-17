@@ -150,3 +150,7 @@ protocol InvestorCashBalanceServiceProtocol {
 
     func getTransactions(for investorId: String) -> [AccountStatementEntry]
 }
+
+extension InvestorCashBalanceServiceProtocol {
+    func syncAuthoritativeBalance(for investorId: String) async {}
+}

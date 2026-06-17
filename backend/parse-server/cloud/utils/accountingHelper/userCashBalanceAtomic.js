@@ -185,10 +185,32 @@ async function compensateUserCashBalanceAdvance({ userId, amount }) {
   }
 }
 
+/**
+ * Liest den autoritativen Kundensaldo (`UserCashBalance.currentBalance`).
+ * Seedet die Zeile bei Bedarf aus dem letzten `AccountStatement`.
+ *
+ * @param {string} userId
+ * @returns {Promise<number>}
+ */
+async function readUserCashBalanceForUser(userId) {
+  const uid = String(userId || '').trim();
+  if (!uid) {
+    throw new Error('readUserCashBalanceForUser: userId is required');
+  }
+
+  await ensureUserCashBalanceSeeded(uid);
+
+  const q = new Parse.Query('UserCashBalance');
+  q.equalTo('userId', uid);
+  const row = await q.first({ useMasterKey: true });
+  return normalizeEuro(row ? Number(row.get('currentBalance') || 0) : 0);
+}
+
 module.exports = {
   ensureUserCashBalanceSeeded,
   advanceUserCashBalanceAtomic,
   compensateUserCashBalanceAdvance,
+  readUserCashBalanceForUser,
   getDatabaseUri,
   getFin1MongoDb,
   getUserCashBalanceCollection,

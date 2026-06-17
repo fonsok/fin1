@@ -16,6 +16,8 @@ final class InvestorCashBalanceService: InvestorCashBalanceServiceProtocol, Obse
     let configurationService: any ConfigurationServiceProtocol
     let parseLiveQueryClient: (any ParseLiveQueryClientProtocol)?
     let userService: (any UserServiceProtocol)?
+    nonisolated(unsafe) var settlementAPIService: (any SettlementAPIServiceProtocol)?
+    var authoritativeBalances: [String: Double] = [:]
     var initialInvestorBalance: Double
     let queue = DispatchQueue(label: "com.fin.app.investorcashbalance", attributes: .concurrent)
     var liveQuerySubscriptions: [String: LiveQuerySubscription] = [:]
@@ -42,6 +44,10 @@ final class InvestorCashBalanceService: InvestorCashBalanceServiceProtocol, Obse
 
     func getBalance(for investorId: String) -> Double {
         return self.queue.sync {
+            if self.configurationService.investorMonetaryServerOnly,
+               let authoritative = self.authoritativeBalances[investorId] {
+                return authoritative
+            }
             return self.balances[investorId] ?? self.initialInvestorBalance
         }
     }

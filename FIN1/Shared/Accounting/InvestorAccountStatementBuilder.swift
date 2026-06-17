@@ -8,13 +8,7 @@ struct InvestorAccountStatementSnapshot {
 
 enum InvestorAccountStatementBuilder {
     /// Builds an investor account statement snapshot including wallet transactions.
-    /// Uses backend `AccountStatement` entries when `settlementAPIService` is provided,
-    /// falling back to local `investorCashBalanceService` ledger entries otherwise.
-    ///
-    /// When `configurationService` is provided, opening balance matches admin / `getConfig`
-    /// (`initialAccountBalance`), and closing balance is derived from ledger + wallet entries
-    /// (same basis as trader statements). Otherwise the legacy path infers opening from
-    /// `investorCashBalanceService` cache, which can drift from server configuration.
+    /// Uses backend `AccountStatement` entries and `UserCashBalance` for closing balance when configured.
     @MainActor
     static func buildSnapshotWithWallet(
         for user: User?,
@@ -23,7 +17,7 @@ enum InvestorAccountStatementBuilder {
         settlementAPIService: (any SettlementAPIServiceProtocol)? = nil,
         configurationService: (any ConfigurationServiceProtocol)? = nil
     ) async -> InvestorAccountStatementSnapshot {
-        guard let user = user else {
+        guard let user else {
             let initialBalance = configurationService?.initialAccountBalance
                 ?? CalculationConstants.Account.initialInvestorBalance
             return InvestorAccountStatementSnapshot(
@@ -33,38 +27,33 @@ enum InvestorAccountStatementBuilder {
             )
         }
 
-        let serviceBalance = investorCashBalanceService.getBalance(for: user.id)
+        let serverOnly = configurationService?.investorStatementServerOnly ?? true
         let walletEntries = await loadWalletEntries(for: user, paymentService: paymentService)
 
-        // Try backend entries first; fall back to local ledger
         let investmentEntries: [AccountStatementEntry]
-        let serverOnly = configurationService?.investorStatementServerOnly ?? true
         if let settlementService = settlementAPIService {
             investmentEntries = await self.loadBackendEntries(
                 for: user,
                 settlementAPIService: settlementService,
-                investorCashBalanceService: investorCashBalanceService,
                 monetaryServerOnly: serverOnly
             )
-        } else if serverOnly {
-            investmentEntries = []
         } else {
-            investmentEntries = investorCashBalanceService.getTransactions(for: user.id)
+            investmentEntries = []
         }
 
         let allEntries = investmentEntries + walletEntries
-        let openingBalance: Double
-        if let configurationService {
-            openingBalance = configurationService.initialAccountBalance
-        } else {
-            openingBalance = self.calculateOpeningBalance(serviceBalance: serviceBalance, entries: allEntries)
-        }
+        let openingBalance = configurationService?.initialAccountBalance
+            ?? CalculationConstants.Account.initialInvestorBalance
         let recalculatedEntries = self.recalculateBalanceAfter(entries: allEntries, openingBalance: openingBalance)
+
         let closingBalance: Double
-        if configurationService != nil {
-            closingBalance = recalculatedEntries.last?.balanceAfter ?? openingBalance
+        if let settlementAPIService,
+           let serverBalance = await UserCashBalanceResolver.fetchCurrentBalance(
+               settlementAPIService: settlementAPIService
+           ) {
+            closingBalance = serverBalance
         } else {
-            closingBalance = serviceBalance
+            closingBalance = recalculatedEntries.last?.balanceAfter ?? openingBalance
         }
 
         return InvestorAccountStatementSnapshot(
@@ -77,12 +66,11 @@ enum InvestorAccountStatementBuilder {
     // MARK: - Backend Integration
 
     /// Fetches investor account statement entries from the backend and converts them
-    /// to `AccountStatementEntry` objects. Falls back to the local ledger on error.
+    /// to `AccountStatementEntry` objects.
     @MainActor
     private static func loadBackendEntries(
-        for user: User,
+        for _: User,
         settlementAPIService: any SettlementAPIServiceProtocol,
-        investorCashBalanceService: any InvestorCashBalanceServiceProtocol,
         monetaryServerOnly: Bool
     ) async -> [AccountStatementEntry] {
         do {
@@ -101,72 +89,18 @@ enum InvestorAccountStatementBuilder {
             guard !allBackendEntries.isEmpty else {
                 if monetaryServerOnly {
                     InvestorCollectionBillLog.warning(InvestorMonetaryMessages.accountStatementUnavailable)
-                    return []
                 }
-                return investorCashBalanceService.getTransactions(for: user.id)
+                return []
             }
-            let converted = allBackendEntries.compactMap { self.convertBackendEntry($0) }
-            if Self.backendInvestorTimelineIncludesMergedEscrows(converted) {
-                return converted
-            }
-            return self.mergeMissingLocalEscrowReserves(
-                backend: converted,
-                local: investorCashBalanceService.getTransactions(for: user.id),
-                monetaryServerOnly: monetaryServerOnly
-            )
+            return allBackendEntries.compactMap { self.convertBackendEntry($0) }
         } catch {
             if monetaryServerOnly {
                 InvestorCollectionBillLog.warning(
                     "InvestorAccountStatementBuilder: \(InvestorMonetaryMessages.accountStatementUnavailable) — \(error.localizedDescription)"
                 )
-                return []
             }
-            print("⚠️ InvestorAccountStatementBuilder: Backend entries unavailable (\(error.localizedDescription)) — using local ledger")
-            return investorCashBalanceService.getTransactions(for: user.id)
+            return []
         }
-    }
-
-    /// When `getAccountStatement` already returns the merged investor timeline (AccountStatement + AVA AppLedger),
-    /// do not merge in local cash-balance lines — they duplicate escrow legs and look like an extra „GoB“ layer.
-    private static func backendInvestorTimelineIncludesMergedEscrows(_ backend: [AccountStatementEntry]) -> Bool {
-        backend.contains { entry in
-            if entry.metadata["source"] == "app_subledger" { return true }
-            let t = entry.metadata["backendEntryType"] ?? ""
-            if t.hasPrefix("investment_escrow_") { return true }
-            return false
-        }
-    }
-
-    /// When the API returns only `AccountStatement` rows (e.g. after first buy) but escrow
-    /// reserves live in `AppLedgerEntry`, keep local reserve lines until the backend merge includes them.
-    private static func mergeMissingLocalEscrowReserves(
-        backend: [AccountStatementEntry],
-        local: [AccountStatementEntry],
-        monetaryServerOnly: Bool
-    ) -> [AccountStatementEntry] {
-        guard !monetaryServerOnly else { return backend }
-
-        let backendReserveInvestmentIds = Set(
-            backend.compactMap { entry -> String? in
-                guard entry.category == .investment, entry.direction == .debit else { return nil }
-                let type = entry.metadata["backendEntryType"] ?? ""
-                if type == "investment_escrow_reserve" || type.isEmpty {
-                    return entry.metadata["investmentId"]
-                }
-                return nil
-            }
-        )
-
-        let supplemental = local.filter { localEntry in
-            guard localEntry.category == .investment,
-                  localEntry.direction == .debit,
-                  let investmentId = localEntry.metadata["investmentId"],
-                  !investmentId.isEmpty else { return false }
-            return !backendReserveInvestmentIds.contains(investmentId)
-        }
-
-        guard !supplemental.isEmpty else { return backend }
-        return backend + supplemental
     }
 
     /// Converts a single `BackendAccountEntry` to a display `AccountStatementEntry`.
@@ -270,7 +204,7 @@ enum InvestorAccountStatementBuilder {
         for user: User,
         paymentService: (any PaymentServiceProtocol)?
     ) async -> [AccountStatementEntry] {
-        guard let paymentService = paymentService else {
+        guard let paymentService else {
             return []
         }
 
@@ -287,20 +221,6 @@ enum InvestorAccountStatementBuilder {
             )
             return []
         }
-    }
-
-    /// Calculates the opening balance from service balance and all entries
-    /// - Parameters:
-    ///   - serviceBalance: Current balance from service
-    ///   - entries: All account statement entries
-    /// - Returns: Calculated opening balance
-    private static func calculateOpeningBalance(
-        serviceBalance: Double,
-        entries: [AccountStatementEntry]
-    ) -> Double {
-        let totalDelta = entries.reduce(0.0) { $0 + $1.signedAmount }
-        let calculatedOpening = serviceBalance - totalDelta
-        return max(0, calculatedOpening)
     }
 
     /// Recalculates balanceAfter for all entries in chronological order

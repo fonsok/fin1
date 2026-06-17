@@ -156,6 +156,9 @@ private struct InvestmentSheetContent: View {
                 }
             }
         }
+        .task {
+            await self.viewModel.refreshAuthoritativeCashBalance()
+        }
         .alert("Investment nicht möglich", isPresented: self.$viewModel.showInvestmentError) {
             Button("OK") { }
         } message: {

@@ -119,6 +119,9 @@ extension AppServicesBuilder {
                 parseLiveQueryClient: parseLiveQueryClient,
                 userService: userService
             )
+            if let settlementAPIService = ctx.settlementAPIService {
+                ctx.investorCashBalanceService?.configure(settlementAPIService: settlementAPIService)
+            }
         }
     }
 }
