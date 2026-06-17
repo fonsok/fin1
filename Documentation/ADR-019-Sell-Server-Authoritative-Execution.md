@@ -1,6 +1,6 @@
 # ADR-019 – Sell: Server-Authoritative Execution (Symmetrie zu Paired Buy)
 
-- **Status:** Accepted (Phase 1a implemented 2026-06-17; Phase 1b implemented 2026-06-17; Phase 2 implemented 2026-06-17; Phase 3a implemented 2026-06-17)
+- **Status:** Accepted (Phase 1a–2, 3a–3b implemented 2026-06-17)
 - **Datum:** 2026-06-17
 - **Bezug:** `BACKEND_CALCULATION_MIGRATION.md`, `executionPriceResolver.js`, `executePairedBuy`, ADR-018, Gap-Analyse Monetary SSOT (2026-06)
 
@@ -41,12 +41,16 @@ Analog **P3b** (`InvoiceLocalSynthesisGate`):
 
 Offen (Phase 4+): `settlementGLOutboxEnabled` in Prod, ADR-018 P3c Decimal an Mongo-Grenzen.
 
-### Phase 3 — Saldo SSOT (implemented 2026-06-17)
+### Phase 3a — Saldo-Anzeige iOS (implemented 2026-06-17)
 
-1. **`getUserCashBalance` CF:** liest `UserCashBalance.currentBalance` (mit Seed aus letztem `AccountStatement`).
-2. **iOS customer display:** Closing balance from `getAccountStatement` merge (`balanceAfter` der letzten Zeile) — identisch Admin „Kundensicht“. `UserCashBalance` nur für Buchungs-Counter/Ops.
-3. **`InvestorCashBalanceService.syncAuthoritativeBalance`:** Investment-Sheet und Quick-Stats nutzen Server-Saldo bei `investorMonetaryServerOnly`.
-4. **`InvestorAccountStatementBuilder`:** keine lokalen Ledger-Fallbacks mehr für Kontoauszugszeilen.
+1. **iOS customer display:** Closing balance aus `getAccountStatement` merge — identisch Admin „Kundensicht“.
+2. **Saldo-Fix:** kein `UserCashBalance`/Client-Recalc mit doppelten Wallet-Zeilen.
+
+### Phase 3b — UserCashBalance Reconciliation (implemented 2026-06-17)
+
+1. **`customerClosingBalance.js`:** Closing aus Investor/Trader Merge-Timeline.
+2. **`getUserCashBalance`:** `source: customer_timeline`; Drift-Audit vs. Mongo-Counter.
+3. **Seed + Backfill:** `ensureUserCashBalanceSeeded` / `backfillUserCashBalanceFromStatements` auf Kundensicht.
 
 Offen: ADR-009 `collectionBillServerLegs`, ADR-018 P3c `currentBalanceCents`.
 

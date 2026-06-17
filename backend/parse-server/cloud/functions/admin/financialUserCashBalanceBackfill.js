@@ -1,14 +1,14 @@
 'use strict';
 
 /**
- * Admin: `UserCashBalance.currentBalance` aus dem letzten `AccountStatement` pro User
- * nachziehen (Reconciliation / Post-Migration). Read-heavy; nutzt Mongo Aggregation
- * auf derselben DB wie Phase 3b.
+ * Admin: reconcile `UserCashBalance.currentBalance` to customer merge timeline
+ * (same basis as `getAccountStatement` / Admin „Kundensicht“).
  */
 
-const { round2 } = require('../../utils/accountingHelper/shared');
 const { audit } = require('../../utils/structuredLogger');
-const { getAccountStatementMongoCollection, getUserCashBalanceCollection } = require('../../utils/accountingHelper/userCashBalanceAtomic');
+const { getUserCashBalanceCollection } = require('../../utils/accountingHelper/userCashBalanceAtomic');
+const { computeCustomerClosingBalanceForUserId } = require('../../utils/accountingHelper/customerClosingBalance');
+const { normalizeEuro } = require('../../utils/accountingHelper/moneyCents');
 
 /**
  * @param {import('parse/node').Cloud.FunctionRequest} request
@@ -18,30 +18,33 @@ async function handleBackfillUserCashBalanceFromStatements(request) {
   const requestedLimit = Number(request.params?.limitUsers || 500);
   const limitUsers = Math.min(5000, Math.max(1, requestedLimit));
 
-  const stmtColl = await getAccountStatementMongoCollection();
   const balColl = await getUserCashBalanceCollection();
 
-  const userIds = await stmtColl
-    .distinct('userId', { userId: { $exists: true, $nin: [null, ''] } });
-  const limitedUserIds = userIds.slice(0, limitUsers);
+  const userQuery = new Parse.Query(Parse.User);
+  userQuery.limit(limitUsers);
+  userQuery.ascending('createdAt');
+  const users = await userQuery.find({ useMasterKey: true });
 
   const preview = [];
   let writesPerformed = 0;
-  const targets = [];
+  let usersProcessed = 0;
+  let skipped = 0;
 
-  for (const userId of limitedUserIds) {
-    const uid = String(userId || '').trim();
-    if (!uid) continue;
-    // eslint-disable-next-line no-await-in-loop
-    const lastRow = await stmtColl
-      .find({ userId: uid })
-      .project({ balanceAfter: 1, _created_at: 1, _id: 1 })
-      .sort({ _created_at: -1, _id: -1 })
-      .limit(1)
-      .next();
-    if (!lastRow) continue;
-    const target = round2(Number(lastRow.balanceAfter || 0));
-    targets.push({ userId: uid, currentBalanceTarget: target });
+  for (const user of users) {
+    usersProcessed += 1;
+    const uid = user.id;
+    let target;
+    try {
+      // eslint-disable-next-line no-await-in-loop
+      target = normalizeEuro(await computeCustomerClosingBalanceForUserId(uid));
+    } catch (err) {
+      skipped += 1;
+      audit.warn('admin.userCashBalance.backfill.skip', {
+        userId: uid,
+        error: err && err.message ? err.message : String(err),
+      });
+      continue;
+    }
 
     if (dryRun) {
       if (preview.length < 20) {
@@ -62,16 +65,20 @@ async function handleBackfillUserCashBalanceFromStatements(request) {
   audit.info('admin.userCashBalance.backfill', {
     dryRun,
     limitUsers,
-    usersProcessed: limitedUserIds.length,
+    usersProcessed,
     writesPerformed,
+    skipped,
+    basis: 'customer_timeline',
     message: 'backfillUserCashBalanceFromStatements completed',
   });
 
   return {
     dryRun,
     limitUsers,
-    usersProcessed: limitedUserIds.length,
+    usersProcessed,
     writesPerformed,
+    skipped,
+    basis: 'customer_timeline',
     preview,
   };
 }

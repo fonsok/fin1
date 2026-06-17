@@ -21,6 +21,9 @@ const {
   normalizeEuro,
   addCents,
 } = require('./moneyCents');
+const {
+  computeCustomerClosingBalanceForUserId,
+} = require('./customerClosingBalance');
 const { audit } = require('../structuredLogger');
 
 let fin1MongoPromise;
@@ -73,8 +76,7 @@ async function __resetUserCashBalanceMongoForTests() {
 
 /**
  * Legt eine `UserCashBalance`-Zeile an, wenn noch keine existiert, mit `currentBalance`
- * = letztes `AccountStatement.balanceAfter` (oder 0). Idempotent; Duplikat-Save wird
- * ignoriert (paralleles Seed).
+ * = customer merge timeline closing (fallback: letztes `AccountStatement`). Idempotent.
  *
  * @param {string} userId
  */
@@ -89,12 +91,21 @@ async function ensureUserCashBalanceSeeded(userId) {
   const existing = await q.first({ useMasterKey: true });
   if (existing) return;
 
-  const lastEntry = await new Parse.Query('AccountStatement')
-    .equalTo('userId', uid)
-    .descending('createdAt')
-    .first({ useMasterKey: true });
-
-  const seed = normalizeEuro(lastEntry ? Number(lastEntry.get('balanceAfter') || 0) : 0);
+  let seed = 0;
+  try {
+    seed = await computeCustomerClosingBalanceForUserId(uid);
+  } catch (err) {
+    audit.warn('userCashBalance.seed.fallback', {
+      userId: uid,
+      error: err && err.message ? err.message : String(err),
+      message: 'Falling back to last AccountStatement.balanceAfter for UserCashBalance seed',
+    });
+    const lastEntry = await new Parse.Query('AccountStatement')
+      .equalTo('userId', uid)
+      .descending('createdAt')
+      .first({ useMasterKey: true });
+    seed = normalizeEuro(lastEntry ? Number(lastEntry.get('balanceAfter') || 0) : 0);
+  }
 
   const row = new Parse.Object('UserCashBalance');
   row.set('userId', uid);
@@ -186,8 +197,26 @@ async function compensateUserCashBalanceAdvance({ userId, amount }) {
 }
 
 /**
+ * Reads persisted `UserCashBalance.currentBalance` without seeding.
+ * @param {string} userId
+ * @returns {Promise<number|null>}
+ */
+async function readStoredUserCashBalanceForUser(userId) {
+  const uid = String(userId || '').trim();
+  if (!uid) {
+    throw new Error('readStoredUserCashBalanceForUser: userId is required');
+  }
+
+  const q = new Parse.Query('UserCashBalance');
+  q.equalTo('userId', uid);
+  const row = await q.first({ useMasterKey: true });
+  if (!row) return null;
+  return normalizeEuro(Number(row.get('currentBalance') || 0));
+}
+
+/**
  * Liest den autoritativen Kundensaldo (`UserCashBalance.currentBalance`).
- * Seedet die Zeile bei Bedarf aus dem letzten `AccountStatement`.
+ * Seedet die Zeile bei Bedarf. Prefer `computeCustomerClosingBalanceForUser` for display SSOT.
  *
  * @param {string} userId
  * @returns {Promise<number>}
@@ -211,6 +240,7 @@ module.exports = {
   advanceUserCashBalanceAtomic,
   compensateUserCashBalanceAdvance,
   readUserCashBalanceForUser,
+  readStoredUserCashBalanceForUser,
   getDatabaseUri,
   getFin1MongoDb,
   getUserCashBalanceCollection,
