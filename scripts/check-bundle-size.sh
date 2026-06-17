@@ -54,32 +54,36 @@ if [[ -z "$APP_PATH" ]]; then
     exit 1
 fi
 
-# Get bundle size in MB
-BUNDLE_SIZE_MB=$(du -sm "$APP_PATH" | cut -f1)
-# du -sk is KB; convert to approximate bytes for logs
-BUNDLE_SIZE_BYTES=$(($(du -sk "$APP_PATH" | cut -f1) * 1024))
+# Use KiB (du -sk) for thresholds — du -sm rounds up and false-fails at the boundary
+# (e.g. 119 MiB actual → du -sm reports 120MB while 121892 KiB < 122880 KiB limit).
+BUNDLE_SIZE_KB=$(du -sk "$APP_PATH" | cut -f1)
+BUNDLE_SIZE_BYTES=$((BUNDLE_SIZE_KB * 1024))
+BUNDLE_SIZE_MB_DISPLAY=$(awk "BEGIN { printf \"%.1f\", ${BUNDLE_SIZE_KB} / 1024 }")
+WARNING_THRESHOLD_KB=$((WARNING_THRESHOLD * 1024))
+ERROR_THRESHOLD_KB=$((ERROR_THRESHOLD * 1024))
+CRITICAL_THRESHOLD_KB=$((CRITICAL_THRESHOLD * 1024))
 
 echo "📊 Bundle Size Analysis"
 echo "----------------------------------------------------------------"
-echo "   Size: ${BUNDLE_SIZE_MB}MB (${BUNDLE_SIZE_BYTES} bytes)"
+echo "   Size: ${BUNDLE_SIZE_MB_DISPLAY}MB (${BUNDLE_SIZE_BYTES} bytes, ${BUNDLE_SIZE_KB} KiB)"
 echo "   Path: $APP_PATH"
 echo ""
 
 # Check thresholds
-if [ "$BUNDLE_SIZE_MB" -ge "$CRITICAL_THRESHOLD" ]; then
+if [ "$BUNDLE_SIZE_KB" -ge "$CRITICAL_THRESHOLD_KB" ]; then
     echo -e "${RED}❌ CRITICAL: Bundle size exceeds ${CRITICAL_THRESHOLD}MB!${NC}"
     echo "   ⚠️  App Store over-the-air download limit is 200MB"
     echo "   ⚠️  Users will need WiFi to download"
     exit 1
-elif [ "$BUNDLE_SIZE_MB" -ge "$ERROR_THRESHOLD" ]; then
+elif [ "$BUNDLE_SIZE_KB" -ge "$ERROR_THRESHOLD_KB" ]; then
     echo -e "${RED}❌ ERROR: Bundle size exceeds ${ERROR_THRESHOLD}MB${NC}"
     echo "   ⚠️  Consider optimizing assets or removing unused dependencies"
     exit 1
-elif [ "$BUNDLE_SIZE_MB" -ge "$WARNING_THRESHOLD" ]; then
+elif [ "$BUNDLE_SIZE_KB" -ge "$WARNING_THRESHOLD_KB" ]; then
     echo -e "${YELLOW}⚠️  WARNING: Bundle size exceeds ${WARNING_THRESHOLD}MB${NC}"
     echo "   💡 Monitor bundle size growth"
     exit 0
 else
-    echo -e "${GREEN}✅ Bundle size is acceptable (${BUNDLE_SIZE_MB}MB < ${WARNING_THRESHOLD}MB)${NC}"
+    echo -e "${GREEN}✅ Bundle size is acceptable (${BUNDLE_SIZE_MB_DISPLAY}MB < ${WARNING_THRESHOLD}MB)${NC}"
     exit 0
 fi
