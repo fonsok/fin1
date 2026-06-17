@@ -49,8 +49,10 @@ Parse.Cloud.beforeSave('Order', async (request) => {
     order.set('remainingQuantity', order.get('quantity'));
     order.set('timeInForce', order.get('timeInForce') || 'day');
 
+    // Server-authoritative execution price for standalone buy/sell legs (ADR-019).
+    // Paired buys set executionPriceSource in executePairedBuy; skip those rows.
     if (
-      side === 'buy'
+      (side === 'buy' || side === 'sell')
       && !order.get('executionPriceSource')
       && !order.get('pairExecutionId')
     ) {

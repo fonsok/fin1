@@ -154,7 +154,7 @@ private struct ParseOrderInput: Codable {
             subscriptionRatio: nil,
             denomination: nil,
             originalHoldingId: sellOrder.originalHoldingId,
-            clientQuotedAt: nil
+            clientQuotedAt: Self.iso8601NowFormatter.string(from: Date())
         )
     }
 
@@ -191,7 +191,7 @@ private struct ParseOrderInput: Codable {
             subscriptionRatio: order.subscriptionRatio,
             denomination: order.denomination,
             originalHoldingId: order.originalHoldingId,
-            clientQuotedAt: nil
+            clientQuotedAt: order.type == .sell ? Self.iso8601NowFormatter.string(from: Date()) : nil
         )
     }
 }
