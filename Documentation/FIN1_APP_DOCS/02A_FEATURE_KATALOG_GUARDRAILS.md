@@ -139,13 +139,28 @@ Diese Regeln schützen **bereits korrekte Finanzwerte** vor “Formel-Drift” (
 - **Entry Points**
   - `FIN1/Features/Authentication/Views/SignUp/SignUpView.swift`
   - Step-Modelle: `FIN1/Features/Authentication/Views/SignUp/Components/Models/*`
+  - iOS Step 17 (UI): `DesiredReturnStep.swift` — Enum `SignUpStep.desiredReturn`
+  - Wissenstest-SSOT (iOS): `LeveragedProductsKnowledgeTest.swift`
+  - Wissenstest-SSOT (Backend): `backend/parse-server/cloud/utils/leveragedProductsKnowledgeTest.js`
 - **Protected Behaviors**
   - Registrierung bleibt **multi-step** (UI + Validation), inkl. Risk/Experience/Declarations.
   - Validierungen bleiben in Services/ViewModels (nicht in Views).
   - Risiko-/Erfahrungslogik bleibt konsistent (siehe `.cursor/rules/compliance.md` und Auth Services).
+  - **Step 17 (Wissenstest, Gewinnziel & Risikobestätigung):**
+    - Nutzer muss **alle** Wissenstest-Fragen beantworten und **Ja/Nein** zum Totalverlustrisiko wählen, um weiterzugehen.
+    - **Falsche Quiz-Antworten blockieren nicht** — stattdessen Lernhinweis + Link zur In-App-Lernseite (`LeveragedProductsLearningView`).
+    - **Risikoklasse 1 (konservativ)** wird in der Zusammenfassung erzwungen, wenn `leveragedProductsTotalLossRiskAcknowledged == false` **oder** der Wissenstest beantwortet, aber nicht bestanden ist (`requiresConservativeRiskClassFromOnboarding` in `SignUpData`).
+    - iOS- und Backend-Fragenversion müssen übereinstimmen (aktuell **1.2**); Fragen/Optionen nur koordiniert in beiden SSOT-Dateien ändern.
+  - **Step 22 (Hinweis Risikoklassifizierung):**
+    - RK **1–4** → zurück zur Landing Page.
+    - RK **5–6** → Landing nur, wenn der Nutzer die Risikoklasse **nicht** manuell erhöht hat (`shouldReturnToLandingAtRiskNote`).
+    - RK **7** → Onboarding fortsetzen.
+  - **Server bleibt maßgeblich** für Joi-Validierung und `OnboardingAudit`-Snapshot beim Schritt `risk` (siehe `onboarding.js`).
 - **Minimal-Checks**
   - Step Navigation funktioniert (vor/zurück, Progress).
   - Validation Errors werden korrekt angezeigt (kein “silent fail”).
+  - Step 17: Nein bei Totalverlust → Summary zeigt RK1; falscher Quiz → RK1, Weiter trotzdem möglich.
+  - Step 22: Landing-Routing für RK1–6 wie oben; RK7 durchlässig.
 
 ### 3.4 Investing (Investor Discovery → Investment → Portfolio)
 

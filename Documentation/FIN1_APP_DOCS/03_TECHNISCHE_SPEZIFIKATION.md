@@ -263,6 +263,20 @@ sequenceDiagram
 
 **Onboarding-Validierung (Server):** Eingaben werden nach Sanitizing **schemabasiert** geprüft (`backend/parse-server/cloud/utils/onboardingStepSchemas.js`, Einbindung in `validation.js`). Details und Client-Kontrakt: [`Documentation/ENGINEERING_GUIDE.md`](../ENGINEERING_GUIDE.md) (Abschnitt Onboarding), [`Documentation/ADR-002-Onboarding-Codable-DTO.md`](../ADR-002-Onboarding-Codable-DTO.md).
 
+**Onboarding Schritt `risk` — Payload & Wissenstest (seit 2026-06):**
+
+| Feld | Complete (`validateStepData`) | Partial (`validatePartialOnboardingData`) | Hinweis |
+|------|------------------------------|-------------------------------------------|---------|
+| `leveragedProductsTotalLossRiskAcknowledged` | **required** (boolean) | optional | `false` → iOS erzwingt RK1 |
+| `leveragedProductsKnowledgeTestAnswers` | **required** (Object, Keys = Frage-IDs, Werte A–D) | optional | Vollständigkeit via `leveragedProductsKnowledgeTest.js` |
+| `leveragedProductsKnowledgeTestVersion` | optional | optional | SSOT-Version, aktuell `1.2` |
+| `leveragedProductsKnowledgeTestPassed` | optional | optional | Audit/Transparenz; Server validiert nicht die Korrektheit |
+| `desiredReturn`, `calculatedRiskClass`, `finalRiskClass`, Declarations | optional | optional | wie Joi-Schema `risk` |
+
+- **SSOT-Paar (Fragen & Version):** iOS `FIN1/.../LeveragedProductsKnowledgeTest.swift` ↔ Backend `backend/parse-server/cloud/utils/leveragedProductsKnowledgeTest.js` — bei Änderungen **beide** Dateien und ggf. `onboardingStepSchemas.test.js` anpassen.
+- **Audit:** `completeOnboardingStep` mit `step: "risk"` persistiert Snapshot in `OnboardingAudit` (`buildAuditAnswers` in `functions/user/onboarding.js`).
+- **Dev OTP:** E-Mail-/SMS-Verifikation akzeptiert `000000`, wenn `NODE_ENV !== production` oder `ALLOW_DEV_ONBOARDING_OTP_BYPASS=true` (`utils/onboardingDevOtpBypass.js`; Env: `backend/env.example`).
+
 **Company-KYB (Server):** Joi in `backend/parse-server/cloud/utils/companyKybStepSchemas.js`, Einbindung in `validation.js`. Produktregeln und Schrittliste: [`Documentation/COMPANY_KYB_ONBOARDING.md`](../COMPANY_KYB_ONBOARDING.md), [`Documentation/ADR-003-Company-KYB-Onboarding.md`](../ADR-003-Company-KYB-Onboarding.md). iOS: `CompanyKybAPIService` / `SavedCompanyKybData`.
 
 #### Investment

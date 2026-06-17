@@ -1,7 +1,7 @@
 ---
 title: "FIN1 – Fachliche Spezifikation (Requirements)"
 audience: ["Produkt", "BA", "QA", "Compliance", "Support"]
-lastUpdated: "2026-04-11"
+lastUpdated: "2026-06-17"
 ---
 
 ## Zweck
@@ -31,6 +31,20 @@ Wenn es nicht nur um “was soll das Produkt”, sondern um “was darf nicht ka
     - Unterstützte Schritte: `personal`, `address`, `tax`, `experience`, `risk`, `consents`, `verification` (`completeOnboardingStep`).
     - Bei `verification` wird `onboardingCompleted=true` gesetzt.
     - KYC-Status wird korrekt gesetzt (`verified` wenn `kycApproved`, sonst `in_progress`).
+    - **Schritt `risk` (iOS Step 17 — Wissenstest & Risikobestätigung):**
+      - Pflicht bei Abschluss: `leveragedProductsTotalLossRiskAcknowledged` (boolean), `leveragedProductsKnowledgeTestAnswers` (alle Fragen der aktuellen Version beantwortet, Optionen A–D).
+      - Optional: `leveragedProductsKnowledgeTestVersion`, `leveragedProductsKnowledgeTestPassed`, `desiredReturn`, berechnete/finale Risikoklasse.
+      - Server prüft **Vollständigkeit** der Antworten (Joi + `leveragedProductsKnowledgeTest.js`), **nicht** ob Antworten inhaltlich korrekt sind — Korrektheit ist Client-Produktlogik.
+      - **Fachregel RK1:** Wenn Totalverlust mit **Nein** beantwortet oder Wissenstest beantwortet aber nicht bestanden → finale Risikoklasse **1** in der Zusammenfassung (iOS: `requiresConservativeRiskClassFromOnboarding`).
+      - Falsche Quiz-Antwort: Lernhinweis in der App, **kein** Blocker für „Weiter“.
+    - **Schritt 22 (Hinweis Risikoklassifizierung, iOS):** RK 1–4 → Abbruch zur Landing; RK 5–6 → Landing nur ohne manuelle RK-Erhöhung; RK 7 → weiter im Flow.
+    - Audit: Beim Abschluss von `risk` schreibt `OnboardingAudit` u. a. Totalverlust-Bestätigung, Wissenstest-Version/-Antworten/-bestanden, `finalRiskClass` (`onboarding.js` → `buildAuditAnswers`).
+
+- **US-A2b Onboarding — Dev/Test (nur Entwicklung)**
+  Als Entwickler möchte ich den Sign-Up-Flow auf iobox/debug schnell durchklicken können.
+  - **Akzeptanzkriterien**
+    - iOS `#if DEBUG`: Prefill + automatische Verifikation (`SignUpCoordinator+DebugPrefill.swift`, `TestUserConstants.signupTest*`).
+    - OTP `000000` wird serverseitig akzeptiert, wenn `NODE_ENV !== production` **oder** `ALLOW_DEV_ONBOARDING_OTP_BYPASS=true` (siehe `onboardingDevOtpBypass.js`, `backend/env.example`).
 
 - **US-A3 Profil anzeigen/ändern**
   Als Nutzer möchte ich mein Profil sehen und aktualisieren, damit meine Daten korrekt sind.

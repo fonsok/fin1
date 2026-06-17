@@ -38,6 +38,7 @@
 - **Implemented**: [`backend/parse-server/cloud/utils/onboardingStepSchemas.js`](../backend/parse-server/cloud/utils/onboardingStepSchemas.js) defines Joi schemas aligned with the former manual rules.
 - `validateStepData` (complete step) and `validatePartialOnboardingData` (partial save) are wired from [`validation.js`](../backend/parse-server/cloud/utils/validation.js) and used by [`onboarding.js`](../backend/parse-server/cloud/functions/user/onboarding.js) (`completeOnboardingStep`, `saveOnboardingProgress`).
 - Optional future work: JSON Schema docs in `Documentation/` or stricter consents rules if product requires “must be true” on every complete.
+- **Risk step (`risk`) — leveraged-products knowledge test (2026-06):** New persisted fields include `leveragedProductsTotalLossRiskAcknowledged`, `leveragedProductsKnowledgeTestAnswers`, optional version/passed flags. Joi enforces completeness; correctness is evaluated on iOS for RK1 routing. SSOT mirror: `leveragedProductsKnowledgeTest.js` + `LeveragedProductsKnowledgeTest.swift`. See `Documentation/FIN1_APP_DOCS/03_TECHNISCHE_SPEZIFIKATION.md`.
 
 ## Rationale
 - **Codable** gives compile-time structure, easier refactors, and optional fields for backward-compatible decoding of older saved JSON.

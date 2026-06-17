@@ -9,7 +9,7 @@ function envTrue(name) {
 
 /**
  * Accepts `000000` when NODE_ENV is not production, or when explicitly enabled on iobox
- * via ALLOW_DEV_ONBOARDING_OTP_BYPASS=true (see backend/.env.example).
+ * via ALLOW_DEV_ONBOARDING_OTP_BYPASS=true (see backend/env.example).
  */
 function isDevOnboardingOtpBypass(code) {
   if (code !== DEV_ONBOARDING_OTP) return false;
