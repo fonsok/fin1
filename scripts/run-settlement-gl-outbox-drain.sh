@@ -1,47 +1,59 @@
 #!/usr/bin/env bash
 # Drain pending SettlementOutbox rows (ADR-017 async GL posting).
 #
-# Required env: PARSE_SERVER_URL, PARSE_APP_ID, PARSE_MASTER_KEY
-# Optional: SETTLEMENT_GL_OUTBOX_LIMIT (default 50)
+# Usage:
+#   ./scripts/run-settlement-gl-outbox-drain.sh
+#   SETTLEMENT_GL_OUTBOX_LIMIT=100 ./scripts/run-settlement-gl-outbox-drain.sh
 #
 set -euo pipefail
 
-LIMIT="${SETTLEMENT_GL_OUTBOX_LIMIT:-50}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+[ -f "$SCRIPT_DIR/.env.server" ] && source "$SCRIPT_DIR/.env.server"
 
-normalize_parse_base() {
-  local url="${1:-}"
-  url="${url%/}"
-  if [[ -z "$url" ]]; then
-    echo ""
-    return
-  fi
-  if [[ "$url" == */parse ]]; then
-    echo "$url"
-  else
-    echo "${url}/parse"
-  fi
+LIMIT="${SETTLEMENT_GL_OUTBOX_LIMIT:-50}"
+PARSE_HOST="${FIN1_PARSE_CLOUD_SSH_HOST:-${FIN1_SERVER_IP:-192.168.178.20}}"
+PARSE_URL="${PARSE_URL:-https://${PARSE_HOST}/parse}"
+APP_ID="${PARSE_SERVER_APPLICATION_ID:-fin1-app-id}"
+
+load_env_key() {
+  local file="$1" key="$2"
+  [ -f "$file" ] || return 1
+  grep -E "^${key}=" "$file" | head -1 | cut -d= -f2- | tr -d '"' | tr -d "'"
 }
 
-PARSE_BASE="$(normalize_parse_base "${PARSE_SERVER_URL:-}")"
-APP_ID="${PARSE_APP_ID:-}"
-MASTER_KEY="${PARSE_MASTER_KEY:-}"
-
-if [[ -z "$PARSE_BASE" || -z "$APP_ID" || -z "$MASTER_KEY" ]]; then
-  echo "Missing PARSE_SERVER_URL, PARSE_APP_ID, or PARSE_MASTER_KEY" >&2
+ENV_FILE="${FIN1_SERVER_ENV:-$HOME/fin1-server/backend/.env}"
+if [ -z "${PARSE_SERVER_MASTER_KEY:-}" ]; then
+  PARSE_SERVER_MASTER_KEY="$(load_env_key "$ENV_FILE" PARSE_SERVER_MASTER_KEY || true)"
+fi
+if [ -z "${PARSE_SERVER_MASTER_KEY:-}" ]; then
+  echo "Loading master key from ${FIN1_SERVER_USER:-io}@${PARSE_HOST} …"
+  PARSE_SERVER_MASTER_KEY="$(ssh "${FIN1_SERVER_USER:-io}@${PARSE_HOST}" \
+    "grep -E '^PARSE_SERVER_MASTER_KEY=' ~/fin1-server/backend/.env | head -1 | cut -d= -f2- | tr -d '\"' | tr -d \"'\"")"
+fi
+if [ -z "${PARSE_SERVER_MASTER_KEY:-}" ]; then
+  echo "Error: PARSE_SERVER_MASTER_KEY not available."
   exit 1
 fi
 
-RESPONSE="$(curl -sk -X POST "${PARSE_BASE}/functions/runSettlementGLOutbox" \
+echo "=== runSettlementGLOutbox (limit=$LIMIT) ==="
+echo "  PARSE_URL=$PARSE_URL"
+echo ""
+
+RESPONSE="$(curl -sk --connect-timeout 120 -X POST "${PARSE_URL}/functions/runSettlementGLOutbox" \
   -H "X-Parse-Application-Id: ${APP_ID}" \
-  -H "X-Parse-Master-Key: ${MASTER_KEY}" \
+  -H "X-Parse-Master-Key: ${PARSE_SERVER_MASTER_KEY}" \
   -H "Content-Type: application/json" \
   -d "$(python3 -c "import json; print(json.dumps({'limit': int('${LIMIT}')}))")")"
+
+if echo "$RESPONSE" | grep -q '"error"'; then
+  echo "$RESPONSE" | python3 -m json.tool 2>/dev/null || echo "$RESPONSE"
+  exit 1
+fi
 
 python3 -c "
 import json, sys
 raw = json.loads(sys.argv[1])
-if raw.get('code') or raw.get('error'):
-    raise SystemExit('Parse error: ' + json.dumps(raw))
 r = raw.get('result') or {}
 processed = int(r.get('processed') or 0)
 print(f'processed={processed}')

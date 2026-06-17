@@ -39,7 +39,7 @@ Analog **P3b** (`InvoiceLocalSynthesisGate`):
 3. **Prod-Call-Sites:** ViewModels, `InvestmentCashDistributor`, `ProfitDistributionService`, `OrderLifecycleCoordinator+Settlement` (Credit Note) ohne lokale Monetary-Fallbacks.
 4. **Listen/Detail:** `canonicalSummaries` / `summarizeInvestmentFromServer` statt lokaler Aggregator-Summaries.
 
-Offen (Phase 4+): `settlementGLOutboxEnabled` in Prod, ADR-018 P3c Decimal an Mongo-Grenzen.
+Offen (Phase 5+): ADR-018 P3c Decimal an Mongo-Grenzen, ADR-009 `collectionBillServerLegs`.
 
 ### Phase 3a — Saldo-Anzeige iOS (implemented 2026-06-17)
 
@@ -54,7 +54,29 @@ Offen (Phase 4+): `settlementGLOutboxEnabled` in Prod, ADR-018 P3c Decimal an Mo
 
 Offen: ADR-009 `collectionBillServerLegs`, ADR-018 P3c `currentBalanceCents`.
 
-### Phase 2 (ursprüngliche Roadmap-Notiz)
+### Phase 3b ops — Drift inspect (implemented 2026-06-17)
+
+1. **`checkUserCashBalanceDrift`:** server-side inspect all users vs customer timeline.
+2. **`scripts/check-user-cash-balance-drift.sh`:** ops wrapper (exit 0/2).
+3. **Backfill ausgeführt:** 27/27 User auf Kundensicht; Drift-Check `healthy`.
+
+### Phase 4 — Settlement GL Outbox (ADR-017, live on FIN1 prod)
+
+Async GL posting: `AccountStatement` + `SettlementOutbox` in Mongo-Transaction; Worker in `main.js` (45s).
+
+| Check | Tool |
+|-------|------|
+| Outbox queue + GL recon | `scripts/check-settlement-gl-outbox-health.sh` |
+| Drain backlog | `scripts/run-settlement-gl-outbox-drain.sh` |
+| UserCashBalance drift | `scripts/check-user-cash-balance-drift.sh` |
+| Combined | `scripts/check-monetary-ssot-health.sh` |
+
+**Prod-Baseline (2026-06-17):** `settlementGLOutboxEnabled=true` (live Config, 4-Augen); outbox `posted=54`, `pending/failed=0`; `getSettlementGLReconciliationStatus` → `healthy`.
+
+**Rollback:** Admin Config `settlementGLOutboxEnabled=false` (4-Augen) — synchroner GL-Pfad in `settlementGLPoster.js` greift wieder; Outbox-Queue vorher leeren.
+
+**Nicht ändern:** `defaultConfig.js` auf `true` setzen — Flag nur über live Config / Admin.
+
 
 - Saldo-UI an `UserCashBalance` / `getAccountStatement` koppeln (→ Phase 3)
 

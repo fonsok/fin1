@@ -115,7 +115,15 @@ const REPAIR_CATALOG = [
     cloudFunction: 'runSettlementGLOutbox',
     defaultParams: { limit: 25 },
     notes: 'ADR-017: drain pending SettlementOutbox rows (async GL posting)',
+    relatedChecks: ['settlement_gl_reconciliation', 'settlement_gl_outbox_health'],
+  },
+  {
+    id: 'settlement_gl_outbox_health',
+    layer: 'detection',
+    cloudFunction: 'getSettlementGLOutboxStatus',
+    defaultParams: { sampleLimit: 25 },
     relatedChecks: ['settlement_gl_reconciliation'],
+    notes: 'Outbox pending/failed counts; pair with getSettlementGLReconciliationStatus (scripts/check-settlement-gl-outbox-health.sh)',
   },
   {
     id: 'settlement_gl_pairs_missing',
