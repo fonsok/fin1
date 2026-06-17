@@ -40,6 +40,7 @@ export const CONFIG_DEFAULT_VALUES: Record<string, number> = {
   frontendReadonlyMode: 0,
   settlementGLOutboxEnabled: 0,
   showInvestorPartialSellRealizations: 0,
+  collectionBillServerLegs: 1,
   /** 1 = true; matches backend default for account-statement voucher links */
   showDocumentReferenceLinksInAccountStatement: 1,
   /** 0 = false; Trader-Gutschrift: Commission Calculation Breakdown standardmäßig aus */

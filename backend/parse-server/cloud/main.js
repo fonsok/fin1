@@ -198,6 +198,11 @@ Parse.Cloud.define('getConfig', async (request) => {
   } else if (typeof display.showInvestorPartialSellRealizations !== 'boolean') {
     display.showInvestorPartialSellRealizations = false;
   }
+  if (liveConfig.display && typeof liveConfig.display.collectionBillServerLegs === 'boolean') {
+    display.collectionBillServerLegs = liveConfig.display.collectionBillServerLegs;
+  } else if (typeof display.collectionBillServerLegs !== 'boolean') {
+    display.collectionBillServerLegs = true;
+  }
 
   const defaultLimits = {
     minDeposit: 10.0,

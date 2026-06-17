@@ -38,6 +38,7 @@ struct GetConfigResponse: Decodable {
         let serviceChargeInvoiceFromBackend: Bool?
         let serviceChargeLegacyClientFallbackEnabled: Bool?
         let investorMonetaryServerOnly: Bool?
+        let collectionBillServerLegs: Bool?
         let traderMonetaryServerOnly: Bool?
         let frontendReadonlyMode: Bool?
         let showInvestorPartialSellRealizations: Bool?

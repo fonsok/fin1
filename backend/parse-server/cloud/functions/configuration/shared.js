@@ -81,6 +81,7 @@ function buildDisplay(config) {
     frontendReadonlyMode: config.display?.frontendReadonlyMode ?? false,
     settlementGLOutboxEnabled: config.display?.settlementGLOutboxEnabled ?? false,
     showInvestorPartialSellRealizations: config.display?.showInvestorPartialSellRealizations ?? false,
+    collectionBillServerLegs: config.display?.collectionBillServerLegs ?? true,
   };
 }
 

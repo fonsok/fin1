@@ -77,6 +77,8 @@ const DEFAULT_CONFIG = {
     settlementGLOutboxEnabled: false,
     /** iOS Investor: Bereich „Teil-Sell-Realisierungen (Active Investment)“ — unabhängig von Trader-Teil-Sells. */
     showInvestorPartialSellRealizations: false,
+    /** ADR-009: iOS reads buyLeg/sellLeg from server metadata only; missing legs → pending. */
+    collectionBillServerLegs: true,
   },
   legal: {
     appName: 'FIN1',

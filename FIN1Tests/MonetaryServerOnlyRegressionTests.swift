@@ -8,6 +8,7 @@ final class MonetaryServerOnlyRegressionTests: XCTestCase {
     func testAppConfigurationDefaultsPreferServerOnlyMonetaryPaths() {
         let config = AppConfiguration.default
         XCTAssertTrue(config.effectiveInvestorMonetaryServerOnly)
+        XCTAssertTrue(config.effectiveCollectionBillServerLegs)
         XCTAssertTrue(config.effectiveTraderMonetaryServerOnly)
     }
 
@@ -38,6 +39,7 @@ final class MonetaryServerOnlyRegressionTests: XCTestCase {
                 investmentId: "inv-1",
                 preloadedBill: nil,
                 monetaryServerOnly: true,
+                collectionBillServerLegs: true,
                 billResolvedFromPrefetchIndex: false
             )
             XCTFail("Expected server-only rejection")
@@ -46,6 +48,44 @@ final class MonetaryServerOnlyRegressionTests: XCTestCase {
         } catch {
             XCTFail("Unexpected error: \(error)")
         }
+    }
+
+    func testInvestorCollectionBillBackendPathReturnsPendingWhenServerLegsIncomplete() async throws {
+        let service = InvestorCollectionBillCalculationService()
+        let input = InvestorCollectionBillInput(
+            investmentCapital: 1_000,
+            buyPrice: 10,
+            tradeTotalQuantity: 100,
+            ownershipPercentage: 0.1,
+            buyInvoice: nil,
+            sellInvoices: [],
+            investorAllocatedAmount: 100
+        )
+        let json = """
+        {
+          "objectId": "doc-1",
+          "accountingDocumentNumber": "CB-TEST",
+          "metadata": {
+            "buyLeg": { "quantity": 10, "price": 10, "amount": 100 },
+            "sellLeg": null
+          }
+        }
+        """.data(using: .utf8)!
+        let bill = try JSONDecoder().decode(BackendCollectionBill.self, from: json)
+
+        let output = try await service.calculateCollectionBillWithBackend(
+            input: input,
+            settlementAPIService: nil,
+            tradeId: "trade-1",
+            investmentId: "inv-1",
+            preloadedBill: bill,
+            monetaryServerOnly: true,
+            collectionBillServerLegs: true,
+            billResolvedFromPrefetchIndex: false
+        )
+
+        XCTAssertTrue(output.isServerLegsPending)
+        XCTAssertEqual(output.accountingDocumentNumber, "CB-TEST")
     }
 
     func testInvoiceLocalSynthesisGateBlocksProductionSynthesis() {
@@ -77,6 +117,7 @@ private final class ProdMonetaryConfigurationStub: ObservableObject, Configurati
     var maximumRiskExposurePercent: Double { 2 }
     var walletFeatureEnabled: Bool { false }
     var investorMonetaryServerOnly: Bool { true }
+    var collectionBillServerLegs: Bool { true }
     var traderMonetaryServerOnly: Bool { true }
     var frontendReadonlyMode: Bool { false }
     var serviceChargeInvoiceFromBackend: Bool { true }

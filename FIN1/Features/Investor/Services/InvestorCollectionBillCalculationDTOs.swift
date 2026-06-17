@@ -82,9 +82,13 @@ struct InvestorCollectionBillOutput {
         switch self.dataSource {
         case .backendBeleg, .backendBelegInconsistent:
             return true
-        case .localInvoices, .localFallbackAfterBackendError:
+        case .localInvoices, .localFallbackAfterBackendError, .serverLegsPending:
             return false
         }
+    }
+
+    var isServerLegsPending: Bool {
+        self.dataSource == .serverLegsPending
     }
 }
 

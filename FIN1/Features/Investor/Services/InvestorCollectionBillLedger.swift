@@ -68,6 +68,8 @@ enum InvestorCollectionBillDataSource: String, Sendable {
     case backendBeleg
     /// Same as backendBeleg but summary totals diverge from legs (defective Beleg).
     case backendBelegInconsistent
+    /// ADR-009: Beleg exists but `buyLeg` / `sellLeg` await server backfill.
+    case serverLegsPending
     /// Local invoice + capital solver (no bill on server).
     case localInvoices
     /// Local solver after backend fetch failed (no bill could be loaded).

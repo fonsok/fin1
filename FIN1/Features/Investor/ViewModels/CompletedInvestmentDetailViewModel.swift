@@ -89,7 +89,8 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
                     investment: self.investment,
                     additionalTradesById: tradesById,
                     commissionRate: commissionRate,
-                    monetaryServerOnly: self.monetaryServerOnly
+                    monetaryServerOnly: self.monetaryServerOnly,
+                    collectionBillServerLegs: self.configurationService?.collectionBillServerLegs ?? true
                 )
                 self.canonicalSummary = await ServerCalculatedReturnResolver.resolveCanonicalSummary(
                     investmentId: investmentId,

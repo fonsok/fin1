@@ -201,7 +201,8 @@ enum InvestorInvestmentStatementAggregator {
         investmentService: (any InvestmentServiceProtocol)? = nil,
         additionalTradesById: [String: Trade] = [:],
         commissionRate: Double,
-        monetaryServerOnly: Bool
+        monetaryServerOnly: Bool,
+        collectionBillServerLegs: Bool
     ) async -> InvestorInvestmentStatementSummary? {
         let participations = poolTradeParticipationService.getParticipations(forInvestmentId: investmentId)
         guard !participations.isEmpty else { return nil }
@@ -266,6 +267,7 @@ enum InvestorInvestmentStatementAggregator {
                     investmentId: investmentId,
                     preloadedBill: billsByTradeId[trade.id],
                     monetaryServerOnly: monetaryServerOnly,
+                    collectionBillServerLegs: collectionBillServerLegs,
                     billResolvedFromPrefetchIndex: true
                 )
                 let item = InvestorInvestmentStatementItem.from(

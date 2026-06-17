@@ -308,6 +308,7 @@ final class InvestorCollectionBillCalculationService: InvestorCollectionBillCalc
         investmentId: String?,
         preloadedBill: BackendCollectionBill?,
         monetaryServerOnly: Bool,
+        collectionBillServerLegs: Bool,
         billResolvedFromPrefetchIndex: Bool
     ) async throws -> InvestorCollectionBillOutput {
         var usedBackendErrorFallback = false
@@ -336,6 +337,15 @@ final class InvestorCollectionBillCalculationService: InvestorCollectionBillCalc
             }
 
             if let bill {
+                if collectionBillServerLegs {
+                    if let meta = bill.metadata, Self.hasCompleteServerLegs(meta),
+                       let output = self.mapBackendToOutput(bill: bill, input: input) {
+                        return output
+                    }
+                    return Self.makeServerLegsPendingOutput(
+                        documentNumber: bill.accountingDocumentNumber
+                    )
+                }
                 if let output = self.mapBackendToOutput(bill: bill, input: input) {
                     return output
                 }
@@ -481,5 +491,40 @@ final class InvestorCollectionBillCalculationService: InvestorCollectionBillCalc
             details.append(InvestorFeeDetail(label: "Fremdkostenpauschale", amount: v))
         }
         return details
+    }
+
+    private static func hasCompleteServerLegs(_ meta: BackendCollectionBillMetadata) -> Bool {
+        guard let buyLeg = meta.buyLeg else { return false }
+        let buyAmount = buyLeg.amount?.doubleValue ?? 0
+        let buyQty = buyLeg.quantity ?? 0
+        guard buyQty > 0 || buyAmount > 0.000_1 else { return false }
+        return meta.sellLeg != nil
+    }
+
+    private static func makeServerLegsPendingOutput(documentNumber: String?) -> InvestorCollectionBillOutput {
+        InvestorCollectionBillOutput(
+            buyAmount: 0,
+            buyQuantity: 0,
+            buyPrice: 0,
+            buyFees: 0,
+            buyFeeDetails: [],
+            residualAmount: 0,
+            sellAmount: 0,
+            sellQuantity: 0,
+            sellAveragePrice: 0,
+            sellFees: 0,
+            sellFeeDetails: [],
+            totalBuyCost: 0,
+            netSellAmount: 0,
+            grossProfit: 0,
+            roiGrossProfit: 0,
+            roiInvestedAmount: 0,
+            bookedCommission: nil,
+            bookedNetProfit: nil,
+            bookedTransferAmount: nil,
+            accountingDocumentNumber: documentNumber,
+            belegInconsistencyMessage: nil,
+            dataSource: .serverLegsPending
+        )
     }
 }

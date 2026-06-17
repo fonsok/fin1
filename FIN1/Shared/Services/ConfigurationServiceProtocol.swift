@@ -115,6 +115,9 @@ protocol ConfigurationServiceProtocol: ObservableObject, Sendable {
     /// When `true`, trader account statements and invoice backfill use server data only.
     var traderMonetaryServerOnly: Bool { get }
 
+    /// ADR-009: investor collection bill legs from server metadata only.
+    var collectionBillServerLegs: Bool { get }
+
     /// Production kill-switch: no client-side monetary fallbacks or local invoice generation.
     var frontendReadonlyMode: Bool { get }
 

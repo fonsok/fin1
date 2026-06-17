@@ -170,6 +170,7 @@ private final class StubConfigurationService: ObservableObject, ConfigurationSer
     var maximumRiskExposurePercent: Double { 2 }
     var walletFeatureEnabled: Bool { false }
     var investorMonetaryServerOnly: Bool { false }
+    var collectionBillServerLegs: Bool { true }
     var traderMonetaryServerOnly: Bool { false }
     var frontendReadonlyMode: Bool { false }
     var serviceChargeInvoiceFromBackend: Bool { false }

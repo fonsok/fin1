@@ -33,6 +33,8 @@ final class ConfigurationService: ConfigurationServiceProtocol, ServiceLifecycle
     @Published var serviceChargeLegacyClientFallbackEnabled: Bool = false
     /// GoB: investor payment surfaces fail closed without server Beleg / AccountStatement.
     @Published var investorMonetaryServerOnly: Bool = true
+    /// ADR-009: read `metadata.buyLeg` / `metadata.sellLeg` only; missing legs → pending.
+    @Published var collectionBillServerLegs: Bool = true
     /// Trader Kontoauszug / invoice backfill: server SSOT when true (default).
     @Published var traderMonetaryServerOnly: Bool = true
     /// Disables all client monetary fallbacks when true (production kill-switch).

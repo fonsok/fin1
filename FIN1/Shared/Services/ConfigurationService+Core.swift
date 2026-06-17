@@ -85,6 +85,7 @@ extension ConfigurationService {
         serviceChargeInvoiceFromBackend = configuration.effectiveServiceChargeInvoiceFromBackend
         serviceChargeLegacyClientFallbackEnabled = configuration.effectiveServiceChargeLegacyClientFallbackEnabled
         investorMonetaryServerOnly = configuration.effectiveInvestorMonetaryServerOnly
+        collectionBillServerLegs = configuration.effectiveCollectionBillServerLegs
         traderMonetaryServerOnly = configuration.effectiveTraderMonetaryServerOnly
         frontendReadonlyMode = configuration.effectiveFrontendReadonlyMode
         showInvestorPartialSellRealizations = configuration.effectiveShowInvestorPartialSellRealizations
@@ -141,6 +142,7 @@ extension ConfigurationService {
                 if let v = response.display?.serviceChargeInvoiceFromBackend { self.configuration.serviceChargeInvoiceFromBackend = v; changed = true }
                 if let v = response.display?.serviceChargeLegacyClientFallbackEnabled { self.configuration.serviceChargeLegacyClientFallbackEnabled = v; changed = true }
                 if let v = response.display?.investorMonetaryServerOnly { self.configuration.investorMonetaryServerOnly = v; changed = true }
+                if let v = response.display?.collectionBillServerLegs { self.configuration.collectionBillServerLegs = v; changed = true }
                 if let v = response.display?.traderMonetaryServerOnly { self.configuration.traderMonetaryServerOnly = v; changed = true }
                 if let v = response.display?.frontendReadonlyMode { self.configuration.frontendReadonlyMode = v; changed = true }
                 if let v = response.display?.showInvestorPartialSellRealizations {

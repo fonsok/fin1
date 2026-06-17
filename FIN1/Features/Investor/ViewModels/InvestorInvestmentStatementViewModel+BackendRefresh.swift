@@ -31,6 +31,7 @@ extension InvestorInvestmentStatementViewModel {
         }
 
         let serverOnly = configurationService.investorMonetaryServerOnly
+        let serverLegs = configurationService.collectionBillServerLegs
 
         guard let settlementAPIService else {
             backendRefreshMessage = InvestorMonetaryMessages.serverUnavailable
@@ -94,6 +95,7 @@ extension InvestorInvestmentStatementViewModel {
                     investmentId: investment.id,
                     preloadedBill: backendBillsByTradeId[trade.id],
                     monetaryServerOnly: serverOnly,
+                    collectionBillServerLegs: serverLegs,
                     billResolvedFromPrefetchIndex: true
                 )
 

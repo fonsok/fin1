@@ -1,7 +1,7 @@
 # ADR-009: iOS renders Collection Bills exclusively from server-owned `metadata.buyLeg` / `metadata.sellLeg`
 
 ## Status
-Proposed — depends on ADR-008 Phase B landing first.
+Accepted — implemented 2026-06-17 (`collectionBillServerLegs` config flag, iOS server-leg reader + pending state).
 
 ## Date
 2026-04-23

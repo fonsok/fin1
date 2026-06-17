@@ -349,4 +349,13 @@ export const PARAMETER_DEFINITIONS: Record<string, Omit<ConfigurationParameter, 
     category: 'display',
     isCritical: false,
   },
+  collectionBillServerLegs: {
+    key: 'collectionBillServerLegs',
+    displayName: 'Collection Bill: Server buyLeg/sellLeg (ADR-009)',
+    description:
+      'Wenn aktiv, liest iOS Investor-Collection-Bills ausschließlich metadata.buyLeg/sellLeg vom Server. Fehlende Legs → „pending“ statt lokaler Neuberechnung. Standard: aktiv.',
+    type: 'boolean',
+    category: 'display',
+    isCritical: false,
+  },
 };

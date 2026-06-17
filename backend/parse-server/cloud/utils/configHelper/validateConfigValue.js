@@ -189,6 +189,10 @@ function validateConfigValue(paramName, value) {
       type: 'boolean',
       errorMsg: 'showInvestorPartialSellRealizations muss true oder false sein',
     },
+    collectionBillServerLegs: {
+      type: 'boolean',
+      errorMsg: 'collectionBillServerLegs muss true oder false sein',
+    },
     showCommissionBreakdownInCreditNote: {
       type: 'boolean',
       errorMsg: 'showCommissionBreakdownInCreditNote muss true oder false sein',

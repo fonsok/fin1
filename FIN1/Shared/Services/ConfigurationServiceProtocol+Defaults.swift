@@ -64,6 +64,7 @@ extension ConfigurationServiceProtocol {
     var serviceChargeInvoiceFromBackend: Bool { true }
     var serviceChargeLegacyClientFallbackEnabled: Bool { false }
     var investorMonetaryServerOnly: Bool { true }
+    var collectionBillServerLegs: Bool { true }
     var traderMonetaryServerOnly: Bool { true }
     var frontendReadonlyMode: Bool { false }
     var showDocumentReferenceLinksInAccountStatement: Bool { true }

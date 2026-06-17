@@ -191,6 +191,9 @@ async function loadConfig(forceRefresh = false) {
             ?? DEFAULT_CONFIG.display.settlementGLOutboxEnabled,
           showInvestorPartialSellRealizations: config.get('showInvestorPartialSellRealizations')
             ?? DEFAULT_CONFIG.display.showInvestorPartialSellRealizations,
+          collectionBillServerLegs:
+            config.get('collectionBillServerLegs')
+            ?? DEFAULT_CONFIG.display.collectionBillServerLegs,
         },
         legal: {
           ...DEFAULT_CONFIG.legal,

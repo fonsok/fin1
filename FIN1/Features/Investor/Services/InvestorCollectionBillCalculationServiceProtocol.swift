@@ -35,6 +35,7 @@ protocol InvestorCollectionBillCalculationServiceProtocol {
         investmentId: String?,
         preloadedBill: BackendCollectionBill?,
         monetaryServerOnly: Bool,
+        collectionBillServerLegs: Bool,
         billResolvedFromPrefetchIndex: Bool
     ) async throws -> InvestorCollectionBillOutput
 
@@ -60,6 +61,7 @@ extension InvestorCollectionBillCalculationServiceProtocol {
             investmentId: investmentId,
             preloadedBill: preloadedBill,
             monetaryServerOnly: false,
+            collectionBillServerLegs: false,
             billResolvedFromPrefetchIndex: preloadedBill != nil
         )
     }

@@ -19,6 +19,7 @@ struct AppConfiguration: Codable {
     var serviceChargeInvoiceFromBackend: Bool?
     var serviceChargeLegacyClientFallbackEnabled: Bool?
     var investorMonetaryServerOnly: Bool?
+    var collectionBillServerLegs: Bool?
     var traderMonetaryServerOnly: Bool?
     var frontendReadonlyMode: Bool?
     var showInvestorPartialSellRealizations: Bool?
@@ -43,7 +44,7 @@ struct AppConfiguration: Codable {
         case platformServiceChargeRate, platformServiceChargeRateCompanies
         case showCommissionBreakdownInCreditNote, showDocumentReferenceLinksInAccountStatement
         case maximumRiskExposurePercent, walletFeatureEnabled
-        case serviceChargeInvoiceFromBackend, serviceChargeLegacyClientFallbackEnabled, investorMonetaryServerOnly, traderMonetaryServerOnly, frontendReadonlyMode, showInvestorPartialSellRealizations
+        case serviceChargeInvoiceFromBackend, serviceChargeLegacyClientFallbackEnabled, investorMonetaryServerOnly, collectionBillServerLegs, traderMonetaryServerOnly, frontendReadonlyMode, showInvestorPartialSellRealizations
         case dailyTransactionLimit, weeklyTransactionLimit, monthlyTransactionLimit
         case minInvestment, maxInvestment, maxPoolMirrorBuyOrderAmount, maxTraderPartialSells, taxCollectionMode, userMinimumCashReserves, slaMonitoringInterval, lastUpdated, updatedBy
     }
@@ -72,6 +73,7 @@ struct AppConfiguration: Codable {
         self.serviceChargeInvoiceFromBackend = try c.decodeIfPresent(Bool.self, forKey: .serviceChargeInvoiceFromBackend)
         self.serviceChargeLegacyClientFallbackEnabled = try c.decodeIfPresent(Bool.self, forKey: .serviceChargeLegacyClientFallbackEnabled)
         self.investorMonetaryServerOnly = try c.decodeIfPresent(Bool.self, forKey: .investorMonetaryServerOnly)
+        self.collectionBillServerLegs = try c.decodeIfPresent(Bool.self, forKey: .collectionBillServerLegs)
         self.traderMonetaryServerOnly = try c.decodeIfPresent(Bool.self, forKey: .traderMonetaryServerOnly)
         self.frontendReadonlyMode = try c.decodeIfPresent(Bool.self, forKey: .frontendReadonlyMode)
         self.showInvestorPartialSellRealizations = try c.decodeIfPresent(Bool.self, forKey: .showInvestorPartialSellRealizations)
@@ -107,6 +109,7 @@ struct AppConfiguration: Codable {
         try c.encodeIfPresent(self.serviceChargeInvoiceFromBackend, forKey: .serviceChargeInvoiceFromBackend)
         try c.encodeIfPresent(self.serviceChargeLegacyClientFallbackEnabled, forKey: .serviceChargeLegacyClientFallbackEnabled)
         try c.encodeIfPresent(self.investorMonetaryServerOnly, forKey: .investorMonetaryServerOnly)
+        try c.encodeIfPresent(self.collectionBillServerLegs, forKey: .collectionBillServerLegs)
         try c.encodeIfPresent(self.traderMonetaryServerOnly, forKey: .traderMonetaryServerOnly)
         try c.encodeIfPresent(self.frontendReadonlyMode, forKey: .frontendReadonlyMode)
         try c.encodeIfPresent(self.showInvestorPartialSellRealizations, forKey: .showInvestorPartialSellRealizations)
@@ -141,6 +144,7 @@ struct AppConfiguration: Codable {
         serviceChargeInvoiceFromBackend: Bool? = nil,
         serviceChargeLegacyClientFallbackEnabled: Bool? = nil,
         investorMonetaryServerOnly: Bool? = nil,
+        collectionBillServerLegs: Bool? = nil,
         traderMonetaryServerOnly: Bool? = nil,
         frontendReadonlyMode: Bool? = nil,
         showInvestorPartialSellRealizations: Bool? = nil,
@@ -173,6 +177,7 @@ struct AppConfiguration: Codable {
         self.serviceChargeInvoiceFromBackend = serviceChargeInvoiceFromBackend
         self.serviceChargeLegacyClientFallbackEnabled = serviceChargeLegacyClientFallbackEnabled
         self.investorMonetaryServerOnly = investorMonetaryServerOnly
+        self.collectionBillServerLegs = collectionBillServerLegs
         self.traderMonetaryServerOnly = traderMonetaryServerOnly
         self.frontendReadonlyMode = frontendReadonlyMode
         self.showInvestorPartialSellRealizations = showInvestorPartialSellRealizations
@@ -207,6 +212,7 @@ struct AppConfiguration: Codable {
         serviceChargeInvoiceFromBackend: true,
         serviceChargeLegacyClientFallbackEnabled: false,
         investorMonetaryServerOnly: true,
+        collectionBillServerLegs: true,
         traderMonetaryServerOnly: true,
         frontendReadonlyMode: false,
         dailyTransactionLimit: CalculationConstants.TransactionLimits.baseDailyLimit,
@@ -240,6 +246,7 @@ struct AppConfiguration: Codable {
     var effectiveServiceChargeInvoiceFromBackend: Bool { self.serviceChargeInvoiceFromBackend ?? true }
     var effectiveServiceChargeLegacyClientFallbackEnabled: Bool { self.serviceChargeLegacyClientFallbackEnabled ?? false }
     var effectiveInvestorMonetaryServerOnly: Bool { self.investorMonetaryServerOnly ?? true }
+    var effectiveCollectionBillServerLegs: Bool { self.collectionBillServerLegs ?? true }
     var effectiveTraderMonetaryServerOnly: Bool { self.traderMonetaryServerOnly ?? true }
     var effectiveFrontendReadonlyMode: Bool { self.frontendReadonlyMode ?? false }
     var effectiveShowInvestorPartialSellRealizations: Bool { self.showInvestorPartialSellRealizations ?? false }

@@ -100,7 +100,8 @@ final class InvestorGrossProfitService: InvestorGrossProfitServiceProtocol, Obse
             commissionCalculationService: commissionCalculationService,
             investmentService: self.investmentService,
             commissionRate: commissionRate,
-            monetaryServerOnly: self.configurationService.investorMonetaryServerOnly
+            monetaryServerOnly: self.configurationService.investorMonetaryServerOnly,
+            collectionBillServerLegs: self.configurationService.collectionBillServerLegs
         )
         guard let summary else {
             throw AppError.serviceError(.dataNotFound)
