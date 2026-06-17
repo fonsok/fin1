@@ -504,26 +504,32 @@ final class OrderAPIService: OrderAPIServiceProtocol {
     // MARK: - Save Sell Order
 
     func saveSellOrder(_ order: OrderSell, tradeId: String?) async throws -> OrderSell {
-        print("📡 OrderAPIService: Saving sell order to Parse Server (tradeId: \(tradeId ?? "nil"))")
+        print("📡 OrderAPIService: Placing sell order via executeSellOrder (tradeId: \(tradeId ?? "nil"))")
 
-        let input = ParseOrderInput.from(sellOrder: order, tradeId: tradeId)
-        let response = try await apiClient.createObject(
-            className: self.className,
-            object: input
+        let payload = Self.buildExecuteSellOrderPayload(order: order, tradeId: tradeId)
+        guard JSONSerialization.isValidJSONObject(payload) else {
+            throw AppError.validationError("Ungültige Sell-Order-Parameter.")
+        }
+
+        let result: ExecuteSellOrderResult = try await apiClient.callFunction(
+            "executeSellOrder",
+            parameters: payload
         )
 
-        print("✅ OrderAPIService: Sell order saved with objectId: \(response.objectId)")
+        print(
+            "✅ OrderAPIService: Sell order placed — id=\(result.orderId) "
+                + "price=\(result.executionPrice) replay=\(result.idempotentReplay)"
+        )
 
-        // Return order with Parse objectId
         return OrderSell(
-            id: response.objectId,
+            id: result.orderId,
             traderId: order.traderId,
             symbol: order.symbol,
             description: order.description,
             quantity: order.quantity,
-            price: order.price,
-            totalAmount: order.totalAmount,
-            status: order.status,
+            price: result.executionPrice,
+            totalAmount: result.grossAmount,
+            status: OrderSellStatus(rawValue: result.status ?? order.status.rawValue) ?? order.status,
             createdAt: order.createdAt,
             executedAt: order.executedAt,
             confirmedAt: order.confirmedAt,
@@ -537,6 +543,48 @@ final class OrderAPIService: OrderAPIServiceProtocol {
             limitPrice: order.limitPrice,
             originalHoldingId: order.originalHoldingId
         )
+    }
+
+    private static func buildExecuteSellOrderPayload(order: OrderSell, tradeId: String?) -> [String: Any] {
+        var payload: [String: Any] = [
+            "symbol": order.symbol,
+            "quantity": Int(order.quantity),
+            "price": order.price,
+            "orderInstruction": order.orderInstruction ?? "market",
+            "clientOrderIntentId": order.id,
+            "clientQuotedAt": Self.iso8601NowString()
+        ]
+        if let tradeId, !tradeId.isEmpty {
+            payload["tradeId"] = tradeId
+        }
+        if let originalHoldingId = order.originalHoldingId, !originalHoldingId.isEmpty {
+            payload["originalHoldingId"] = originalHoldingId
+        }
+        if !order.description.isEmpty {
+            payload["description"] = order.description
+        }
+        if let optionDirection = order.optionDirection {
+            payload["optionDirection"] = optionDirection
+        }
+        if let underlyingAsset = order.underlyingAsset {
+            payload["underlyingAsset"] = underlyingAsset
+        }
+        if let wkn = order.wkn {
+            payload["wkn"] = wkn
+        }
+        if let strike = order.strike {
+            payload["strike"] = strike
+        }
+        if let limitPrice = order.limitPrice {
+            payload["limitPrice"] = limitPrice
+        }
+        return payload
+    }
+
+    private static func iso8601NowString() -> String {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter.string(from: Date())
     }
 
     // MARK: - Update Order
@@ -664,4 +712,16 @@ final class OrderAPIService: OrderAPIServiceProtocol {
 
         print("✅ OrderAPIService: Paired order legs advanced to \(status)")
     }
+}
+
+private struct ExecuteSellOrderResult: Decodable {
+    let orderId: String
+    let orderNumber: String?
+    let status: String?
+    let executionPrice: Double
+    let priceSource: String?
+    let grossAmount: Double
+    let totalFees: Double
+    let netAmount: Double
+    let idempotentReplay: Bool
 }

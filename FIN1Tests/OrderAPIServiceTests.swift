@@ -59,17 +59,31 @@ final class OrderAPIServiceTests: XCTestCase {
     func testSaveSellOrder_Success() async throws {
         // Given
         let sellOrder = self.createSampleSellOrder()
-        self.mockAPIClient.mockObjectId = "server-sell-order-id-456"
+        self.mockAPIClient.mockFunctionResult = [
+            "orderId": "server-sell-order-id-456",
+            "orderNumber": "ORD-456",
+            "status": "submitted",
+            "executionPrice": 99.5,
+            "priceSource": "client_quote_validated",
+            "grossAmount": 995.0,
+            "totalFees": 6.0,
+            "netAmount": 989.0,
+            "idempotentReplay": false,
+        ]
 
         // When
         let savedOrder = try await sut.saveSellOrder(sellOrder, tradeId: "trade-abc")
 
         // Then
-        XCTAssertTrue(self.mockAPIClient.createObjectCalled)
-        XCTAssertEqual(self.mockAPIClient.lastClassName, "Order")
+        XCTAssertTrue(self.mockAPIClient.callFunctionCalled)
+        XCTAssertEqual(self.mockAPIClient.lastFunctionName, "executeSellOrder")
+        XCTAssertEqual(self.mockAPIClient.lastFunctionParameters?["tradeId"] as? String, "trade-abc")
+        XCTAssertEqual(self.mockAPIClient.lastFunctionParameters?["clientOrderIntentId"] as? String, sellOrder.id)
         XCTAssertEqual(savedOrder.id, "server-sell-order-id-456")
         XCTAssertEqual(savedOrder.symbol, sellOrder.symbol)
         XCTAssertEqual(savedOrder.quantity, sellOrder.quantity)
+        XCTAssertEqual(savedOrder.price, 99.5)
+        XCTAssertEqual(savedOrder.totalAmount, 995.0)
     }
 
     // MARK: - Update Order Tests

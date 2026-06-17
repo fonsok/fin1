@@ -15,6 +15,7 @@ const {
 const { getUserStableId } = require('./tradingIdentity');
 const { normalizeTradeForClient, enrichTradesWithOrderLegs } = require('../utils/tradeClientPresentation');
 const { handleExecutePairedBuy } = require('./tradingPairedBuyExecution');
+const { handleExecuteSellOrder } = require('./tradingSellOrderExecution');
 const { handleFinalizePairedBuyExecution } = require('./tradingPairedBuyFinalize');
 const { handleCommitPairedBuyExecution } = require('./tradingPairedBuyCommit');
 const { handleCancelOrder } = require('./tradingOrderCancellation');
@@ -141,7 +142,7 @@ Parse.Cloud.define('placeOrder', async (request) => {
     order.set('clientQuotedAt', clientQuotedAt);
   }
 
-  if (side === 'buy') {
+  if (side === 'buy' || side === 'sell') {
     const priceMeta = await resolveOrderExecutionPrice({
       symbol,
       orderType,
@@ -170,6 +171,8 @@ Parse.Cloud.define('placeOrder', async (request) => {
 });
 
 Parse.Cloud.define('executePairedBuy', handleExecutePairedBuy);
+
+Parse.Cloud.define('executeSellOrder', handleExecuteSellOrder);
 
 Parse.Cloud.define('finalizePairedBuyExecution', handleFinalizePairedBuyExecution);
 

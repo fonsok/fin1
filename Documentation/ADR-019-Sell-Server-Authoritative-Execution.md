@@ -1,6 +1,6 @@
 # ADR-019 – Sell: Server-Authoritative Execution (Symmetrie zu Paired Buy)
 
-- **Status:** Accepted (Phase 1a implemented 2026-06-17)
+- **Status:** Accepted (Phase 1a implemented 2026-06-17; Phase 1b implemented 2026-06-17)
 - **Datum:** 2026-06-17
 - **Bezug:** `BACKEND_CALCULATION_MIGRATION.md`, `executionPriceResolver.js`, `executePairedBuy`, ADR-018, Gap-Analyse Monetary SSOT (2026-06)
 
@@ -20,15 +20,15 @@ Dies ist **kein** „Client↔Server-Doppelrechner mit Cent-Gate“, sondern **e
 2. **iOS `ParseOrderInput.from(sellOrder:)`:** `clientQuotedAt` mitsenden (wie Buy), damit Market-Orders eine frische Quote und MarketData-Toleranzprüfung erhalten.
 3. **UI:** `estimatedProceeds` / „Erlös (geschätzt)“ bleiben reine Vorschau; Buchungsrelevant ist der nach `beforeSave` persistierte Order-Satz.
 
-### Phase 1b (nächster Schritt) — `executePairedSell` oder `placeSellOrder` Cloud Function
+### Phase 1b (implemented 2026-06-17) — `executeSellOrder` Cloud Function
 
-Analog `executePairedBuy`:
+1. **`executeSellOrder`:** Server-orchestrierter Sell-Intent (`quantity`, `symbol`, `tradeId`, `clientOrderIntentId`); idempotent pro Trader+Intent; Preis via `resolveOrderExecutionPrice`; Fees via `calculateOrderFees`.
+2. **iOS `OrderAPIService.saveSellOrder`:** ruft `executeSellOrder` statt direktem `createObject`; `clientOrderIntentId` = lokale `order.id` (Retry-sicher).
+3. **`placeOrder` CF:** Sell erhält dieselbe Preis-Auflösung wie Buy (Legacy-API-Parität).
 
-- Idempotenz via `clientOrderIntentId`
-- Atomare Leg-Persistenz + Server-Fees (`calculateOrderFees`)
-- Kein direkter Client-`createObject` für produktionskritische Sells
+### Phase 1c (optional) — Sell-Finalize-Orchestrierung
 
-**Trigger:** Teil-Verkauf-Volumen, Paired-Leg-Kopplung oder Audit-Anforderung an eine einzige Orchestrierungs-API.
+Analog `commitPairedBuyExecution` für Sell-Status-Kopplung — nur wenn Paired-Sell-Legs oder Teil-Verkauf-Volumen es erfordern.
 
 ### Phase 2 — Legacy-Cleanup (siehe Gap-Roadmap)
 
@@ -62,6 +62,12 @@ Analog `executePairedBuy`:
 - [x] Regressionstests für Monetary Server-Only Policy (iOS)
 - [ ] Staging: Sell-Invoice `grossAmount` = Server-`executionPrice` × `quantity` (manuell)
 
+## Akzeptanzkriterien Phase 1b
+
+- [x] `executeSellOrder` Cloud Function mit Idempotenz (`clientOrderIntentId`)
+- [x] iOS `saveSellOrder` nutzt `executeSellOrder` (kein direktes `createObject`)
+- [x] Unit-Tests Backend + iOS
+
 ## Referenzen
 
 | Thema | Pfad |
@@ -70,3 +76,5 @@ Analog `executePairedBuy`:
 | Order beforeSave | `backend/parse-server/cloud/triggers/orderTriggerBeforeSave.js` |
 | iOS Sell persist | `FIN1/Features/Trader/Services/OrderAPIService.swift` |
 | Paired Buy SSOT | `backend/parse-server/cloud/functions/tradingPairedBuyExecution.js` |
+| Sell SSOT | `backend/parse-server/cloud/functions/tradingSellOrderExecution.js` |
+| iOS Sell placement | `FIN1/Features/Trader/Services/OrderAPIService.swift` |
