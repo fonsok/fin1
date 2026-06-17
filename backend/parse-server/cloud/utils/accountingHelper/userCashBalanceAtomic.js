@@ -109,7 +109,9 @@ async function ensureUserCashBalanceSeeded(userId) {
 
   const row = new Parse.Object('UserCashBalance');
   row.set('userId', uid);
-  row.set('currentBalance', seed);
+  const seedEuro = normalizeEuro(seed);
+  row.set('currentBalance', seedEuro);
+  row.set('currentBalanceCents', euroToCents(seedEuro));
   try {
     await row.save(null, { useMasterKey: true });
   } catch (err) {
@@ -143,7 +145,12 @@ async function advanceUserCashBalanceAtomic({ userId, amount }) {
   const coll = await getUserCashBalanceCollection();
   const result = await coll.findOneAndUpdate(
     { userId: uid },
-    { $inc: { currentBalance: amt } },
+    {
+      $inc: {
+        currentBalance: amt,
+        currentBalanceCents: amountCents,
+      },
+    },
     { upsert: true, returnDocument: 'before' },
   );
 
@@ -151,13 +158,20 @@ async function advanceUserCashBalanceAtomic({ userId, amount }) {
     ? result.value
     : null;
 
-  let balanceBeforeEuro = 0;
-  if (prev && prev.currentBalance !== undefined && prev.currentBalance !== null) {
-    const n = Number(prev.currentBalance);
-    if (Number.isFinite(n)) balanceBeforeEuro = normalizeEuro(n);
+  let balanceBeforeCents = 0;
+  if (prev) {
+    if (prev.currentBalanceCents !== undefined && prev.currentBalanceCents !== null) {
+      const storedCents = Number(prev.currentBalanceCents);
+      if (Number.isFinite(storedCents)) {
+        balanceBeforeCents = storedCents;
+      }
+    } else if (prev.currentBalance !== undefined && prev.currentBalance !== null) {
+      const n = Number(prev.currentBalance);
+      if (Number.isFinite(n)) {
+        balanceBeforeCents = euroToCents(n);
+      }
+    }
   }
-
-  const balanceBeforeCents = euroToCents(balanceBeforeEuro);
   const balanceAfterCents = addCents(balanceBeforeCents, amountCents);
 
   return {
@@ -176,12 +190,18 @@ async function compensateUserCashBalanceAdvance({ userId, amount }) {
   if (!uid || !Number.isFinite(Number(amount))) return true;
 
   const amt = centsToEuro(euroToCents(Number(amount)));
+  const amountCents = euroToCents(Number(amount));
 
   try {
     const coll = await getUserCashBalanceCollection();
     await coll.findOneAndUpdate(
       { userId: uid },
-      { $inc: { currentBalance: -amt } },
+      {
+        $inc: {
+          currentBalance: -amt,
+          currentBalanceCents: -amountCents,
+        },
+      },
       { upsert: false },
     );
     return true;
@@ -211,7 +231,23 @@ async function readStoredUserCashBalanceForUser(userId) {
   q.equalTo('userId', uid);
   const row = await q.first({ useMasterKey: true });
   if (!row) return null;
-  return normalizeEuro(Number(row.get('currentBalance') || 0));
+  const storedEuro = normalizeEuro(Number(row.get('currentBalance') || 0));
+  const storedCentsRaw = row.get('currentBalanceCents');
+  if (storedCentsRaw !== undefined && storedCentsRaw !== null) {
+    const storedCents = Number(storedCentsRaw);
+    const expectedCents = euroToCents(storedEuro);
+    if (Number.isFinite(storedCents) && storedCents !== expectedCents) {
+      audit.warn('userCashBalance.centsFieldDrift', {
+        userId: uid,
+        currentBalance: storedEuro,
+        currentBalanceCents: storedCents,
+        expectedCents,
+        deltaCents: expectedCents - storedCents,
+        message: 'UserCashBalance.currentBalanceCents differs from cent-aligned EUR field',
+      });
+    }
+  }
+  return storedEuro;
 }
 
 /**

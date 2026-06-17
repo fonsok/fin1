@@ -74,6 +74,8 @@ echo "$RESP" | python3 -m json.tool
 HEALTHY="$(echo "$RESP" | python3 -c 'import json,sys; r=json.load(sys.stdin); print("true" if r.get("result",r).get("healthy") else "false")')"
 DRIFTED="$(echo "$RESP" | python3 -c 'import json,sys; r=json.load(sys.stdin); print(r.get("result",r).get("drifted",0))')"
 MISSING="$(echo "$RESP" | python3 -c 'import json,sys; r=json.load(sys.stdin); print(r.get("result",r).get("missingRows",0))')"
+MISSING_CENTS="$(echo "$RESP" | python3 -c 'import json,sys; r=json.load(sys.stdin); print(r.get("result",r).get("missingCents",0))')"
+CENTS_MISMATCH="$(echo "$RESP" | python3 -c 'import json,sys; r=json.load(sys.stdin); print(r.get("result",r).get("centsMismatch",0))')"
 
 echo ""
 if [ "$HEALTHY" = "true" ]; then
@@ -81,6 +83,6 @@ if [ "$HEALTHY" = "true" ]; then
   exit 0
 fi
 
-echo "Drift detected: drifted=$DRIFTED missingRows=$MISSING"
+echo "Drift detected: drifted=$DRIFTED missingRows=$MISSING missingCents=$MISSING_CENTS centsMismatch=$CENTS_MISMATCH"
 echo "Repair: backfillUserCashBalanceFromStatements({ dryRun: false })"
 exit 2

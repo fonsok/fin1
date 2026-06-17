@@ -75,7 +75,7 @@ describe('userCashBalanceAtomic (Phase 3b)', () => {
     expect(out.balanceAfter).toBe(75);
     expect(mockFindOneAndUpdate).toHaveBeenCalledWith(
       { userId: 'u1' },
-      { $inc: { currentBalance: -25 } },
+      { $inc: { currentBalance: -25, currentBalanceCents: -2500 } },
       { upsert: true, returnDocument: 'before' },
     );
   });
@@ -98,7 +98,7 @@ describe('userCashBalanceAtomic (Phase 3b)', () => {
     await advanceUserCashBalanceAtomic({ userId: 'u3', amount: 0.1 + 0.2 });
     expect(mockFindOneAndUpdate).toHaveBeenCalledWith(
       { userId: 'u3' },
-      { $inc: { currentBalance: 0.3 } },
+      { $inc: { currentBalance: 0.3, currentBalanceCents: 30 } },
       { upsert: true, returnDocument: 'before' },
     );
   });

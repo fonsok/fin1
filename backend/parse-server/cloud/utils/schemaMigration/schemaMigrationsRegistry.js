@@ -122,6 +122,13 @@ const SCHEMA_MIGRATIONS = [
     },
   },
   {
+    migrationId: 'gob_user_cash_balance_cents_v1',
+    title: 'UserCashBalance: currentBalanceCents (ADR-018 P3c-4 dual-write)',
+    apply: () => putParseSchemaFields('UserCashBalance', {
+      currentBalanceCents: { type: 'Number' },
+    }),
+  },
+  {
     migrationId: 'investment_number_unique_sparse_v1',
     title: 'Investment.investmentNumber: unique+sparse (E11000 ohne Nummer vermeiden)',
     apply: async () => {

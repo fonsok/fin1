@@ -15,6 +15,8 @@ async function handleInspectUserCashBalanceDrift(request) {
     alignedUsers: report.alignedUsers,
     drifted: report.drifted,
     missingRows: report.missingRows,
+    missingCents: report.missingCents,
+    centsMismatch: report.centsMismatch,
     skipped: report.skipped,
     healthy: report.healthy,
     message: 'checkUserCashBalanceDrift completed',

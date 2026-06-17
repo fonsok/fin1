@@ -78,7 +78,9 @@ describe('backfillUserCashBalanceFromStatements', () => {
     expect(mockUpdates).toHaveLength(2);
 
     const u1Update = mockUpdates.find((u) => u.filter.userId === 'u1');
-    expect(u1Update.update).toEqual({ $set: { userId: 'u1', currentBalance: 9522.31 } });
+    expect(u1Update.update).toEqual({
+      $set: { userId: 'u1', currentBalance: 9522.31, currentBalanceCents: 952231 },
+    });
     expect(u1Update.opts).toEqual({ upsert: true });
 
     expect(auditCalls.some((c) => c.event === 'admin.userCashBalance.backfill')).toBe(true);

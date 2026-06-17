@@ -6,7 +6,7 @@
  */
 
 const { computeCustomerClosingBalanceForUserId } = require('./customerClosingBalance');
-const { readStoredUserCashBalanceForUser } = require('./userCashBalanceAtomic');
+const { readStoredUserCashBalanceForUser, getUserCashBalanceCollection } = require('./userCashBalanceAtomic');
 const { euroToCents, normalizeEuro, withinCentsTolerance } = require('./moneyCents');
 
 /**
@@ -28,11 +28,17 @@ async function inspectUserCashBalanceDrift(params = {}) {
 
   const driftedUsers = [];
   const missingRowUsers = [];
+  const missingCentsUsers = [];
+  const centsMismatchUsers = [];
   const skippedUsers = [];
   let usersProcessed = 0;
   let alignedUsers = 0;
   let drifted = 0;
   let missingRows = 0;
+  let missingCents = 0;
+  let centsMismatch = 0;
+
+  const balColl = await getUserCashBalanceCollection();
 
   for (const user of users) {
     usersProcessed += 1;
@@ -69,9 +75,34 @@ async function inspectUserCashBalanceDrift(params = {}) {
       continue;
     }
 
-    const storedCents = euroToCents(storedBalance);
+    // eslint-disable-next-line no-await-in-loop
+    const mongoRow = await balColl.findOne({ userId: uid });
+    const storedCentsRaw = mongoRow && mongoRow.currentBalanceCents;
+    if (storedCentsRaw === undefined || storedCentsRaw === null) {
+      missingCents += 1;
+      if (missingCentsUsers.length < previewLimit) {
+        missingCentsUsers.push({ userId: uid, currentBalance: normalizeEuro(storedBalance) });
+      }
+    } else {
+      const storedCents = Number(storedCentsRaw);
+      const expectedCents = euroToCents(storedBalance);
+      if (!Number.isFinite(storedCents) || !withinCentsTolerance(storedCents, expectedCents, 0)) {
+        centsMismatch += 1;
+        if (centsMismatchUsers.length < previewLimit) {
+          centsMismatchUsers.push({
+            userId: uid,
+            currentBalance: normalizeEuro(storedBalance),
+            currentBalanceCents: storedCents,
+            expectedCents,
+            deltaCents: expectedCents - storedCents,
+          });
+        }
+      }
+    }
+
+    const storedEuroCents = euroToCents(storedBalance);
     const customerCents = euroToCents(customerBalance);
-    if (withinCentsTolerance(storedCents, customerCents)) {
+    if (withinCentsTolerance(storedEuroCents, customerCents)) {
       alignedUsers += 1;
       continue;
     }
@@ -82,13 +113,17 @@ async function inspectUserCashBalanceDrift(params = {}) {
         userId: uid,
         storedBalance: normalizeEuro(storedBalance),
         customerBalance,
-        deltaCents: customerCents - storedCents,
+        deltaCents: customerCents - storedEuroCents,
       });
     }
   }
 
   const examined = usersProcessed;
-  const healthy = drifted === 0 && missingRows === 0 && skippedUsers.length === 0;
+  const healthy = drifted === 0
+    && missingRows === 0
+    && missingCents === 0
+    && centsMismatch === 0
+    && skippedUsers.length === 0;
 
   return {
     healthy,
@@ -97,14 +132,20 @@ async function inspectUserCashBalanceDrift(params = {}) {
     alignedUsers,
     drifted,
     missingRows,
+    missingCents,
+    centsMismatch,
     skipped: skippedUsers.length,
     limitUsers,
     filterUserId: filterUserId || null,
     driftedUsers,
     missingRowUsers,
+    missingCentsUsers,
+    centsMismatchUsers,
     skippedUsers: skippedUsers.slice(0, previewLimit),
     previewTruncated: drifted > driftedUsers.length
       || missingRows > missingRowUsers.length
+      || missingCents > missingCentsUsers.length
+      || centsMismatch > centsMismatchUsers.length
       || skippedUsers.length > previewLimit,
   };
 }

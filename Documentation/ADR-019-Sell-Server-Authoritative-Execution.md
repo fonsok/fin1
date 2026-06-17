@@ -52,7 +52,12 @@ Offen (Phase 5+): ADR-018 P3c Decimal an Mongo-Grenzen, ADR-009 `collectionBillS
 2. **`getUserCashBalance`:** `source: customer_timeline`; Drift-Audit vs. Mongo-Counter.
 3. **Seed + Backfill:** `ensureUserCashBalanceSeeded` / `backfillUserCashBalanceFromStatements` auf Kundensicht.
 
-Offen: ADR-009 `collectionBillServerLegs`, ADR-018 P3c `currentBalanceCents`.
+Offen: ADR-009 `collectionBillServerLegs`.
+
+### Phase 5 — ADR-018 P3c-4 `currentBalanceCents` (implemented 2026-06-17)
+
+Dual-write integer cents on `UserCashBalance` Mongo `$inc`; backfill sets `currentBalanceCents`; drift inspect flags missing/mismatch.
+
 
 ### Phase 3b ops — Drift inspect (implemented 2026-06-17)
 

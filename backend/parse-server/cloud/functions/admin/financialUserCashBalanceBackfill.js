@@ -8,7 +8,7 @@
 const { audit } = require('../../utils/structuredLogger');
 const { getUserCashBalanceCollection } = require('../../utils/accountingHelper/userCashBalanceAtomic');
 const { computeCustomerClosingBalanceForUserId } = require('../../utils/accountingHelper/customerClosingBalance');
-const { normalizeEuro } = require('../../utils/accountingHelper/moneyCents');
+const { normalizeEuro, euroToCents } = require('../../utils/accountingHelper/moneyCents');
 
 /**
  * @param {import('parse/node').Cloud.FunctionRequest} request
@@ -56,7 +56,13 @@ async function handleBackfillUserCashBalanceFromStatements(request) {
     // eslint-disable-next-line no-await-in-loop
     await balColl.updateOne(
       { userId: uid },
-      { $set: { userId: uid, currentBalance: target } },
+      {
+        $set: {
+          userId: uid,
+          currentBalance: target,
+          currentBalanceCents: euroToCents(target),
+        },
+      },
       { upsert: true },
     );
     writesPerformed += 1;
