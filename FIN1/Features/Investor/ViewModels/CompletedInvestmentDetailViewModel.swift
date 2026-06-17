@@ -77,7 +77,7 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
             )
             self.rebuildTradeLineItems(additionalTradesById: tradesById)
 
-            if self.monetaryServerOnly, let settlementAPIService = self.settlementAPIService {
+            if let settlementAPIService = self.settlementAPIService {
                 self.statementSummary = await InvestorInvestmentStatementAggregator.summarizeInvestmentFromServer(
                     investmentId: investmentId,
                     poolTradeParticipationService: poolTradeParticipationService,
@@ -89,29 +89,16 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
                     investment: self.investment,
                     additionalTradesById: tradesById,
                     commissionRate: commissionRate,
-                    monetaryServerOnly: true
+                    monetaryServerOnly: self.monetaryServerOnly
                 )
                 self.canonicalSummary = await ServerCalculatedReturnResolver.resolveCanonicalSummary(
                     investmentId: investmentId,
                     settlementAPIService: settlementAPIService,
-                    allowUnweightedReturnFallback: false
+                    allowUnweightedReturnFallback: !self.monetaryServerOnly
                 )
             } else {
-                self.statementSummary = InvestorInvestmentStatementAggregator.summarizeInvestment(
-                    investmentId: investmentId,
-                    poolTradeParticipationService: poolTradeParticipationService,
-                    tradeLifecycleService: tradeLifecycleService,
-                    invoiceService: invoiceService,
-                    investmentService: investmentService,
-                    calculationService: calculationService,
-                    commissionCalculationService: commissionCalculationService,
-                    additionalTradesById: tradesById,
-                    commissionRate: commissionRate
-                )
-                self.canonicalSummary = await ServerCalculatedReturnResolver.resolveCanonicalSummary(
-                    investmentId: investmentId,
-                    settlementAPIService: self.settlementAPIService
-                )
+                self.statementSummary = nil
+                self.canonicalSummary = nil
             }
         }
     }

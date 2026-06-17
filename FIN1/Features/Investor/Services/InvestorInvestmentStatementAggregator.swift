@@ -41,6 +41,7 @@ struct InvestorInvestmentStatementSummary {
 
 enum InvestorInvestmentStatementAggregator {
 
+    /// Local mirror-basis aggregation — tests/dev only (`InvestorCollectionBillLocalCalculationGate`).
     @MainActor
     static func summarizeInvestment(
         investmentId: String,
@@ -54,6 +55,7 @@ enum InvestorInvestmentStatementAggregator {
         additionalTradesById: [String: Trade] = [:],
         commissionRate: Double
     ) -> InvestorInvestmentStatementSummary? {
+        InvestorCollectionBillLocalCalculationGate.requirePermitted()
 
         let participations = poolTradeParticipationService.getParticipations(forInvestmentId: investmentId)
         guard !participations.isEmpty else {

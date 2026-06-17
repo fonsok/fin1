@@ -1,6 +1,6 @@
 # ADR-019 – Sell: Server-Authoritative Execution (Symmetrie zu Paired Buy)
 
-- **Status:** Accepted (Phase 1a implemented 2026-06-17; Phase 1b implemented 2026-06-17)
+- **Status:** Accepted (Phase 1a implemented 2026-06-17; Phase 1b implemented 2026-06-17; Phase 2 implemented 2026-06-17)
 - **Datum:** 2026-06-17
 - **Bezug:** `BACKEND_CALCULATION_MIGRATION.md`, `executionPriceResolver.js`, `executePairedBuy`, ADR-018, Gap-Analyse Monetary SSOT (2026-06)
 
@@ -30,11 +30,20 @@ Dies ist **kein** „Client↔Server-Doppelrechner mit Cent-Gate“, sondern **e
 
 Analog `commitPairedBuyExecution` für Sell-Status-Kopplung — nur wenn Paired-Sell-Legs oder Teil-Verkauf-Volumen es erfordern.
 
-### Phase 2 — Legacy-Cleanup (siehe Gap-Roadmap)
+### Phase 2 — Legacy-Cleanup (implemented 2026-06-17)
 
-- Lokale Settlement-Fallbacks entfernen (nur Tests)
-- ADR-009 `collectionBillServerLegs` abschließen
-- Saldo-UI an `UserCashBalance` / `getAccountStatement` koppeln
+Analog **P3b** (`InvoiceLocalSynthesisGate`):
+
+1. **`InvestorCollectionBillLocalCalculationGate`:** `calculateCollectionBill(input:)` und `summarizeInvestment` nur in Tests via `withPermitted`.
+2. **`calculateCollectionBillWithBackend`:** kein `localFallbackAfterBackendError` mehr — fehlender Beleg → `InvestorMonetaryServerOnlyError`.
+3. **Prod-Call-Sites:** ViewModels, `InvestmentCashDistributor`, `ProfitDistributionService`, `OrderLifecycleCoordinator+Settlement` (Credit Note) ohne lokale Monetary-Fallbacks.
+4. **Listen/Detail:** `canonicalSummaries` / `summarizeInvestmentFromServer` statt lokaler Aggregator-Summaries.
+
+Offen (Phase 3+): ADR-009 `collectionBillServerLegs`, Saldo-UI an `UserCashBalance`, Outbox in Prod.
+
+### Phase 2 (ursprüngliche Roadmap-Notiz)
+
+- Saldo-UI an `UserCashBalance` / `getAccountStatement` koppeln (→ Phase 3)
 
 ## Nicht-Ziele
 

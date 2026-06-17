@@ -338,13 +338,11 @@ struct CommissionCalculationExplanationSheet: View {
     }
 
     private func refreshStatementSummary() {
-        let commissionRate = self.services.configurationService.effectiveInvestorCommissionRate
-        let serverOnly = self.monetaryServerOnly
         let settlementService = self.services.settlementAPIService
         let investmentId = self.investment.id
 
         Task { @MainActor in
-            if serverOnly, let settlementService {
+            if let settlementService {
                 self.statementSummary = nil
                 self.canonicalSummary = await ServerCalculatedReturnResolver.resolveCanonicalSummary(
                     investmentId: investmentId,
@@ -352,20 +350,8 @@ struct CommissionCalculationExplanationSheet: View {
                     allowUnweightedReturnFallback: false
                 )
             } else {
-                self.statementSummary = InvestorInvestmentStatementAggregator.summarizeInvestment(
-                    investmentId: investmentId,
-                    poolTradeParticipationService: self.services.poolTradeParticipationService,
-                    tradeLifecycleService: self.services.tradeLifecycleService,
-                    invoiceService: self.services.invoiceService,
-                    investmentService: self.services.investmentService,
-                    calculationService: InvestorCollectionBillCalculationService(),
-                    commissionCalculationService: self.services.commissionCalculationService,
-                    commissionRate: commissionRate
-                )
-                self.canonicalSummary = await ServerCalculatedReturnResolver.resolveCanonicalSummary(
-                    investmentId: investmentId,
-                    settlementAPIService: settlementService
-                )
+                self.statementSummary = nil
+                self.canonicalSummary = nil
             }
         }
     }

@@ -3,6 +3,7 @@ import Foundation
 @MainActor
 extension InvestorInvestmentStatementViewModel {
     func rebuildStatement() {
+        InvestorCollectionBillLocalCalculationGate.requirePermitted()
         let participations = poolTradeParticipationService.getParticipations(forInvestmentId: investment.id)
         let tradesById = Dictionary(uniqueKeysWithValues: tradeService.completedTrades.map { ($0.id, $0) })
         statementItems = self.buildStatementItems(participations: participations, tradesById: tradesById)

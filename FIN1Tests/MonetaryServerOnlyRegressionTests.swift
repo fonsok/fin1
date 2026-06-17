@@ -51,6 +51,10 @@ final class MonetaryServerOnlyRegressionTests: XCTestCase {
     func testInvoiceLocalSynthesisGateBlocksProductionSynthesis() {
         XCTAssertFalse(InvoiceLocalSynthesisGate.isPermitted)
     }
+
+    func testInvestorCollectionBillLocalCalculationGateBlocksProductionSynthesis() {
+        XCTAssertFalse(InvestorCollectionBillLocalCalculationGate.isPermitted)
+    }
 }
 
 // MARK: - Prod defaults stub (mirrors Parse `defaultConfig.display`)

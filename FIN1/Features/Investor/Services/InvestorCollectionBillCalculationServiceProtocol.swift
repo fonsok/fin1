@@ -17,10 +17,8 @@ import Foundation
 /// **Documentation**: See `Documentation/DATA_SOURCE_HIERARCHY.md` for complete data source hierarchy and calculation rules.
 @MainActor
 protocol InvestorCollectionBillCalculationServiceProtocol {
-    /// Calculates collection bill values for a single trade participation
-    /// - Parameter input: Input data containing investment capital, trade data, invoices, and ownership
-    /// - Returns: Calculated collection bill output with all buy/sell amounts, quantities, fees, and profit
-    /// - Throws: Validation errors if input data is invalid or inconsistent
+    /// Local mirror-basis calculation — tests/dev only (`InvestorCollectionBillLocalCalculationGate`).
+    /// - Throws: When gate is not permitted (production uses server Beleg metadata only).
     func calculateCollectionBill(input: InvestorCollectionBillInput) throws -> InvestorCollectionBillOutput
 
     /// Validates input data for collection bill calculation
@@ -28,8 +26,7 @@ protocol InvestorCollectionBillCalculationServiceProtocol {
     /// - Returns: Validation result with any errors or warnings
     func validateInput(_ input: InvestorCollectionBillInput) -> ValidationResult
 
-    /// Builds collection bill output from backend Beleg data.
-    /// When ``monetaryServerOnly`` is true, never falls back to ``calculateCollectionBill(input:)``.
+    /// Builds collection bill output from backend Beleg data only (no local recompute in production).
     /// Set ``billResolvedFromPrefetchIndex`` when ``preloadedBill`` came from a prefetch map lookup (nil = no bill).
     func calculateCollectionBillWithBackend(
         input: InvestorCollectionBillInput,

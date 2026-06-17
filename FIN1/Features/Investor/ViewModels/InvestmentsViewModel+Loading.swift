@@ -60,9 +60,6 @@ extension InvestmentsViewModel {
             )
             var usernames: [String: String] = [:]
             var tradeNums: [String: String] = [:]
-            let commissionRate = configurationService.effectiveInvestorCommissionRate
-            let calculationService = InvestorCollectionBillCalculationService()
-            let serverOnly = configurationService.investorMonetaryServerOnly
 
             for inv in investments {
                 usernames[inv.id] = traderDataService.getTrader(by: inv.traderId)?.username ?? "---"
@@ -77,29 +74,7 @@ extension InvestmentsViewModel {
             }
             completedTraderUsernames = usernames
             completedTradeNumbers = tradeNums
-
-            if serverOnly {
-                completedInvestmentSummaries = [:]
-            } else {
-                var summaries: [String: InvestorInvestmentStatementSummary] = [:]
-                for inv in investments {
-                    if let summary = InvestorInvestmentStatementAggregator.summarizeInvestment(
-                        investmentId: inv.id,
-                        poolTradeParticipationService: poolTradeParticipationService,
-                        tradeLifecycleService: tradeLifecycleService,
-                        invoiceService: invoiceService,
-                        investmentService: investmentService,
-                        calculationService: calculationService,
-                        commissionCalculationService: commissionCalculationService,
-                        additionalTradesById: tradesById,
-                        commissionRate: commissionRate
-                    ) {
-                        summaries[inv.id] = summary
-                    }
-                }
-                completedInvestmentSummaries = summaries
-            }
-
+            completedInvestmentSummaries = [:]
             self.refreshCompletedCanonicalSummaries(for: investments)
         }
     }

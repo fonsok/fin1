@@ -3,8 +3,7 @@ import Foundation
 // MARK: - Investor Gross Profit Service Protocol
 
 /// Local investor gross-profit estimation (Collection-Bill-shaped).
-/// Phase 3: Production uses server collection bills / settlement; this path is for tests and
-/// dev preview (`investorMonetaryServerOnly == false`) via `TradeInvestorCommissionBreakdownLoader.loadLocalEstimate`.
+/// Production uses server collection bills via ``summarizeInvestmentFromServer``.
 protocol InvestorGrossProfitServiceProtocol: ServiceLifecycle, Sendable {
     /// Gets the gross profit for a specific investor's investment in a specific trade
     /// - Parameters:
@@ -86,36 +85,23 @@ final class InvestorGrossProfitService: InvestorGrossProfitServiceProtocol, Obse
         tradeId: String
     ) async throws -> Double {
         let commissionRate = self.configurationService.effectiveInvestorCommissionRate
-        let serverOnly = self.configurationService.investorMonetaryServerOnly
 
-        let summary: InvestorInvestmentStatementSummary?
-        if serverOnly, let settlementAPIService, let commissionCalculationService {
-            summary = await InvestorInvestmentStatementAggregator.summarizeInvestmentFromServer(
-                investmentId: investmentId,
-                poolTradeParticipationService: self.poolTradeParticipationService,
-                tradeLifecycleService: self.tradeLifecycleService,
-                invoiceService: self.invoiceService,
-                settlementAPIService: settlementAPIService,
-                calculationService: self.calculationService,
-                commissionCalculationService: commissionCalculationService,
-                investmentService: self.investmentService,
-                commissionRate: commissionRate,
-                monetaryServerOnly: true
-            )
-        } else {
-            summary = await MainActor.run {
-                InvestorInvestmentStatementAggregator.summarizeInvestment(
-                    investmentId: investmentId,
-                    poolTradeParticipationService: self.poolTradeParticipationService,
-                    tradeLifecycleService: self.tradeLifecycleService,
-                    invoiceService: self.invoiceService,
-                    investmentService: self.investmentService,
-                    calculationService: self.calculationService,
-                    commissionCalculationService: self.commissionCalculationService,
-                    commissionRate: commissionRate
-                )
-            }
+        guard let settlementAPIService, let commissionCalculationService else {
+            throw AppError.serviceError(.dataNotFound)
         }
+
+        let summary = await InvestorInvestmentStatementAggregator.summarizeInvestmentFromServer(
+            investmentId: investmentId,
+            poolTradeParticipationService: self.poolTradeParticipationService,
+            tradeLifecycleService: self.tradeLifecycleService,
+            invoiceService: self.invoiceService,
+            settlementAPIService: settlementAPIService,
+            calculationService: self.calculationService,
+            commissionCalculationService: commissionCalculationService,
+            investmentService: self.investmentService,
+            commissionRate: commissionRate,
+            monetaryServerOnly: self.configurationService.investorMonetaryServerOnly
+        )
         guard let summary else {
             throw AppError.serviceError(.dataNotFound)
         }

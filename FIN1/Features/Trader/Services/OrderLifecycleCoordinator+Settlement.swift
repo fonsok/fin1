@@ -149,7 +149,7 @@ extension OrderLifecycleCoordinator {
         }
     }
 
-    /// Generates a Credit Note document if commission was earned (local fallback when backend unsettled).
+    /// Generates a Credit Note document when backend settlement provides commission (server-only).
     func generateCreditNoteIfCommissionExists(for trade: Trade) async {
         if let settlementAPI = settlementAPIService {
             do {
@@ -169,57 +169,9 @@ extension OrderLifecycleCoordinator {
             }
         }
 
-        if self.configurationService.investorMonetaryServerOnly {
-            print("⚠️ CreditNote: investorMonetaryServerOnly — no local fallback")
+        if self.configurationService.traderStatementServerOnly {
+            print("⚠️ CreditNote: server-only — no local fallback")
             return
         }
-
-        guard let poolTradeParticipationService,
-              let investmentService,
-              let investorGrossProfitService,
-              let commissionCalculationService else {
-            print("📄 CreditNote: Required services unavailable - skipping")
-            return
-        }
-
-        let participations = poolTradeParticipationService.getParticipations(forTradeId: trade.id)
-        guard !participations.isEmpty else {
-            print("📄 CreditNote: No participations for trade #\(trade.tradeNumber) - no commission")
-            return
-        }
-
-        let commissionRate = self.configurationService.effectiveCommissionRate
-        let participationsByInvestment = Dictionary(grouping: participations) { $0.investmentId }
-        let allInvestments = investmentService.investments
-
-        var totalCommission: Double = 0.0
-        var totalGrossProfit: Double = 0.0
-
-        for (investmentId, _) in participationsByInvestment {
-            guard allInvestments.first(where: { $0.id == investmentId }) != nil else { continue }
-            do {
-                let investorGrossProfit = try await investorGrossProfitService.getGrossProfit(
-                    for: investmentId, tradeId: trade.id
-                )
-                let investorCommission = try await commissionCalculationService.calculateCommissionForInvestor(
-                    investmentId: investmentId, tradeId: trade.id, commissionRate: commissionRate
-                )
-                totalGrossProfit += investorGrossProfit
-                totalCommission += investorCommission
-            } catch {
-                print("⚠️ CreditNote [local fallback]: Error for investment \(investmentId): \(error)")
-            }
-        }
-
-        guard totalCommission > 0 else {
-            print("📄 CreditNote: Commission is €0 for trade #\(trade.tradeNumber) - skipping")
-            return
-        }
-
-        await self.tradingNotificationService.generateCreditNoteDocument(
-            for: trade,
-            commissionAmount: totalCommission,
-            grossProfit: totalGrossProfit
-        )
     }
 }

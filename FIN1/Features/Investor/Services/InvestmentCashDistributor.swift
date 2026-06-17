@@ -46,7 +46,6 @@ enum InvestmentCashDistributor {
 
         let commissionRate = configurationService.effectiveInvestorCommissionRate
 
-        let serverOnly = configurationService.investorStatementServerOnly
         let amounts: DistributionAmounts
         if let backendAmounts = await fetchBackendAmounts(
             investment: investment,
@@ -54,20 +53,11 @@ enum InvestmentCashDistributor {
             settlementAPIService: settlementAPIService
         ) {
             amounts = backendAmounts
-        } else if serverOnly {
+        } else {
             InvestorCollectionBillLog.warning(
                 "InvestmentCashDistributor: blocked — \(InvestorMonetaryMessages.cashDistributionBlocked)"
             )
             return
-        } else {
-            amounts = self.calculateDistributionAmounts(
-                investment: investment,
-                investmentReservation: investmentReservation,
-                poolTradeParticipationService: poolTradeParticipationService,
-                tradeLifecycleService: tradeLifecycleService,
-                invoiceService: invoiceService,
-                commissionRate: commissionRate
-            )
         }
 
         if amounts.netSellAmount > 0 {
@@ -118,7 +108,7 @@ enum InvestmentCashDistributor {
     // MARK: - Backend Integration
 
     /// Fetches distribution amounts from backend AccountStatement entries for the investment.
-    /// Returns nil if the backend has no data or the call fails (triggering local fallback).
+    /// Returns nil if the backend has no data or the call fails.
     private static func fetchBackendAmounts(
         investment: Investment,
         commissionRate: Double,
@@ -178,7 +168,7 @@ enum InvestmentCashDistributor {
                 residualAmount: residual
             )
         } catch {
-            print("⚠️ InvestmentCashDistributor: Backend fetch failed — using local fallback: \(error.localizedDescription)")
+            print("⚠️ InvestmentCashDistributor: Backend fetch failed: \(error.localizedDescription)")
             return nil
         }
     }
@@ -203,86 +193,6 @@ enum InvestmentCashDistributor {
         } catch {
             return nil
         }
-    }
-
-    // MARK: - Private Helpers
-
-    @MainActor
-    private static func calculateDistributionAmounts(
-        investment: Investment,
-        investmentReservation: InvestmentReservation,
-        poolTradeParticipationService: (any PoolTradeParticipationServiceProtocol)?,
-        tradeLifecycleService: (any TradeLifecycleServiceProtocol)?,
-        invoiceService: (any InvoiceServiceProtocol)?,
-        commissionRate: Double
-    ) -> DistributionAmounts {
-
-        // Initialize residual amount
-        var residualAmount: Double = 0.0
-
-        // Guard against nil services
-        guard let poolTradeSvc = poolTradeParticipationService,
-              let tradeService = tradeLifecycleService,
-              let invoiceSvc = invoiceService else {
-            print("⚠️ InvestmentCashDistributor: Missing required services for investment \(investment.id)")
-            return DistributionAmounts(
-                netSellAmount: 0,
-                commissionAmount: 0,
-                grossProfit: 0,
-                tradeNumbers: [],
-                residualAmount: 0
-            )
-        }
-
-        // Get statement summary from aggregator
-        guard let summary = InvestorInvestmentStatementAggregator.summarizeInvestment(
-            investmentId: investment.id,
-            poolTradeParticipationService: poolTradeSvc,
-            tradeLifecycleService: tradeService,
-            invoiceService: invoiceSvc,
-            commissionCalculationService: nil,
-            investment: investment,
-            commissionRate: commissionRate
-        ) else {
-            print("⚠️ InvestmentCashDistributor: Could not get statement summary for investment \(investment.id)")
-            return DistributionAmounts(
-                netSellAmount: 0,
-                commissionAmount: 0,
-                grossProfit: 0,
-                tradeNumbers: [],
-                residualAmount: 0
-            )
-        }
-
-        // Get residual amount from the statement summary
-        residualAmount = summary.statementResidualAmount
-
-        // Debug logging to verify residual amount
-        print("💰 InvestmentCashDistributor: Retrieved residual amount from summary")
-        print("   💵 Residual Amount: €\(String(format: "%.2f", residualAmount))")
-        print("   💵 Investment Capital: €\(String(format: "%.2f", investment.amount))")
-        print("   💵 Total Buy Cost: €\(String(format: "%.2f", summary.statementTotalBuyCost))")
-        print("   💵 Expected Residual: €\(String(format: "%.2f", investment.amount - summary.statementTotalBuyCost))")
-
-        // Net Sell Amount = Total Sell Value - Total Sell Fees (already calculated in summary)
-        let netSellAmount = summary.statementNetSellAmount
-
-        // Use statement gross profit
-        let grossProfit = summary.statementGrossProfit
-
-        // Commission is based on gross profit (only if profit > 0)
-        let commissionAmount = grossProfit > 0 ? grossProfit * commissionRate : 0.0
-
-        // Get trade numbers for commission details
-        let tradeNumbers = summary.items.map { String(format: "%03d", $0.tradeNumber) }
-
-        return DistributionAmounts(
-            netSellAmount: netSellAmount,
-            commissionAmount: commissionAmount,
-            grossProfit: grossProfit,
-            tradeNumbers: tradeNumbers,
-            residualAmount: residualAmount
-        )
     }
 
     private static func logDistribution(

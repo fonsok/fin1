@@ -236,9 +236,6 @@ final class CompletedInvestmentsViewModel: ObservableObject {
             )
             var usernames: [String: String] = [:]
             var tradeNums: [String: String] = [:]
-            let commissionRate = self.configurationService.effectiveInvestorCommissionRate
-            let calculationService = InvestorCollectionBillCalculationService()
-            let serverOnly = self.monetaryServerOnly
 
             for inv in self.investments {
                 usernames[inv.id] = self.traderDataService.getTrader(by: inv.traderId)?.username ?? "---"
@@ -253,29 +250,7 @@ final class CompletedInvestmentsViewModel: ObservableObject {
             }
             self.traderUsernames = usernames
             self.tradeNumbers = tradeNums
-
-            if serverOnly {
-                self.investmentSummaries = [:]
-            } else {
-                var summaries: [String: InvestorInvestmentStatementSummary] = [:]
-                for inv in self.investments {
-                    if let summary = InvestorInvestmentStatementAggregator.summarizeInvestment(
-                        investmentId: inv.id,
-                        poolTradeParticipationService: poolTradeParticipationService,
-                        tradeLifecycleService: tradeLifecycleService,
-                        invoiceService: invoiceService,
-                        investmentService: investmentService,
-                        calculationService: calculationService,
-                        commissionCalculationService: commissionCalculationService,
-                        additionalTradesById: tradesById,
-                        commissionRate: commissionRate
-                    ) {
-                        summaries[inv.id] = summary
-                    }
-                }
-                self.investmentSummaries = summaries
-            }
-
+            self.investmentSummaries = [:]
             self.refreshCanonicalSummaries(for: self.investments)
         }
     }

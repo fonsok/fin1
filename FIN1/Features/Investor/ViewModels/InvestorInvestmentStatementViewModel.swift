@@ -57,8 +57,8 @@ final class InvestorInvestmentStatementViewModel: ObservableObject {
         self.settlementAPIService = settlementAPIService
         self.statementDataProvider = statementDataProvider
 
-        // Production path: one backend refresh supplies authoritative rows (avoids local-then-server flash).
-        if settlementAPIService == nil {
+        // Tests/dev: local build only when explicitly permitted (no settlement API in preview).
+        if settlementAPIService == nil, InvestorCollectionBillLocalCalculationGate.isPermitted {
             rebuildStatement()
         }
     }

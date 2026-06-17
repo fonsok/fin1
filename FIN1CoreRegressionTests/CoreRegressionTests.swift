@@ -53,27 +53,29 @@ final class CoreRegressionTests: XCTestCase {
 
         // When
         let calculationService = InvestorCollectionBillCalculationService()
-        let viewModel = InvestorInvestmentStatementViewModel(
-            investment: investment,
-            poolTradeParticipationService: poolParticipationService,
-            tradeService: tradeLifecycleService,
-            invoiceService: invoiceService,
-            calculationService: calculationService,
-            configurationService: StubConfigurationService()
-        )
+        InvestorCollectionBillLocalCalculationGate.withPermitted {
+            let viewModel = InvestorInvestmentStatementViewModel(
+                investment: investment,
+                poolTradeParticipationService: poolParticipationService,
+                tradeService: tradeLifecycleService,
+                invoiceService: invoiceService,
+                calculationService: calculationService,
+                configurationService: StubConfigurationService()
+            )
 
-        // Then
-        guard let statement = viewModel.statementItems.first else {
-            return XCTFail("Expected statement item")
+            // Then
+            guard let statement = viewModel.statementItems.first else {
+                return XCTFail("Expected statement item")
+            }
+
+            XCTAssertEqual(statement.buyFeeDetails.map(\.label).prefix(2), ["Ordergebühr", "Handelsplatzgebühr"])
+            XCTAssertEqual(statement.sellFeeDetails.map(\.label).prefix(2), ["Ordergebühr Verkauf", "Börsenplatz Verkauf"])
+            XCTAssertEqual(statement.buyFees, 7.5, accuracy: 0.0001)
+            XCTAssertEqual(statement.sellFees, -5, accuracy: 0.0001)
+            XCTAssertEqual(statement.sellFeesDisplayAmount, 5, accuracy: 0.0001)
+            XCTAssertEqual(statement.netSellAmount, statement.sellTotal - statement.sellFeesDisplayAmount, accuracy: 0.0001)
+            XCTAssertEqual(statement.grossProfit, statement.netSellAmount - statement.totalBuyCost, accuracy: 0.0001)
         }
-
-        XCTAssertEqual(statement.buyFeeDetails.map(\.label).prefix(2), ["Ordergebühr", "Handelsplatzgebühr"])
-        XCTAssertEqual(statement.sellFeeDetails.map(\.label).prefix(2), ["Ordergebühr Verkauf", "Börsenplatz Verkauf"])
-        XCTAssertEqual(statement.buyFees, 7.5, accuracy: 0.0001)
-        XCTAssertEqual(statement.sellFees, -5, accuracy: 0.0001)
-        XCTAssertEqual(statement.sellFeesDisplayAmount, 5, accuracy: 0.0001)
-        XCTAssertEqual(statement.netSellAmount, statement.sellTotal - statement.sellFeesDisplayAmount, accuracy: 0.0001)
-        XCTAssertEqual(statement.grossProfit, statement.netSellAmount - statement.totalBuyCost, accuracy: 0.0001)
     }
 
     func testInvestmentCompletionMatchesStatementGrossReturn() {

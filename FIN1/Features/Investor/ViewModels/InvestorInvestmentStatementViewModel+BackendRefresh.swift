@@ -33,20 +33,8 @@ extension InvestorInvestmentStatementViewModel {
         let serverOnly = configurationService.investorMonetaryServerOnly
 
         guard let settlementAPIService else {
-            if serverOnly {
-                backendRefreshMessage = InvestorMonetaryMessages.serverUnavailable
-                statementItems = []
-                return
-            }
-            let localItems = buildStatementItems(
-                participations: participations,
-                tradesById: resolvedContext.tradesById
-            )
-            if !localItems.isEmpty {
-                statementItems = localItems
-            } else {
-                backendRefreshMessage = "Collection Bill konnte nicht aufgebaut werden (Trades fehlen lokal — bitte erneut öffnen oder Sync prüfen)"
-            }
+            backendRefreshMessage = InvestorMonetaryMessages.serverUnavailable
+            statementItems = []
             return
         }
 
@@ -65,12 +53,6 @@ extension InvestorInvestmentStatementViewModel {
             )
         } catch {
             backendRefreshMessage = InvestorMonetaryMessages.serverUnavailable
-            if !serverOnly {
-                statementItems = buildStatementItems(
-                    participations: participations,
-                    tradesById: trades
-                )
-            }
             return
         }
 

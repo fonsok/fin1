@@ -9,9 +9,9 @@ final class InvestorCollectionBillCalculationService: InvestorCollectionBillCalc
 
     // MARK: - Public Methods
 
-    /// Local mirror-basis calculation. Phase 3: not used in production when `monetaryServerOnly`;
-    /// kept for unit tests and admin/dev preview.
+    /// Local mirror-basis calculation — tests/dev only (`InvestorCollectionBillLocalCalculationGate`).
     func calculateCollectionBill(input: InvestorCollectionBillInput) throws -> InvestorCollectionBillOutput {
+        InvestorCollectionBillLocalCalculationGate.requirePermitted()
         // Validate input first
         let validation = self.validateInput(input)
         if !validation.isValid {
@@ -354,37 +354,10 @@ final class InvestorCollectionBillCalculationService: InvestorCollectionBillCalc
             throw InvestorMonetaryServerOnlyError.serverUnavailable
         }
 
-        if monetaryServerOnly {
+        if usedBackendErrorFallback {
             throw InvestorMonetaryServerOnlyError.serverUnavailable
         }
-
-        let local = try self.calculateCollectionBill(input: input)
-        guard usedBackendErrorFallback else { return local }
-
-        return InvestorCollectionBillOutput(
-            buyAmount: local.buyAmount,
-            buyQuantity: local.buyQuantity,
-            buyPrice: local.buyPrice,
-            buyFees: local.buyFees,
-            buyFeeDetails: local.buyFeeDetails,
-            residualAmount: local.residualAmount,
-            sellAmount: local.sellAmount,
-            sellQuantity: local.sellQuantity,
-            sellAveragePrice: local.sellAveragePrice,
-            sellFees: local.sellFees,
-            sellFeeDetails: local.sellFeeDetails,
-            totalBuyCost: local.totalBuyCost,
-            netSellAmount: local.netSellAmount,
-            grossProfit: local.grossProfit,
-            roiGrossProfit: local.roiGrossProfit,
-            roiInvestedAmount: local.roiInvestedAmount,
-            bookedCommission: nil,
-            bookedNetProfit: nil,
-            bookedTransferAmount: nil,
-            accountingDocumentNumber: nil,
-            belegInconsistencyMessage: nil,
-            dataSource: .localFallbackAfterBackendError
-        )
+        throw InvestorMonetaryServerOnlyError.noArchivedBeleg(tradeNumber: nil)
     }
 
     /// Maps archived collection bill (`Document`) to display output — Beleg-first (GoB).
