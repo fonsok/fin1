@@ -34,69 +34,62 @@ The ResponsiveDesign system ensures consistent, adaptive UI across all device si
 
 ### Spacing Optimization (Critical)
 
-### Main View Spacing Standards
-The following main views have been optimized for better space utilization and must maintain these patterns:
+#### Flat list layout (default for scrollable screens)
 
-#### Dashboard (`DashboardContainer.swift`)
+Most feature screens (dashboard, sign-up, profile, depot shell, account statement, investments, CSR dashboard) use **full-width zebra bands** instead of nested scroll cards. Padding lives **per section**, not on an outer wrapper.
+
+**SSOT:** `FIN1/Shared/Components/StripedListSection.swift` — `StripedStepList`, `stripedListSection`, `PaddedFormSectionList`. Sign-up uses the alias `signUpListSection` (`SignUpSectionStyle.swift`).
+
 ```swift
-// ✅ REQUIRED - Optimized spacing
-VStack(spacing: ResponsiveDesign.spacing(6)) {
-    // content
-}
-.padding(.horizontal, ResponsiveDesign.horizontalPadding())
-.padding(.top, ResponsiveDesign.spacing(8))
+ScrollView {
+    StripedStepList {
+        MyHeaderView()
+            .stripedListSection(stripeIndex: 0)
 
-// ❌ FORBIDDEN - Excessive spacing
-VStack(spacing: ResponsiveDesign.spacing(24)) { // Too much!
-    // content
+        MyContentSection()
+            .stripedListSection(stripeIndex: 1)
+    }
+    .padding(.bottom, ResponsiveDesign.spacing(16))
 }
-.responsivePadding() // Adds excessive vertical padding
 ```
 
-#### Securities Search (`SecuritiesSearchView.swift`)
+- Each `.stripedListSection` applies `ResponsiveDesign.mainHorizontalPadding()` and vertical band padding internally.
+- Stack sections with `VStack(spacing: ResponsiveDesign.spacing(0))` inside `StripedStepList` (never raw `spacing: 0`).
+- **Data tables:** title/metadata in `stripedListSection`; table rows in a separate shell (`InvestmentsTableStyle`, `solidBackground:` on rows). See `.cursor/rules/architecture.md` → *Flat list layout*.
+- **Deprecated:** `scrollSection()` / `ScrollSectionModifier`, outer card wrapping inner section cards.
+
+**Collapsible sections & pagination:** `FIN1/Shared/Components/ListSection/` (`CollapsibleListSectionHeader`, `ListPaginationBar`, `ClientSideListPagination`).
+
+#### Main view spacing validation
+
+`scripts/validate-main-view-spacing.sh` (pre-commit + CI) protects Dashboard, Securities Search, and Depot:
+
+| Screen | Pattern |
+|--------|---------|
+| **Dashboard**, **Depot** | `StripedStepList` + `stripedListSection` (no outer `.padding(.horizontal, …)` required) |
+| **Securities Search** | Legacy: outer `VStack` + `.padding(.horizontal, ResponsiveDesign.horizontalPadding())` + `.padding(.top, ResponsiveDesign.spacing(8))` until migrated |
+
 ```swift
-// ✅ REQUIRED - Optimized spacing
+// ✅ Securities Search (legacy — not yet on StripedStepList)
 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(6)) {
     // content
 }
 .padding(.horizontal, ResponsiveDesign.horizontalPadding())
 .padding(.top, ResponsiveDesign.spacing(8))
 
-// ❌ FORBIDDEN - Excessive spacing
-VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(16)) { // Too much!
-    // content
-}
-.responsivePadding() // Adds excessive vertical padding
+// ❌ FORBIDDEN on main views
+.responsivePadding() // excessive vertical padding on scroll roots
+VStack(spacing: ResponsiveDesign.spacing(24)) { … } // excessive section gap
 ```
 
-#### Depot (`TraderDepotView.swift`)
-```swift
-// ✅ REQUIRED - Optimized spacing
-VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(6)) {
-    // content
-}
-.padding(.horizontal, ResponsiveDesign.horizontalPadding())
-.padding(.top, ResponsiveDesign.spacing(8))
+#### Regression protection
 
-// ❌ FORBIDDEN - Excessive spacing
-VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(16)) { // Too much!
-    // content
-}
-.responsivePadding() // Adds excessive vertical padding
-```
+- **`./scripts/check-responsive-design.sh`** — no fixed fonts/spacing/padding literals
+- **`./scripts/validate-main-view-spacing.sh`** — Dashboard / Depot / Securities Search (StripedStepList-aware)
+- **Pre-commit hooks** and **CI** (`responsive-design-compliance.yml`, `ci.yml`)
+- **`UISpacingRegressionTests.swift`** where applicable
 
-### Regression Protection
-These spacing optimizations are protected by:
-- **SwiftLint Rules**: Automatic detection of excessive spacing
-- **Pre-commit Hooks**: Validation before each commit
-- **Regression Tests**: Automated tests in `UISpacingRegressionTests.swift`
-- **CI/CD Checks**: GitHub Actions enforce compliance
-
-**⚠️ CRITICAL**: Do not revert these spacing optimizations. They provide:
-- 75% reduction in vertical spacing
-- Better space utilization
-- Improved user experience
-- Modern UI feel
+Do not reintroduce nested scroll cards or `.responsivePadding()` on main scroll roots.
 
 ### Corner Radius
 ```swift
@@ -226,10 +219,10 @@ The ResponsiveDesign system is optimized for performance:
 
 When updating existing code:
 
-1. **Find patterns**: Search for `.font(\.`, `VStack(spacing:`, `.cornerRadius(`
-2. **Replace systematically**: Use find/replace with regex
-3. **Test thoroughly**: Verify on multiple devices
-4. **Run checks**: Use automated tools to verify
+1. **Scrollable feature screens:** migrate `scrollSection()` / nested cards → `ScrollView` + `StripedStepList` + `stripedListSection` (see *Flat list layout* above).
+2. **Find fixed literals:** search for `.font(\.`, `VStack(spacing:`, `.cornerRadius(`
+3. **Replace systematically:** use ResponsiveDesign methods; `spacing: 0` → `ResponsiveDesign.spacing(0)`.
+4. **Run checks:** `./scripts/check-responsive-design.sh`, `./scripts/validate-main-view-spacing.sh`
 
 ## Support
 
