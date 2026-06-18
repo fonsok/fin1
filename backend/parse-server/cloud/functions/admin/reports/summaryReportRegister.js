@@ -26,7 +26,7 @@ const {
 } = require('./summaryReportAggPipelines');
 const {
   mapInvestmentRow,
-  loadCanonicalReturnByInvestmentId,
+  loadCanonicalBillMetricsByInvestmentId,
 } = require('./summaryReportInvestmentRows');
 const {
   mapTradeRow,
@@ -111,8 +111,8 @@ async function handleGetSummaryReportInvestmentsPage(request) {
     pageSize,
   );
   const { total, rows, searchMode } = pageResult;
-  const canonicalReturnMap = await loadCanonicalReturnByInvestmentId(rows.map((r) => r.id));
-  const items = rows.map((inv) => mapInvestmentRow(inv, commissionRate, canonicalReturnMap));
+  const canonicalMetrics = await loadCanonicalBillMetricsByInvestmentId(rows.map((r) => r.id));
+  const items = rows.map((inv) => mapInvestmentRow(inv, commissionRate, canonicalMetrics));
 
   return { items, total, page, pageSize, searchMode: searchMode || 'none' };
 }

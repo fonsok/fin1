@@ -1,22 +1,41 @@
 'use strict';
 
+const {
+  investmentCollectionBillsLookupStage,
+  sumCollectionBillTotalBuyCostMongoExpr,
+  investmentPositionAmountMongoExpression,
+} = require('../../../utils/investmentDisplayAmount');
+
 function investmentAggPipeline(match) {
   const stages = [];
   if (match && Object.keys(match).length > 0) {
     stages.push({ $match: match });
   }
+
+  // Beleg-SSOT: Σ metadata.totalBuyCost per investment (matches list rows + iOS).
+  stages.push(investmentCollectionBillsLookupStage());
   stages.push({
     $addFields: {
+      canonicalTotalBuyCost: sumCollectionBillTotalBuyCostMongoExpr(),
       effCurrent: { $ifNull: ['$currentValue', '$amount'] },
+    },
+  });
+  stages.push({
+    $addFields: {
+      displayAmount: investmentPositionAmountMongoExpression(),
+    },
+  });
+  stages.push({
+    $addFields: {
       rowGross: {
-        $subtract: [{ $ifNull: ['$currentValue', '$amount'] }, { $ifNull: ['$amount', 0] }],
+        $subtract: ['$effCurrent', '$displayAmount'],
       },
     },
   });
   stages.push({
     $group: {
       _id: null,
-      totalInvestedAmount: { $sum: { $ifNull: ['$amount', 0] } },
+      totalInvestedAmount: { $sum: '$displayAmount' },
       totalCurrentValue: { $sum: '$effCurrent' },
       totalGrossProfit: { $sum: '$rowGross' },
       positiveGrossSum: {

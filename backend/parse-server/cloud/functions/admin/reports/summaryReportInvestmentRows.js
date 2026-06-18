@@ -1,22 +1,25 @@
 'use strict';
 
-// SSOT: returnPercentage comes from the canonical CollectionBill metadata (ROI2).
-// If no bill is present yet (active/ongoing investment, or pre-settlement), we fall
-// back to the ROI2 formula `((grossProfit − commission) / amount) × 100` — identical
-// to the formula used by `computeCollectionBillReturnPercentage`.
-// See: Documentation/RETURN_CALCULATION_SCHEMAS.md and
-// Documentation/ADR-006-Server-Owned-Return-Percentage-Contract.md
+const {
+  resolveInvestmentPositionAmount,
+  bookedTotalBuyCostFromMetadata,
+} = require('../../../utils/investmentDisplayAmount');
 
-function mapInvestmentRow(inv, commissionRate, canonicalReturnByInvestmentId = null) {
-  const amount = inv.get('amount') || 0;
+// SSOT: returnPercentage comes from the canonical CollectionBill metadata (ROI2).
+// Position amount: resolveInvestmentPositionAmount (Beleg totalBuyCost → poolTradingAmount → nominal).
+// See: Documentation/BOOKING_AND_BELEG_SSOT.md, RETURN_CALCULATION_SCHEMAS.md, ADR-006.
+
+function mapInvestmentRow(inv, commissionRate, canonicalByInvestmentId = null) {
+  const canonical = canonicalByInvestmentId?.[inv.id];
+  const amount = resolveInvestmentPositionAmount(inv, canonical?.totalBuyCost);
   const currentValue = inv.get('currentValue') || amount;
   const grossProfit = currentValue - amount;
   const commission = grossProfit > 0 ? grossProfit * commissionRate : 0;
   const netProfit = grossProfit - commission;
 
   const canonicalReturn =
-    canonicalReturnByInvestmentId && typeof canonicalReturnByInvestmentId[inv.id] === 'number'
-      ? canonicalReturnByInvestmentId[inv.id]
+    canonical && typeof canonical.returnPercentage === 'number'
+      ? canonical.returnPercentage
       : null;
   const fallbackReturn = amount > 0 ? (netProfit / amount) * 100 : 0;
   const returnPercentage = canonicalReturn != null ? canonicalReturn : fallbackReturn;
@@ -38,10 +41,11 @@ function mapInvestmentRow(inv, commissionRate, canonicalReturnByInvestmentId = n
   };
 }
 
-// Loads canonical `metadata.returnPercentage` from investorCollectionBill documents
-// for a batch of investment IDs. If an investment has multiple bills, we compute the
-// weighted average by buyLeg invested amount (matches ServerCalculatedReturnResolver).
-async function loadCanonicalReturnByInvestmentId(investmentIds) {
+/**
+ * Loads Collection Bill canonical metrics per investment (single batch query).
+ * Matches iOS `ServerCalculatedReturnResolver` aggregation rules.
+ */
+async function loadCanonicalBillMetricsByInvestmentId(investmentIds) {
   if (!Array.isArray(investmentIds) || investmentIds.length === 0) {
     return {};
   }
@@ -54,15 +58,31 @@ async function loadCanonicalReturnByInvestmentId(investmentIds) {
   const buckets = {};
   for (const d of docs) {
     const metadata = d.get('metadata') || {};
-    const pct = metadata.returnPercentage;
-    if (typeof pct !== 'number' || !Number.isFinite(pct)) continue;
     const invId = d.get('investmentId');
     if (!invId) continue;
+
+    if (!buckets[invId]) {
+      buckets[invId] = {
+        weighted: 0,
+        invested: 0,
+        sum: 0,
+        count: 0,
+        totalBuyCost: 0,
+      };
+    }
+    const bucket = buckets[invId];
+
+    const bookedBuy = bookedTotalBuyCostFromMetadata(metadata);
+    if (bookedBuy > 0.005) {
+      bucket.totalBuyCost += bookedBuy;
+    }
+
+    const pct = metadata.returnPercentage;
+    if (typeof pct !== 'number' || !Number.isFinite(pct)) continue;
+
     const buyAmount = metadata.buyLeg?.amount || 0;
     const buyFees = metadata.buyLeg?.fees?.totalFees || 0;
     const invested = buyAmount + buyFees;
-    if (!buckets[invId]) buckets[invId] = { weighted: 0, invested: 0, sum: 0, count: 0 };
-    const bucket = buckets[invId];
     if (invested > 0) {
       bucket.weighted += pct * invested;
       bucket.invested += invested;
@@ -75,10 +95,27 @@ async function loadCanonicalReturnByInvestmentId(investmentIds) {
   const result = {};
   for (const invId of Object.keys(buckets)) {
     const b = buckets[invId];
+    let returnPercentage;
     if (b.invested > 0) {
-      result[invId] = b.weighted / b.invested;
+      returnPercentage = b.weighted / b.invested;
     } else if (b.count > 0) {
-      result[invId] = b.sum / b.count;
+      returnPercentage = b.sum / b.count;
+    }
+    result[invId] = {
+      ...(returnPercentage != null ? { returnPercentage } : {}),
+      ...(b.totalBuyCost > 0.005 ? { totalBuyCost: b.totalBuyCost } : {}),
+    };
+  }
+  return result;
+}
+
+/** @deprecated Use loadCanonicalBillMetricsByInvestmentId — kept for tests. */
+async function loadCanonicalReturnByInvestmentId(investmentIds) {
+  const metrics = await loadCanonicalBillMetricsByInvestmentId(investmentIds);
+  const result = {};
+  for (const [invId, row] of Object.entries(metrics)) {
+    if (typeof row.returnPercentage === 'number') {
+      result[invId] = row.returnPercentage;
     }
   }
   return result;
@@ -86,5 +123,6 @@ async function loadCanonicalReturnByInvestmentId(investmentIds) {
 
 module.exports = {
   mapInvestmentRow,
+  loadCanonicalBillMetricsByInvestmentId,
   loadCanonicalReturnByInvestmentId,
 };

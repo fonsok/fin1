@@ -1,9 +1,12 @@
 'use strict';
 
+const { resolveInvestmentPositionAmount } = require('../../utils/investmentDisplayAmount');
+const { loadCanonicalBillMetricsByInvestmentId } = require('./reports/summaryReportInvestmentRows');
+
 async function loadInvestorInvestmentLists(user, userId) {
   const role = user.get('role');
   if (role !== 'investor') {
-    return { investments: [], investmentSummary: null };
+    return { investments: [], investmentSummary: null, canonicalByInvestmentId: {} };
   }
 
   const investorIdByEmail = `user:${user.get('email')}`;
@@ -23,7 +26,16 @@ async function loadInvestorInvestmentLists(user, userId) {
   allInvByEmailQuery.equalTo('investorId', investorIdByEmail);
   const allInvestmentsQuery = Parse.Query.or(allInvByIdQuery, allInvByEmailQuery);
   const allInvestments = await allInvestmentsQuery.find({ useMasterKey: true });
-  const totalInvested = allInvestments.reduce((sum, i) => sum + (i.get('amount') || 0), 0);
+
+  const allIds = allInvestments.map((i) => i.id);
+  const canonicalByInvestmentId = allIds.length
+    ? await loadCanonicalBillMetricsByInvestmentId(allIds)
+    : {};
+
+  const positionAmount = (inv) =>
+    resolveInvestmentPositionAmount(inv, canonicalByInvestmentId[inv.id]?.totalBuyCost);
+
+  const totalInvested = allInvestments.reduce((sum, i) => sum + positionAmount(i), 0);
   const totalProfit = allInvestments.reduce((sum, i) => sum + (i.get('profit') || 0), 0);
   const activeInvestments = allInvestments.filter(i => i.get('status') === 'active');
 
@@ -38,11 +50,16 @@ async function loadInvestorInvestmentLists(user, userId) {
     currentValue: activeInvestments.reduce((sum, i) => sum + (i.get('currentValue') || i.get('amount') || 0), 0),
   };
 
-  return { investments, investmentSummary };
+  return { investments, investmentSummary, canonicalByInvestmentId };
 }
 
-async function mapInvestmentsForAdminDetail(investments, formatDate) {
+async function mapInvestmentsForAdminDetail(investments, formatDate, canonicalByInvestmentId = {}) {
   return Promise.all(investments.map(async (i) => {
+    const displayAmount = resolveInvestmentPositionAmount(
+      i,
+      canonicalByInvestmentId[i.id]?.totalBuyCost,
+    );
+
     const partQuery = new Parse.Query('PoolTradeParticipation');
     partQuery.equalTo('investmentId', i.id);
     const participations = await partQuery.find({ useMasterKey: true });
@@ -77,7 +94,7 @@ async function mapInvestmentsForAdminDetail(investments, formatDate) {
         }
         investTradeCount = 1;
         investStatus = 'completed';
-        const capital = i.get('amount') || allocatedAmount;
+        const capital = displayAmount || allocatedAmount;
         if (capital > 0) {
           investProfitPct = parseFloat(((investProfit / capital) * 100).toFixed(2));
         }
@@ -131,7 +148,7 @@ async function mapInvestmentsForAdminDetail(investments, formatDate) {
       objectId: i.id,
       traderId: i.get('traderId'),
       traderName: i.get('traderName'),
-      amount: i.get('amount'),
+      amount: displayAmount,
       status: investStatus,
       profit: investProfit,
       currentValue: i.get('currentValue'),

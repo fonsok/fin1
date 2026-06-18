@@ -104,7 +104,16 @@ Ein web-basiertes Administrations-Portal für FIN1, das rollen-basierte Zugriffs
 - **Tabellen** (`InvestmentTable`): Es werden höchstens **10** Investments geladen (neueste zuerst). Aufteilung im UI:
   - **Ongoing Investments:** Status weder `completed` noch `cancelled`
   - **Completed Investments:** Status `completed` oder `cancelled`
-- **Spalten:** Investment-Nr. (gekürzte `objectId`), **Trader** (Name oder `traderId`), **Trade-Nr.** (aus verknüpftem Trade, 3-stellig), **InvestAmount**, **Profit**, **Return (%)**, **Beleg / Rechnung** (`docRef`: Referenz aus `Document`, gesucht über `AccountStatement` mit `investmentId` und `entryType` ∈ `investment_profit`, `commission_debit` und gesetztem `referenceDocumentId`), **Status**.
+- **Spalten:** Investment-Nr. (gekürzte `objectId`), **Trader** (Name oder `traderId`), **Trade-Nr.** (aus verknüpftem Trade, 3-stellig), **InvestAmount** (Positions-SSOT: Beleg `totalBuyCost` → `poolTradingAmount` → Nominal — `usersDetailInvestor.js`), **Profit**, **Return (%)**, **Beleg / Rechnung** (`docRef`: Referenz aus `Document`, gesucht über `AccountStatement` mit `investmentId` und `entryType` ∈ `investment_profit`, `commission_debit` und gesetztem `referenceDocumentId`), **Status**.
+- **KPI „Investiert“:** Summe der Positionsbeträge (gleiche SSOT wie Spalte InvestAmount), nicht rohes Nominal.
+
+#### Summary Report (`SummaryReportPage`, Finanzen → Reports)
+
+- **Cloud Functions:** `getSummaryReport` (Overview-KPIs), `getSummaryReportInvestmentsPage`, `getSummaryReportTradesPage` (`admin/reports/summaryReportRegister.js`).
+- **Tab Investments — Spalte Betrag:** Positions-SSOT wie iOS/iOS Completed — reserviert → Nominal (`Investment.amount`); sonst Collection Bill **`totalBuyCost`** (Σ Belege) → `poolTradingAmount` → Nominal. Backend: `cloud/utils/investmentDisplayAmount.js`, `summaryReportInvestmentRows.js`.
+- **Tab Overview — KPI „Investiertes Kapital“:** dieselbe Positions-Logik via Mongo `$lookup` auf `Document` (Collection Bills) in `summaryReportAggPipelines.js` — konsistent mit Investments-Liste.
+- **Return (%):** ROI2 aus Beleg-`metadata.returnPercentage` wenn vorhanden; siehe [`../RETURN_CALCULATION_SCHEMAS.md`](../RETURN_CALCULATION_SCHEMAS.md).
+- **Vollständige SSOT-Beschreibung:** [`../INVESTOR_POSITION_AMOUNT_SSOT.md`](../INVESTOR_POSITION_AMOUNT_SSOT.md).
 
 #### Kontoauszug (`AccountStatementCard`)
 

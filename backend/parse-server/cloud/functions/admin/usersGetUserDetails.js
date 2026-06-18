@@ -32,7 +32,7 @@ async function handleGetUserDetails(request) {
   const formatDate = formatAdminUserDate;
 
   const { trades, tradeSummary } = await loadTraderTradeLists(user);
-  const { investments, investmentSummary } = await loadInvestorInvestmentLists(user, userId);
+  const { investments, investmentSummary, canonicalByInvestmentId } = await loadInvestorInvestmentLists(user, userId);
 
   const activityQuery = new Parse.Query('AuditLog');
   activityQuery.equalTo('resourceId', userId);
@@ -97,7 +97,7 @@ async function handleGetUserDetails(request) {
     tradeSummary,
     trades: tradesWithInvestors,
     investmentSummary,
-    investments: await mapInvestmentsForAdminDetail(investments, formatDate),
+    investments: await mapInvestmentsForAdminDetail(investments, formatDate, canonicalByInvestmentId),
     accountStatement,
     accountStatementLedger,
     clientFundsBreakdown,

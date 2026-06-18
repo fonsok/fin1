@@ -39,6 +39,8 @@ Collection Bills und Admin-Beleg (`usersDetailStatementsAndWallet`) liefern `buy
 
 Nach Aktivierung wird die gleiche gebuchte Gesamtkaufkosten-Größe zusätzlich auf **`Investment.poolTradingAmount`** persistiert (und kann aus Beleg-Metadaten `totalBuyCost` / `poolTradingAmount` nachgezogen werden), damit Clients das Nominal (`amount` = Reservierung) von der Kaufseite unterscheiden können.
 
+**Anzeige-SSOT (eine Positionsgröße pro Investment in Tabellen/Reports, nicht Einzel-Ledgerzeilen):** [`INVESTOR_POSITION_AMOUNT_SSOT.md`](INVESTOR_POSITION_AMOUNT_SSOT.md) — Priorität Beleg `totalBuyCost` → `poolTradingAmount` → Nominal; Code: `cloud/utils/investmentDisplayAmount.js`.
+
 ## Pipeline
 
 ### Investor Collection Bill
