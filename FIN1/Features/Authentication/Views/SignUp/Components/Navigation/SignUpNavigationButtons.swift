@@ -68,7 +68,6 @@ struct SignUpNavigationButtons: View {
                     .padding(.top, ResponsiveDesign.spacing(16))
                 }
             }
-            .padding(.horizontal, ResponsiveDesign.lightBlueAreaHorizontalPadding())
         }
     }
 

@@ -6,7 +6,8 @@ extension DataTable {
         rows: [TableRowData],
         showTraderColumn: Bool = true,
         isInteractive: Bool = false,
-        onInteractiveChange: ((String) -> Void)? = nil
+        onInteractiveChange: ((String) -> Void)? = nil,
+        layout: DataTableLayout = .card
     ) -> DataTable {
         var columns: [TableColumn] = []
 
@@ -42,6 +43,6 @@ extension DataTable {
             infoText: "Ø-Return per Trade shows the average ROI percentage across all trades (both wins and losses combined). It measures the average return per trade. This can be negative if losses outweigh wins, or positive if gains are larger.\nExample:\nIf a trader has 36% average return, it means the average ROI across all trades is 36%.\n\nROI = Return On Investment"
         ))
 
-        return DataTable(columns: columns, rows: rows)
+        return DataTable(columns: columns, rows: rows, layout: layout)
     }
 }

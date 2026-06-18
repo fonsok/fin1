@@ -24,15 +24,27 @@ struct CustomerSupportDashboardView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: ResponsiveDesign.spacing(20)) {
+                StripedStepList {
                     self.headerSection
-                    self.searchSection
+                        .stripedListSection(stripeIndex: 0)
+
+                    self.searchSectionTitle
+                        .stripedListSection(stripeIndex: 1)
+
+                    self.searchResultsContent
+
                     CustomerSupportDashboardQuickActionsSection(viewModel: self.viewModel)
-                    CustomerSupportDashboardRecentTicketsSection(viewModel: self.viewModel)
+                        .stripedListSection(stripeIndex: 2)
+
+                    CustomerSupportDashboardRecentTicketsSection(
+                        titleStripeIndex: 3,
+                        viewModel: self.viewModel
+                    )
+
                     self.permissionsSection
-                    Spacer(minLength: ResponsiveDesign.spacing(20))
+                        .stripedListSection(stripeIndex: 4)
                 }
-                .padding()
+                .padding(.bottom, ResponsiveDesign.spacing(16))
             }
             .background(AppTheme.screenBackground.ignoresSafeArea())
             .navigationTitle("Kundenservice")
@@ -147,14 +159,12 @@ struct CustomerSupportDashboardView: View {
             }
             .padding(.top, ResponsiveDesign.spacing(4))
         }
-        .padding()
-        .background(AppTheme.sectionBackground)
-        .cornerRadius(ResponsiveDesign.spacing(12))
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: - Search Section
 
-    private var searchSection: some View {
+    private var searchSectionTitle: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
             Text("Kundensuche")
                 .font(ResponsiveDesign.headlineFont())
@@ -185,26 +195,33 @@ struct CustomerSupportDashboardView: View {
             .background(AppTheme.screenBackground)
             .cornerRadius(ResponsiveDesign.spacing(10))
 
-            if !self.viewModel.searchResults.isEmpty {
-                VStack(spacing: ResponsiveDesign.spacing(8)) {
-                    ForEach(self.viewModel.searchResults) { result in
-                        CustomerSearchResultRow(result: result) {
-                            Task {
-                                await self.viewModel.selectCustomer(result)
-                            }
-                        }
-                    }
-                }
-            } else if !self.viewModel.searchQuery.isEmpty && !self.viewModel.isSearching {
+            if self.viewModel.searchResults.isEmpty,
+               !self.viewModel.searchQuery.isEmpty,
+               !self.viewModel.isSearching {
                 Text("Keine Kunden gefunden")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.7))
                     .padding()
             }
         }
-        .padding()
-        .background(AppTheme.sectionBackground)
-        .cornerRadius(ResponsiveDesign.spacing(12))
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    @ViewBuilder
+    private var searchResultsContent: some View {
+        if !self.viewModel.searchResults.isEmpty {
+            VStack(spacing: ResponsiveDesign.spacing(8)) {
+                ForEach(self.viewModel.searchResults) { result in
+                    CustomerSearchResultRow(result: result) {
+                        Task {
+                            await self.viewModel.selectCustomer(result)
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, ResponsiveDesign.mainHorizontalPadding())
+            .padding(.vertical, ResponsiveDesign.spacing(4))
+        }
     }
 
     // MARK: - Permissions Section
@@ -262,9 +279,7 @@ struct CustomerSupportDashboardView: View {
                 }
             }
         }
-        .padding()
-        .background(AppTheme.sectionBackground)
-        .cornerRadius(ResponsiveDesign.spacing(12))
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

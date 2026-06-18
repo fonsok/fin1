@@ -9,11 +9,13 @@ struct TermsStep: View {
     @Binding var acceptedMarketingConsent: Bool
 
     var body: some View {
-        VStack(spacing: ResponsiveDesign.spacing(20)) {
+        SignUpStepList {
             Text("Terms & Conditions")
                 .font(ResponsiveDesign.headlineFont())
                 .fontWeight(.bold)
                 .foregroundColor(AppTheme.fontColor)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .signUpListSection(stripeIndex: 0)
 
             VStack(spacing: ResponsiveDesign.spacing(16)) {
                 Toggle("I accept the Terms of Service", isOn: self.$acceptedTerms)
@@ -31,29 +33,23 @@ struct TermsStep: View {
                 .foregroundColor(AppTheme.fontColor)
                 .toggleStyle(SwitchToggleStyle(tint: AppTheme.accentLightBlue))
             }
-            .padding()
-            .background(AppTheme.sectionBackground)
-            .cornerRadius(ResponsiveDesign.spacing(12))
+            .signUpListSection(stripeIndex: 1)
 
-            // Terms Explanation
             VStack(spacing: ResponsiveDesign.spacing(16)) {
                 Text("Was Sie akzeptieren:")
                     .font(ResponsiveDesign.headlineFont())
                     .foregroundColor(AppTheme.fontColor)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
                     InfoBullet(text: "Nutzungsbedingungen für unsere App")
                     InfoBullet(text: "Datenschutzrichtlinien und -verarbeitung")
                     InfoBullet(text: "Regulatorische Compliance-Anforderungen")
                     InfoBullet(text: "Risikohinweise für Finanzprodukte")
                 }
             }
-            .padding()
-            .background(AppTheme.sectionBackground)
-            .cornerRadius(ResponsiveDesign.spacing(16))
+            .signUpListSection(stripeIndex: 2)
 
-            // Important Notice
             VStack(spacing: ResponsiveDesign.spacing(12)) {
                 HStack {
                     Image(systemName: "exclamationmark.triangle.fill")
@@ -74,13 +70,7 @@ struct TermsStep: View {
                 .foregroundColor(AppTheme.fontColor.opacity(0.8))
                 .multilineTextAlignment(.leading)
             }
-            .padding()
-            .background(AppTheme.accentOrange.opacity(0.1))
-            .cornerRadius(ResponsiveDesign.spacing(12))
-            .overlay(
-                RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(12))
-                    .stroke(AppTheme.accentOrange.opacity(0.3), lineWidth: 1)
-            )
+            .signUpListSection(stripeIndex: 3, bandTint: AppTheme.accentOrange)
         }
     }
 }

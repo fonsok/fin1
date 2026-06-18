@@ -9,21 +9,13 @@ struct TradesOverviewHeaderView: View {
     @Environment(\.themeManager) private var themeManager
 
     var body: some View {
-        VStack(spacing: ResponsiveDesign.spacing(16)) {
+        VStack(spacing: ResponsiveDesign.spacing(8)) {
             HStack {
-                // Time period filter
                 self.timePeriodFilter
-
                 Spacer()
-
-                // Customize details button
                 self.customizeDetailsButton
             }
-            .padding(.horizontal, ResponsiveDesign.spacing(16))
-            .padding(.top, ResponsiveDesign.spacing(8))
-            .padding(.bottom, ResponsiveDesign.spacing(24))
         }
-        .background(AppTheme.sectionBackground)
     }
 
     // MARK: - Time Period Filter

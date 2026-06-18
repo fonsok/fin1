@@ -27,26 +27,26 @@ struct TraderDepotView: View {
         ZStack {
             NavigationStack {
                 ScrollView {
-                    VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(6)) {
+                    StripedStepList {
                         DepotHeaderView(
                             depotValue: self.viewModel.depotValue,
                             depotNumber: self.viewModel.depotNumber
                         )
-                        .padding(.bottom, ResponsiveDesign.spacing(8))
+                        .stripedListSection(stripeIndex: 0)
 
-                        OngoingOrdersSection(ongoingOrders: self.viewModel.ongoingOrders)
-
-                        Divider().background(Color.white.opacity(0.5))
-                            .padding(.vertical, ResponsiveDesign.spacing(8))
+                        OngoingOrdersSection(
+                            titleStripeIndex: 1,
+                            ongoingOrders: self.viewModel.ongoingOrders
+                        )
 
                         HoldingsSection(
+                            titleStripeIndex: 2,
                             holdings: self.viewModel.holdings,
                             ongoingOrders: self.viewModel.ongoingOrders,
                             warrantDetailsViewModel: self.warrantDetailsViewModel
                         )
                     }
-                    .padding(.horizontal, ResponsiveDesign.horizontalPadding())
-                    .padding(.top, ResponsiveDesign.spacing(8))
+                    .padding(.bottom, ResponsiveDesign.spacing(16))
                 }
                 .background(AppTheme.screenBackground)
                 .navigationTitle("Depot")
@@ -122,37 +122,66 @@ struct TraderDepotView: View {
 // MARK: - Ongoing Orders Section
 /// Displays the ongoing orders section
 private struct OngoingOrdersSection: View {
+    let titleStripeIndex: Int
     let ongoingOrders: [Order]
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            self.sectionTitleBlock
+                .stripedListSection(stripeIndex: self.titleStripeIndex)
+
+            if !self.ongoingOrders.isEmpty {
+                self.orderCards
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var sectionTitleBlock: some View {
         if self.ongoingOrders.isEmpty {
             Text("Keine laufenden Orders")
                 .font(ResponsiveDesign.headlineFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.8))
+                .frame(maxWidth: .infinity, alignment: .leading)
         } else {
-            VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
-                Text("Laufende Orders")
-                    .font(ResponsiveDesign.headlineFont())
-                    .foregroundColor(AppTheme.accentOrange)
+            Text("Laufende Orders")
+                .font(ResponsiveDesign.headlineFont())
+                .foregroundColor(AppTheme.accentOrange)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
 
-                LazyVStack(spacing: ResponsiveDesign.spacing(12)) {
-                    ForEach(Array(self.ongoingOrders.enumerated()), id: \.offset) { index, order in
-                        OrderCard(order: order, position: index + 1)
-                    }
-                }
+    private var orderCards: some View {
+        LazyVStack(spacing: ResponsiveDesign.spacing(12)) {
+            ForEach(Array(self.ongoingOrders.enumerated()), id: \.offset) { index, order in
+                OrderCard(order: order, position: index + 1)
             }
         }
+        .padding(.horizontal, ResponsiveDesign.mainHorizontalPadding())
+        .padding(.vertical, ResponsiveDesign.spacing(4))
     }
 }
 
 // MARK: - Holdings Section
 /// Displays the holdings section
 private struct HoldingsSection: View {
+    let titleStripeIndex: Int
     let holdings: [DepotHolding]
     let ongoingOrders: [Order]
     let warrantDetailsViewModel: WarrantDetailsViewModel
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            self.sectionTitleBlock
+                .stripedListSection(stripeIndex: self.titleStripeIndex)
+
+            if !self.holdings.isEmpty {
+                self.holdingCards
+            }
+        }
+    }
+
+    private var sectionTitleBlock: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
             Text("Bestand")
                 .font(ResponsiveDesign.headlineFont())
@@ -175,18 +204,22 @@ private struct HoldingsSection: View {
                 }
                 .padding(.vertical, ResponsiveDesign.spacing(32))
                 .frame(maxWidth: .infinity)
-            } else {
-                LazyVStack(spacing: ResponsiveDesign.spacing(12)) {
-                    ForEach(self.holdings) { holding in
-                        HoldingCard(
-                            holding: holding,
-                            ongoingOrders: self.ongoingOrders,
-                            warrantDetailsViewModel: self.warrantDetailsViewModel
-                        )
-                    }
-                }
             }
         }
+    }
+
+    private var holdingCards: some View {
+        LazyVStack(spacing: ResponsiveDesign.spacing(12)) {
+            ForEach(self.holdings) { holding in
+                HoldingCard(
+                    holding: holding,
+                    ongoingOrders: self.ongoingOrders,
+                    warrantDetailsViewModel: self.warrantDetailsViewModel
+                )
+            }
+        }
+        .padding(.horizontal, ResponsiveDesign.mainHorizontalPadding())
+        .padding(.vertical, ResponsiveDesign.spacing(4))
     }
 }
 

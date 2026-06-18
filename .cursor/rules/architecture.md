@@ -859,6 +859,35 @@ catch {
 - Use `.sheet()` only for modals, forms, and temporary content.
 - Never use `.sheet()` for navigation that should maintain context.
 
+### Flat list layout (avoid nested cards)
+
+**Default for scrollable feature screens:** screen background → `ScrollView` → `StripedStepList` → sections via `stripedListSection(stripeIndex:)`. No outer scroll card wrapping inner section cards.
+
+**SSOT:** `FIN1/Shared/Components/StripedListSection.swift` (`StripedStepList`, `stripedListSection`, `PaddedFormSectionList`).
+
+**Prefer flat when:**
+- Dashboard, sign-up steps, profile, notification lists, settings-style flows
+- Data tables on dashboard: `DataTableLayout.flatList` (full-width rows; table band colors via `solidBackground`)
+
+**Nesting is still OK for:**
+- Modals/sheets, chips, badges, input fields, icon circles
+- Semantic sub-elements (e.g. expiry badge inside a row)
+- `DataTableLayout.card` in discovery/detail until explicitly migrated
+- Custom band colors: `stripedListSection(solidBackground:)` — not the screen zebra
+
+**Forbidden / deprecated:**
+- `scrollSection()` / `ScrollSectionModifier` (legacy card-in-card)
+- `VStack` of `sectionBackground` cards inside another padded card wrapper
+- New feature-specific copies of stripe logic — use `StripedListSection` or domain aliases (`signUpListSection`)
+
+**Migration order for remaining screens:** Trader depot/trades (shell done; holding/order cards unchanged) → deeper CSR admin sheets. *(Done: sign-up shell, dashboard, profile, notifications, investor discovery, investments page, account statement, CSR dashboard shell.)*
+
+**Collapsible sections & client pagination (Investments, Trades Overview, …):** `FIN1/Shared/Components/ListSection/` — `CollapsibleListSectionHeader`, `ListPaginationBar`, `ClientSideListPagination` (default page size 10 when count > 2). Reuse instead of per-feature copy.
+
+**Investment / data tables (title stripe vs table band):** Section title/metadata in `stripedListSection`; table body in own shell — `InvestmentsTableStyle` (`investmentsTableShell`, header band, row bands). Same pattern for Reserved/Active/Completed and account-statement-style tables.
+
+**Investor position amount (iOS display, not ledger legs):** `Investment.displayAmountForOpenPositions` / `displayEffectiveInvestmentAmount` — see `Documentation/INVESTOR_POSITION_AMOUNT_SSOT.md` (must match Parse `investmentDisplayAmount.js` semantics).
+
 ## Guardrails (fail PRs if violated)
 
 - **No failed builds**: Must achieve "BUILD SUCCEEDED" before committing - fix all build errors and retry until successful.

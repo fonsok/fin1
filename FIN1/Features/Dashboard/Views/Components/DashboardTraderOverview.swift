@@ -1,14 +1,15 @@
 import SwiftUI
 
 struct DashboardTraderOverview: View {
+    let startStripeIndex: Int
     @StateObject private var viewModel: DashboardTraderOverviewViewModel
     @State private var selectedTraderID: TraderIDItem?
     @Environment(\.appServices) private var appServices
     @State private var showError: Bool = false
     @State private var errorTitle: String = ""
-    // Observe via onChange on services; no need to hold a concrete ObservedObject here
 
-    init() {
+    init(startStripeIndex: Int = 5) {
+        self.startStripeIndex = startStripeIndex
         let tempServices = AppServices.live
         self._viewModel = StateObject(wrappedValue: DashboardTraderOverviewViewModel(
             traderDataService: tempServices.traderDataService,
@@ -17,7 +18,7 @@ struct DashboardTraderOverview: View {
     }
 
     var body: some View {
-        VStack(spacing: ResponsiveDesign.spacing(16)) {
+        VStack(spacing: ResponsiveDesign.spacing(0)) {
             HStack {
                 Text("Top Recent Trades")
                     .font(ResponsiveDesign.headlineFont())
@@ -31,18 +32,17 @@ struct DashboardTraderOverview: View {
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.accentLightBlue)
             }
+            .stripedListSection(stripeIndex: self.startStripeIndex)
 
-            // Reusable Data Table
-            // Wrap in horizontal scroll to avoid width-driven clipping on smaller devices
             ScrollView(.horizontal, showsIndicators: false) {
                 DataTable.traderPerformanceTable(
                     rows: self.viewModel.cachedRows,
                     showTraderColumn: true,
-                    isInteractive: false
+                    isInteractive: false,
+                    layout: .flatList
                 )
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .sheet(item: self.$selectedTraderID) { traderIDItem in
             TraderNavigationHelper.sheetView(for: traderIDItem.id, appServices: self.appServices)

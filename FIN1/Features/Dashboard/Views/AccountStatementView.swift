@@ -19,30 +19,32 @@ struct AccountStatementView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: ResponsiveDesign.spacing(20)) {
+            StripedStepList {
                 self.header
+                    .stripedListSection(stripeIndex: 0)
+
                 self.summarySection
+                    .stripedListSection(stripeIndex: 1)
 
                 if let infoMessage = viewModel.infoMessage {
                     Text(infoMessage)
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.85))
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(ResponsiveDesign.spacing(12))
-                        .background(AppTheme.sectionBackground.opacity(0.35))
-                        .cornerRadius(ResponsiveDesign.spacing(10))
+                        .stripedListSection(stripeIndex: 2)
                 }
 
                 if self.viewModel.hasTransactions {
                     self.entriesTable
                 } else {
                     self.emptyState
+                        .stripedListSection(stripeIndex: self.viewModel.infoMessage == nil ? 2 : 3)
                 }
 
                 AccountStatementImportantNoticesView()
+                    .stripedListSection(stripeIndex: self.viewModel.infoMessage == nil ? 3 : 4)
             }
-            .padding(.horizontal, ResponsiveDesign.horizontalPadding())
-            .padding(.vertical, ResponsiveDesign.spacing(20))
+            .padding(.bottom, ResponsiveDesign.spacing(16))
         }
         .background(AppTheme.screenBackground.ignoresSafeArea())
         .navigationBarTitleDisplayMode(.inline)
@@ -106,7 +108,6 @@ struct AccountStatementView: View {
             await MainActor.run {
                 self.isGeneratingStatement = false
                 self.showGenerationSuccess = true
-                // Refresh the view to show any new entries
                 self.viewModel.refresh()
             }
         }
@@ -143,10 +144,7 @@ struct AccountStatementView: View {
             }
             .pickerStyle(.segmented)
         }
-        .padding(ResponsiveDesign.spacing(20))
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(AppTheme.sectionBackground.opacity(0.5))
-        .cornerRadius(ResponsiveDesign.spacing(16))
     }
 
     private var summarySection: some View {
@@ -180,6 +178,7 @@ struct AccountStatementView: View {
         AccountStatementEntriesTable(
             entries: self.viewModel.filteredEntries,
             showDocumentReferenceLinks: self.services.configurationService.showDocumentReferenceLinksInAccountStatement,
+            style: .flatList,
             onEntryTap: self.openReferencedDocument(for:)
         )
     }
@@ -198,11 +197,9 @@ struct AccountStatementView: View {
             Text("Once there are transactions in the selected period, they will appear here.")
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
+                .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
-        .padding(ResponsiveDesign.spacing(32))
-        .background(AppTheme.sectionBackground.opacity(0.3))
-        .cornerRadius(ResponsiveDesign.spacing(16))
     }
 
     // MARK: - Helpers
@@ -222,10 +219,10 @@ struct AccountStatementView: View {
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.6))
         }
-        .padding(ResponsiveDesign.spacing(16))
+        .padding(ResponsiveDesign.spacing(12))
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(AppTheme.sectionBackground.opacity(0.3))
-        .cornerRadius(ResponsiveDesign.spacing(12))
+        .cornerRadius(ResponsiveDesign.spacing(8))
     }
 
     private func openReferencedDocument(for entry: AccountStatementEntry) {
@@ -264,7 +261,7 @@ struct AccountStatementView: View {
             .padding(ResponsiveDesign.spacing(12))
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(AppTheme.sectionBackground.opacity(0.35))
-            .cornerRadius(ResponsiveDesign.spacing(12))
+            .cornerRadius(ResponsiveDesign.spacing(8))
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("WithdrawalToVerifiedAccountButton")

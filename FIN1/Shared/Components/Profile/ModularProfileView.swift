@@ -4,7 +4,6 @@ struct ModularProfileView: View {
     @Environment(\.appServices) private var appServices
     @StateObject private var viewModel: ModularProfileViewModel
     @State private var showEditProfile = false
-    @State private var showSettings = false
     @State private var showNotifications = false
     @State private var showLogoutAlert = false
     @State private var showHelpCenter = false
@@ -34,49 +33,39 @@ struct ModularProfileView: View {
                     .ignoresSafeArea()
 
                 ScrollView {
-                    VStack(spacing: ResponsiveDesign.spacing(24)) {
-                        // Profile Header
+                    StripedStepList {
                         ProfileHeaderView(user: self.appServices.userService.currentUser)
+                            .stripedListSection(stripeIndex: 0)
 
-                        // Logout + Notifications grouped for consistent placement
-                        profilePrimaryActionsSection
+                        ProfileLogoutButton(onLogout: { self.showLogoutAlert = true })
+                            .stripedListSection(stripeIndex: 1)
 
-                        // Quick Actions
-                        ProfileQuickActionsView(
-                            onEditProfile: { self.showEditProfile = true },
-                            onSettings: { self.showSettings = true },
-                            onSecurity: { self.showSecuritySettings = true },
-                            onHelpSupport: { self.showHelpCenter = true }
-                        )
+                        self.notificationsSection
+                            .stripedListSection(stripeIndex: 2)
 
-                        // Settings & Preferences
                         ProfileSettingsView(
                             onPrivacy: { self.showPrivacySettings = true },
                             onSecurity: { self.showSecuritySettings = true },
                             onAppearance: { self.showAppearanceSettings = true }
                         )
+                        .stripedListSection(stripeIndex: 3)
 
-                        // Support & Legal
                         ProfileSupportView(
                             onHelpCenter: { self.showHelpCenter = true },
                             onContactSupport: { self.showContactSupport = true },
-                            onTermsOfService: {
-                                self.showTermsOfService = true
-                            },
+                            onTermsOfService: { self.showTermsOfService = true },
                             onPrivacyPolicy: { self.showPrivacyPolicy = true },
                             onImprint: { self.showImprint = true }
                         )
+                        .stripedListSection(stripeIndex: 4)
 
-                        // Account Information
                         ProfileAccountInfoView(
                             user: self.appServices.userService.currentUser,
                             onEditProfile: { self.showEditProfile = true }
                         )
+                        .stripedListSection(stripeIndex: 5)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 16)
-                    .padding(.bottom, 16)
-                    .scrollSection()
+                    .padding(.bottom, ResponsiveDesign.spacing(16))
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
@@ -92,9 +81,6 @@ struct ModularProfileView: View {
         }
         .sheet(isPresented: self.$showEditProfile) {
             EditProfileView()
-        }
-        .sheet(isPresented: self.$showSettings) {
-            SettingsView()
         }
         .sheet(isPresented: self.$showNotifications) {
             NotificationsView(services: self.appServices)
@@ -200,9 +186,8 @@ struct ModularProfileView: View {
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.5))
             }
-            .padding(ResponsiveDesign.spacing(16))
-            .background(AppTheme.systemTertiaryBackground)
-            .cornerRadius(ResponsiveDesign.spacing(12))
+            .padding(.horizontal, ResponsiveDesign.spacing(16))
+            .padding(.vertical, ResponsiveDesign.spacing(12))
         }
         .buttonStyle(PlainButtonStyle())
     }
@@ -210,10 +195,10 @@ struct ModularProfileView: View {
 
 // MARK: - Subviews
 private extension ModularProfileView {
-    @ViewBuilder
-    var profilePrimaryActionsSection: some View {
-        VStack(spacing: ResponsiveDesign.spacing(16)) {
-            ProfileLogoutButton(onLogout: { self.showLogoutAlert = true })
+    var notificationsSection: some View {
+        VStack(spacing: ResponsiveDesign.spacing(0)) {
+            ProfileSectionTitle(title: "Notifications")
+            ProfileSectionDivider()
             self.notificationsButton
         }
     }

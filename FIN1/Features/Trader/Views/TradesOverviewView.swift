@@ -18,29 +18,16 @@ struct TradesOverviewView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(
-                    alignment: .leading,
-                    spacing: self.viewModel.filteredOngoingTrades.isEmpty ? ResponsiveDesign.spacing(2) : ResponsiveDesign.spacing(16)
-                ) {
-                    // Ongoing Trades Section (at the top)
-                    OngoingTradesSection(ongoingTrades: self.viewModel.filteredOngoingTrades)
+                StripedStepList {
+                    OngoingTradesSection(
+                        titleStripeIndex: 0,
+                        ongoingTrades: self.viewModel.filteredOngoingTrades
+                    )
 
-                    // Horizontal separator line below ongoing section
-                    Divider()
-                        .background(AppTheme.secondaryText)
-                        .padding(.vertical, ResponsiveDesign.spacing(8))
-
-                    // Divider between sections (legacy - keeping for backward compatibility)
-                    if !self.viewModel.filteredOngoingTrades.isEmpty && !self.viewModel.filteredCompletedTrades.isEmpty {
-                        Divider()
-                            .background(Color.white.opacity(0.5))
-                            .padding(.vertical, ResponsiveDesign.spacing(8))
-                    }
-
-                    // Completed Trades Section (with header inside)
                     CompletedTradesSection(
+                        titleStripeIndex: 1,
                         completedTrades: self.viewModel.filteredCompletedTrades,
-                        tableRows: self.viewModel.createTableRows(from: self.viewModel.filteredCompletedTrades),
+                        makeTableRows: { self.viewModel.createTableRows(from: $0) },
                         columnWidths: self.viewModel.columnWidths,
                         commissionPercentage: self.viewModel.commissionPercentage,
                         selectedTimePeriod: self.$selectedTimePeriod,
@@ -52,12 +39,7 @@ struct TradesOverviewView: View {
                         }
                     )
                 }
-                .padding(.horizontal, ResponsiveDesign.horizontalPadding())
-                .padding(
-                    .top,
-                    self.viewModel.filteredOngoingTrades.isEmpty ? ResponsiveDesign.spacing(2) : ResponsiveDesign.verticalPadding()
-                )
-                .padding(.bottom, ResponsiveDesign.verticalPadding())
+                .padding(.bottom, ResponsiveDesign.spacing(16))
             }
             .background(AppTheme.screenBackground)
             .navigationTitle("Überblick Trades-Profit")

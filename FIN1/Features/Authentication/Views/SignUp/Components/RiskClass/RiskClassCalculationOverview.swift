@@ -3,7 +3,7 @@ import SwiftUI
 struct RiskClassCalculationOverview: View {
     var body: some View {
         ScrollView {
-            VStack(spacing: ResponsiveDesign.spacing(24)) {
+            SignUpStepList {
                 Text("Risk Class Calculation Overview")
                     .font(ResponsiveDesign.titleFont())
                     .fontWeight(.bold)

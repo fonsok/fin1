@@ -22,7 +22,7 @@ struct RiskClass7ConfirmationStep: View {
     }
 
     var body: some View {
-        VStack(spacing: ResponsiveDesign.spacing(24)) {
+        SignUpStepList {
             // Header
             VStack(spacing: ResponsiveDesign.spacing(12)) {
                 Text("Risikoklasse 7 Bestätigung")
@@ -79,9 +79,7 @@ struct RiskClass7ConfirmationStep: View {
                         .fontWeight(.medium)
                         .foregroundColor(AppTheme.fontColor)
                 }
-                .padding()
-                .background(AppTheme.sectionBackground)
-                .cornerRadius(ResponsiveDesign.spacing(12))
+                .signUpListSection(stripeIndex: 0)
 
                 // Confirmation message
                 VStack(spacing: ResponsiveDesign.spacing(12)) {

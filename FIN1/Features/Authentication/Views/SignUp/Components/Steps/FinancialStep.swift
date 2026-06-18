@@ -12,7 +12,7 @@ struct FinancialStep: View {
     @Binding var cashAndLiquidAssets: CashAndLiquidAssets
 
     var body: some View {
-        VStack(spacing: ResponsiveDesign.spacing(20)) {
+        SignUpFormStepList {
             Text("Financial Information")
                 .font(ResponsiveDesign.headlineFont())
                 .fontWeight(.bold)

@@ -22,9 +22,7 @@ struct RiskClassCurrentDisplayView: View {
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
         }
-        .padding()
-        .background(AppTheme.sectionBackground)
-        .cornerRadius(ResponsiveDesign.spacing(12))
+        .signUpListSection(stripeIndex: 0)
     }
 }
 

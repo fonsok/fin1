@@ -2,15 +2,15 @@ import SwiftUI
 
 struct AddressDisplayView: View {
     let address: AddressInfo
-    
+
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(16)) {
             Text("Ihre Adresse:")
                 .font(ResponsiveDesign.headlineFont())
                 .foregroundColor(AppTheme.fontColor)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            
-            VStack(alignment: .leading, spacing: 8) {
+
+            VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
                 Text(self.address.streetAndNumber)
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.inputFieldText)
@@ -21,13 +21,11 @@ struct AddressDisplayView: View {
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.inputFieldText)
             }
-            .padding()
+            .padding(ResponsiveDesign.spacing(16))
+            .frame(maxWidth: .infinity, alignment: .leading)
             .background(AppTheme.inputFieldBackground)
             .cornerRadius(ResponsiveDesign.spacing(12))
         }
-        .padding()
-        .background(AppTheme.sectionBackground)
-        .cornerRadius(ResponsiveDesign.spacing(16))
     }
 }
 
@@ -45,5 +43,6 @@ struct AddressInfo {
         city: "Musterstadt",
         country: "Deutschland"
     ))
+    .signUpListSection(stripeIndex: 0)
     .background(AppTheme.screenBackground)
 }

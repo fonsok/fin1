@@ -13,22 +13,9 @@ extension LeveragedProductsLearningView {
             .padding(.vertical, ResponsiveDesign.spacing(20))
             .frame(maxWidth: .infinity, alignment: .leading)
             .background {
-                self.listRowStripeBackground(index: index)
+                StripedListStyle.listRowBackground(index: index)
             }
             .id(anchor?.id)
-    }
-
-    /// Subtle zebra striping on the blue page background (admin-portal style, low contrast).
-    @ViewBuilder
-    func listRowStripeBackground(index: Int) -> some View {
-        ZStack {
-            AppTheme.screenBackground
-            if index.isMultiple(of: 2) {
-                Color.white.opacity(0.035)
-            } else {
-                Color.black.opacity(0.03)
-            }
-        }
     }
 
     // MARK: - Sections

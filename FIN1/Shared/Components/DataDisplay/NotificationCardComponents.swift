@@ -5,6 +5,14 @@ extension Int: @retroactive Identifiable {
     public var id: Int { self }
 }
 
+// MARK: - Notification row presentation
+enum NotificationRowStyle {
+    /// Standalone card (legacy lists, archive).
+    case card
+    /// Flat list row — background comes from `stripedListSection`.
+    case flatList
+}
+
 // MARK: - Unified Item Card
 struct UnifiedItemCard: View {
     let item: NotificationItem
@@ -35,6 +43,7 @@ struct NotificationCardView: View {
     let userId: String
     let customerSupportService: any CustomerSupportServiceProtocol
     let satisfactionSurveyService: any SatisfactionSurveyServiceProtocol
+    let rowStyle: NotificationRowStyle
 
     @Environment(\.appServices) private var appServices
     @StateObject private var viewModel: NotificationCardViewModel
@@ -45,13 +54,15 @@ struct NotificationCardView: View {
         userId: String,
         customerSupportService: any CustomerSupportServiceProtocol,
         satisfactionSurveyService: any SatisfactionSurveyServiceProtocol,
-        documentService: any DocumentServiceProtocol
+        documentService: any DocumentServiceProtocol,
+        rowStyle: NotificationRowStyle = .card
     ) {
         self.notification = notification
         self.notificationService = notificationService
         self.userId = userId
         self.customerSupportService = customerSupportService
         self.satisfactionSurveyService = satisfactionSurveyService
+        self.rowStyle = rowStyle
         _viewModel = StateObject(
             wrappedValue: NotificationCardViewModel(
                 notification: notification,
@@ -122,9 +133,9 @@ struct NotificationCardView: View {
                         }
                     }
                 }
-                .padding(ResponsiveDesign.spacing(16))
-                .background(AppTheme.sectionBackground)
-                .cornerRadius(ResponsiveDesign.spacing(12))
+                .padding(self.rowStyle == .card ? ResponsiveDesign.spacing(16) : ResponsiveDesign.spacing(0))
+                .background(self.rowBackground)
+                .cornerRadius(self.rowStyle == .card ? ResponsiveDesign.spacing(12) : 0)
                 .opacity(self.notification.isRead ? 0.7 : 1.0)
 
                 // Loading overlay
@@ -133,8 +144,8 @@ struct NotificationCardView: View {
                         .progressViewStyle(CircularProgressViewStyle(tint: AppTheme.accentLightBlue))
                         .scaleEffect(1.2)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .background(AppTheme.sectionBackground.opacity(0.8))
-                        .cornerRadius(ResponsiveDesign.spacing(12))
+                        .background(self.loadingOverlayBackground)
+                        .cornerRadius(self.rowStyle == .card ? ResponsiveDesign.spacing(12) : 0)
                 }
             }
         }
@@ -175,6 +186,16 @@ struct NotificationCardView: View {
         } message: {
             Text(self.viewModel.errorMessage)
         }
+    }
+
+    private var rowBackground: Color {
+        self.rowStyle == .card ? AppTheme.sectionBackground : .clear
+    }
+
+    private var loadingOverlayBackground: Color {
+        self.rowStyle == .card
+            ? AppTheme.sectionBackground.opacity(0.8)
+            : AppTheme.screenBackground.opacity(0.6)
     }
 
     private var notificationColor: Color {

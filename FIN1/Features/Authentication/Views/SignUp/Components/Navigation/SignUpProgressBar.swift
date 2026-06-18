@@ -7,45 +7,73 @@ struct SignUpProgressBar: View {
     var phase: OnboardingPhase = .quickStart
 
     var body: some View {
-        VStack(spacing: ResponsiveDesign.spacing(6)) {
-            // Phase indicator
-            HStack(spacing: ResponsiveDesign.spacing(4)) {
-                ForEach(OnboardingPhase.allCases) { p in
-                    Capsule()
-                        .fill(self.capsuleColor(for: p))
-                        .frame(height: ResponsiveDesign.spacing(4))
-                }
-            }
-            .padding(.top, ResponsiveDesign.spacing(2))
+        VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(10)) {
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(2)) {
+                    Text(self.phase.title)
+                        .font(ResponsiveDesign.bodyFont())
+                        .fontWeight(.semibold)
+                        .foregroundColor(AppTheme.fontColor)
 
-            // Phase title + step counter
-            HStack {
-                Text(self.phase.title)
+                    Text("Schritt \(self.currentStep) von \(self.totalSteps)")
+                        .font(ResponsiveDesign.captionFont())
+                        .foregroundColor(AppTheme.fontColor.opacity(0.65))
+                }
+
+                Spacer(minLength: ResponsiveDesign.spacing(8))
+
+                Text("\(self.progressPercentage)%")
                     .font(ResponsiveDesign.captionFont())
                     .fontWeight(.medium)
-                    .foregroundColor(AppTheme.fontColor)
+                    .foregroundColor(AppTheme.accentLightBlue)
+                    .monospacedDigit()
+            }
 
-                Spacer()
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(AppTheme.fontColor.opacity(0.14))
 
-                Text("Step \(self.currentStep) of \(self.totalSteps)")
-                    .font(ResponsiveDesign.captionFont())
-                    .foregroundColor(AppTheme.fontColor.opacity(0.7))
+                    Capsule()
+                        .fill(AppTheme.accentLightBlue)
+                        .frame(width: geometry.size.width * self.clampedProgress)
+                }
+            }
+            .frame(height: ResponsiveDesign.spacing(6))
+            .accessibilityLabel("Fortschritt")
+            .accessibilityValue("\(self.progressPercentage) Prozent")
+
+            HStack(spacing: ResponsiveDesign.spacing(4)) {
+                ForEach(OnboardingPhase.allCases) { phase in
+                    Capsule()
+                        .fill(self.capsuleColor(for: phase))
+                        .frame(height: ResponsiveDesign.spacing(3))
+                }
             }
         }
     }
 
-    private func capsuleColor(for p: OnboardingPhase) -> Color {
-        if p.rawValue < self.phase.rawValue {
+    private var clampedProgress: CGFloat {
+        CGFloat(min(max(self.progress, 0), 1))
+    }
+
+    private var progressPercentage: Int {
+        Int((self.clampedProgress * 100).rounded())
+    }
+
+    private func capsuleColor(for phase: OnboardingPhase) -> Color {
+        if phase.rawValue < self.phase.rawValue {
             return AppTheme.accentGreen
-        } else if p == self.phase {
+        } else if phase == self.phase {
             return AppTheme.accentLightBlue
         } else {
-            return AppTheme.fontColor.opacity(0.2)
+            return AppTheme.fontColor.opacity(0.18)
         }
     }
 }
 
 #Preview {
-    SignUpProgressBar(progress: 0.3, currentStep: 5, totalSteps: 18, phase: .kyc)
+    SignUpProgressBar(progress: 0.42, currentStep: 8, totalSteps: 18, phase: .kyc)
+        .padding()
         .background(AppTheme.screenBackground)
 }

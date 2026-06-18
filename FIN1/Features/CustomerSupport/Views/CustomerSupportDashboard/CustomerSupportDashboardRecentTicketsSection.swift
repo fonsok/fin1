@@ -2,6 +2,7 @@ import SwiftUI
 
 /// Recent/active tickets section for CSR dashboard.
 struct CustomerSupportDashboardRecentTicketsSection: View {
+    let titleStripeIndex: Int
     @ObservedObject var viewModel: CustomerSupportDashboardViewModel
 
     private var activeTickets: [SupportTicket] {
@@ -13,6 +14,18 @@ struct CustomerSupportDashboardRecentTicketsSection: View {
     }
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            self.sectionTitleBlock
+                .stripedListSection(stripeIndex: self.titleStripeIndex)
+
+            if !self.activeTickets.isEmpty {
+                self.ticketList
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var sectionTitleBlock: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
             HStack {
                 Text("Aktuelle Tickets")
@@ -44,26 +57,27 @@ struct CustomerSupportDashboardRecentTicketsSection: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, ResponsiveDesign.spacing(20))
-            } else {
-                VStack(spacing: ResponsiveDesign.spacing(8)) {
-                    ForEach(self.activeTickets.prefix(5)) { ticket in
-                        TicketRow(ticket: ticket) {
-                            self.viewModel.selectTicket(ticket)
-                        }
-                    }
-
-                    if self.activeTickets.count > 5 {
-                        Text("+ \(self.activeTickets.count - 5) weitere aktive Tickets")
-                            .font(ResponsiveDesign.captionFont())
-                            .foregroundColor(AppTheme.accentLightBlue)
-                            .frame(maxWidth: .infinity)
-                            .padding(.top, ResponsiveDesign.spacing(4))
-                    }
-                }
             }
         }
-        .padding()
-        .background(AppTheme.sectionBackground)
-        .cornerRadius(ResponsiveDesign.spacing(12))
+    }
+
+    private var ticketList: some View {
+        VStack(spacing: ResponsiveDesign.spacing(8)) {
+            ForEach(self.activeTickets.prefix(5)) { ticket in
+                TicketRow(ticket: ticket) {
+                    self.viewModel.selectTicket(ticket)
+                }
+            }
+
+            if self.activeTickets.count > 5 {
+                Text("+ \(self.activeTickets.count - 5) weitere aktive Tickets")
+                    .font(ResponsiveDesign.captionFont())
+                    .foregroundColor(AppTheme.accentLightBlue)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, ResponsiveDesign.spacing(4))
+            }
+        }
+        .padding(.horizontal, ResponsiveDesign.mainHorizontalPadding())
+        .padding(.vertical, ResponsiveDesign.spacing(4))
     }
 }

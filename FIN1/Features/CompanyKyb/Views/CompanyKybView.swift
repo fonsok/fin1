@@ -83,16 +83,12 @@ struct CompanyKybView: View {
     @ViewBuilder
     private var stepContent: some View {
         ScrollView {
-            VStack(spacing: ResponsiveDesign.spacing(24)) {
+            VStack(spacing: ResponsiveDesign.spacing(0)) {
                 self.stepView(for: self.viewModel.currentStep)
             }
-            .padding(.top, ResponsiveDesign.spacing(8))
-            .padding(.bottom, ResponsiveDesign.spacing(8))
-            .padding(.horizontal, ResponsiveDesign.scrollSectionHorizontalPadding())
-            .background(AppTheme.systemSecondaryBackground)
-            .cornerRadius(ResponsiveDesign.spacing(12))
+            .padding(.bottom, ResponsiveDesign.spacing(16))
         }
-        .padding(.horizontal, ResponsiveDesign.lightBlueAreaHorizontalPadding())
+        .scrollIndicators(.hidden)
     }
 
     @ViewBuilder

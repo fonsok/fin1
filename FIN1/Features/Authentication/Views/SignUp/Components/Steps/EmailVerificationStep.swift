@@ -13,7 +13,7 @@ struct EmailVerificationStep: View {
     @FocusState private var isCodeFieldFocused: Bool
 
     var body: some View {
-        VStack(spacing: ResponsiveDesign.spacing(24)) {
+        SignUpStepList {
             // Icon
             Image(systemName: "envelope.badge.shield.half.filled")
                 .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 3))
@@ -40,7 +40,7 @@ struct EmailVerificationStep: View {
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: ResponsiveDesign.spacing(240))
                     .padding(ResponsiveDesign.spacing(12))
-                    .background(AppTheme.systemSecondaryBackground)
+                    .background(AppTheme.inputFieldBackground)
                     .cornerRadius(ResponsiveDesign.spacing(12))
                     .overlay(
                         RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(12))

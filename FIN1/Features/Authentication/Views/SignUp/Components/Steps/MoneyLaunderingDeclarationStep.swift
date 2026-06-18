@@ -9,16 +9,16 @@ struct MoneyLaunderingDeclarationStep: View {
     @State private var showBusinessAssetsNotification: Bool = false
 
     var body: some View {
-        VStack(spacing: ResponsiveDesign.spacing(24)) {
+        SignUpStepList {
             Text("Erklärungen")
                 .font(ResponsiveDesign.headlineFont())
                 .fontWeight(.bold)
                 .foregroundColor(AppTheme.fontColor)
-                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .signUpListSection(stripeIndex: 0)
 
-            VStack(alignment: .leading, spacing: 20) {
-                // Section a) Money Laundering Act Declaration
-                VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(20)) {
+                VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
                     Text("a) nach § 10 Absatz 1 Nummer 2 Geldwäschegesetz")
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.medium)
@@ -42,8 +42,7 @@ struct MoneyLaunderingDeclarationStep: View {
                     .buttonStyle(PlainButtonStyle())
                 }
 
-                // Section b) Income Tax Act Declaration
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
                     Text("b) nach § 43 Absatz 2 Satz 3 Nummer 2 EStG")
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.medium)
@@ -55,7 +54,6 @@ struct MoneyLaunderingDeclarationStep: View {
                         .multilineTextAlignment(.leading)
 
                     VStack(spacing: ResponsiveDesign.spacing(8)) {
-                        // Private Assets Radio Button
                         Button(action: { self.assetType = .privateAssets }, label: {
                             HStack {
                                 InteractiveElement(
@@ -72,7 +70,6 @@ struct MoneyLaunderingDeclarationStep: View {
                         })
                         .buttonStyle(PlainButtonStyle())
 
-                        // Business Assets Radio Button
                         Button(action: {
                             self.assetType = .businessAssets
                             self.showBusinessAssetsNotification = true
@@ -94,20 +91,13 @@ struct MoneyLaunderingDeclarationStep: View {
                     }
                 }
             }
-            .padding()
-            .background(AppTheme.sectionBackground)
-            .cornerRadius(ResponsiveDesign.spacing(16))
+            .signUpListSection(stripeIndex: 1)
 
-            // Consent/Disclaimer
-            VStack(spacing: ResponsiveDesign.spacing(12)) {
-                Text("Mit klicken auf \"weiter\", erklären Sie sich mit den Bedingungen der oben genannten Dokumente einverstanden.")
-                    .font(ResponsiveDesign.bodyFont())
-                    .foregroundColor(AppTheme.fontColor.opacity(0.8))
-                    .multilineTextAlignment(.center)
-            }
-            .padding()
-            .background(AppTheme.inputFieldBackground)
-            .cornerRadius(ResponsiveDesign.spacing(12))
+            Text("Mit klicken auf \"weiter\", erklären Sie sich mit den Bedingungen der oben genannten Dokumente einverstanden.")
+                .font(ResponsiveDesign.bodyFont())
+                .foregroundColor(AppTheme.fontColor.opacity(0.8))
+                .multilineTextAlignment(.leading)
+                .signUpListSection(stripeIndex: 2)
         }
         .alert("Only Privatvermögen allowed", isPresented: self.$showBusinessAssetsNotification) {
             Button("OK") {

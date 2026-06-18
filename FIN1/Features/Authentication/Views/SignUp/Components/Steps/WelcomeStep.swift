@@ -8,22 +8,21 @@ struct WelcomeStep: View {
     @Binding var userRole: UserRole
 
     var body: some View {
-        VStack(spacing: ResponsiveDesign.spacing(24)) {
-            // Welcome Header
+        SignUpStepList {
             VStack(spacing: ResponsiveDesign.spacing(16)) {
                 Text("Herzlich willkommen")
                     .font(ResponsiveDesign.isCompactDevice() ? .title : .largeTitle)
                     .fontWeight(.bold)
                     .foregroundColor(AppTheme.fontColor)
-                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
                 Text("Konto eröffnen – einfach und kostenlos.")
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.8))
-                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .signUpListSection(stripeIndex: 0)
 
-            // Account Type Selection
             VStack(spacing: ResponsiveDesign.spacing(20)) {
                 Text("Ich eröffne das Konto als")
                     .font(ResponsiveDesign.headlineFont())
@@ -66,11 +65,8 @@ struct WelcomeStep: View {
                     .buttonStyle(PlainButtonStyle())
                 }
             }
-            .padding(ResponsiveDesign.spacing(16))
-            .background(AppTheme.sectionBackground)
-            .cornerRadius(ResponsiveDesign.isCompactDevice() ? 12 : 16)
+            .signUpListSection(stripeIndex: 1)
 
-            // User Role Selection
             VStack(spacing: ResponsiveDesign.spacing(20)) {
                 Text("Ich bin")
                     .font(ResponsiveDesign.headlineFont())
@@ -129,16 +125,13 @@ struct WelcomeStep: View {
                     .disabled(self.accountType == .company)
                 }
             }
-            .padding(ResponsiveDesign.spacing(16))
-            .background(AppTheme.sectionBackground)
-            .cornerRadius(ResponsiveDesign.isCompactDevice() ? 12 : 16)
+            .signUpListSection(stripeIndex: 2)
             .onChange(of: self.accountType) { _, newType in
                 if newType == .company && self.userRole == .trader {
                     self.userRole = .investor
                 }
             }
 
-            // Information Requirements
             VStack(spacing: ResponsiveDesign.spacing(16)) {
                 Text("Zur Kontoführung benötigen wir folgende Informationen:")
                     .font(ResponsiveDesign.headlineFont())
@@ -162,11 +155,8 @@ struct WelcomeStep: View {
                     }
                 }
             }
-            .padding(ResponsiveDesign.spacing(16))
-            .background(AppTheme.sectionBackground)
-            .cornerRadius(ResponsiveDesign.isCompactDevice() ? 12 : 16)
+            .signUpListSection(stripeIndex: 3)
 
-            // Document Requirements
             VStack(spacing: ResponsiveDesign.spacing(16)) {
                 Text("Bitte halten Sie bereit:")
                     .font(ResponsiveDesign.headlineFont())
@@ -189,11 +179,8 @@ struct WelcomeStep: View {
                     }
                 }
             }
-            .padding(ResponsiveDesign.spacing(16))
-            .background(AppTheme.sectionBackground)
-            .cornerRadius(ResponsiveDesign.isCompactDevice() ? 12 : 16)
+            .signUpListSection(stripeIndex: 4)
 
-            // Continue Application Link
             Button(action: {
                 // Handle continue application action
             }) {
@@ -214,6 +201,7 @@ struct WelcomeStep: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .buttonStyle(PlainButtonStyle())
+            .signUpListSection(stripeIndex: 5)
         }
     }
 }

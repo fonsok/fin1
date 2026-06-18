@@ -29,7 +29,6 @@ private struct DashboardContainerContent: View {
 
     init(services: AppServices) {
         self.services = services
-        // Create ViewModel with the injected services
         _viewModel = StateObject(wrappedValue: DashboardViewModel(
             userService: services.userService,
             dashboardService: services.dashboardService,
@@ -44,38 +43,41 @@ private struct DashboardContainerContent: View {
                     .ignoresSafeArea()
 
                 ScrollView {
-                    VStack(spacing: ResponsiveDesign.spacing(6)) {
-                        // Welcome Header
+                    StripedStepList {
                         DashboardWelcomeHeader()
+                            .stripedListSection(stripeIndex: 0)
 
-                        // Risk Warning Message (value from configuration)
                         Text(self.riskWarningText.isEmpty ? self.defaultRiskWarningText : self.riskWarningText)
                             .font(ResponsiveDesign.captionFont())
                             .foregroundColor(AppTheme.secondaryText)
-                            .multilineTextAlignment(.center)
-                            .frame(maxWidth: .infinity)
-                            .padding(.bottom, ResponsiveDesign.spacing(8))
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .stripedListSection(stripeIndex: 1)
 
-                        // Quick Stats
                         DashboardStatsSection(navigationPath: self.$navigationPath, appServices: self.services)
                             .environmentObject(self.tabRouter)
-                            .padding(.bottom, ResponsiveDesign.spacing(12))
+                            .stripedListSection(stripeIndex: 2)
 
-                        // New Investment button (for investors only, outside Quick Actions)
                         if self.viewModel.isInvestor {
                             NewInvestmentButton()
                                 .environmentObject(self.tabRouter)
+                                .stripedListSection(stripeIndex: 3)
+
+                            DashboardQuickActionsSection(navigateToDiscovery: self.$viewModel.selectedTab)
+                                .stripedListSection(stripeIndex: 4)
+
+                            DashboardTraderOverview(startStripeIndex: 5)
+                        } else if self.viewModel.isTrader {
+                            DashboardQuickActionsSection(navigateToDiscovery: self.$viewModel.selectedTab)
+                                .stripedListSection(stripeIndex: 3)
+                        } else {
+                            DashboardQuickActionsSection(navigateToDiscovery: self.$viewModel.selectedTab)
+                                .stripedListSection(stripeIndex: 3)
                         }
-
-                        // Quick Actions
-                        DashboardQuickActionsSection(navigateToDiscovery: self.$viewModel.selectedTab)
-
-                        // Role-specific content
-                        self.roleSpecificContent
                     }
-                    .padding(.horizontal, ResponsiveDesign.horizontalPadding())
-                    .padding(.top, ResponsiveDesign.spacing(8))
+                    .padding(.bottom, ResponsiveDesign.spacing(16))
                 }
+                .scrollIndicators(.hidden)
             }
             .navigationBarTitleDisplayMode(.inline)
             .navigationDestination(for: DashboardRoute.self) { route in
@@ -114,21 +116,6 @@ private struct DashboardContainerContent: View {
         }
         .onReceive(self.services.configurationService.configurationChanged) { _ in
             self.maximumRiskExposurePercent = self.services.configurationService.maximumRiskExposurePercent
-        }
-    }
-
-    // MARK: - Role-specific Content
-
-    @ViewBuilder
-    private var roleSpecificContent: some View {
-        if self.viewModel.isInvestor {
-            DashboardTraderOverview()
-        } else if self.viewModel.isTrader {
-            // Trader-specific content can be added here
-            EmptyView()
-        } else {
-            // Default content for other roles
-            EmptyView()
         }
     }
 }

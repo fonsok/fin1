@@ -99,9 +99,6 @@ struct DashboardWelcomeHeader: View {
                 Spacer()
             }
         }
-        .padding(ResponsiveDesign.spacing(16))
-        .background(AppTheme.sectionBackground.opacity(0.5))
-        .cornerRadius(ResponsiveDesign.spacing(12))
         .onAppear {
             self.currentUser = self.appServices.userService.currentUser
         }

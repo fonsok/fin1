@@ -18,162 +18,160 @@ struct IdentificationUploadFrontStep: View {
     @Environment(\.appServices) private var appServices
 
     var body: some View {
-        VStack(spacing: ResponsiveDesign.spacing(24)) {
-            Text("Vorderseite hochladen")
-                .font(ResponsiveDesign.headlineFont())
-                .fontWeight(.bold)
-                .foregroundColor(AppTheme.fontColor)
-                .multilineTextAlignment(.center)
+        SignUpStepList {
+            VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
+                Text("Vorderseite hochladen")
+                    .font(ResponsiveDesign.headlineFont())
+                    .fontWeight(.bold)
+                    .foregroundColor(AppTheme.fontColor)
 
-            Text("Bitte laden Sie die Vorderseite Ihres \(self.identificationType.displayName)es hoch")
-                .font(ResponsiveDesign.bodyFont())
-                .foregroundColor(AppTheme.fontColor.opacity(0.8))
-                .multilineTextAlignment(.leading)
+                Text("Bitte laden Sie die Vorderseite Ihres \(self.identificationType.displayName)es hoch")
+                    .font(ResponsiveDesign.bodyFont())
+                    .foregroundColor(AppTheme.fontColor.opacity(0.8))
+            }
+            .signUpListSection(stripeIndex: 0)
 
-            // Test Mode Toggle
-            if self.appServices.testModeService.isTestModeEnabled {
-                HStack {
-                    Image(systemName: "testtube.2")
-                        .foregroundColor(AppTheme.accentOrange)
-                    Text("Test Mode Active")
+            VStack(spacing: ResponsiveDesign.spacing(16)) {
+                if self.appServices.testModeService.isTestModeEnabled {
+                    HStack {
+                        Image(systemName: "testtube.2")
+                            .foregroundColor(AppTheme.accentOrange)
+                        Text("Test Mode Active")
+                            .font(ResponsiveDesign.captionFont())
+                            .foregroundColor(AppTheme.accentOrange)
+                        Spacer()
+                        Button("Disable") {
+                            self.appServices.testModeService.disableTestMode()
+                        }
                         .font(ResponsiveDesign.captionFont())
-                        .foregroundColor(AppTheme.accentOrange)
-                    Spacer()
-                    Button("Disable") {
-                        self.appServices.testModeService.disableTestMode()
-                    }
-                    .font(ResponsiveDesign.captionFont())
-                    .foregroundColor(AppTheme.accentRed)
-                }
-                .padding(ResponsiveDesign.spacing(8))
-                .background(AppTheme.accentOrange.opacity(0.1))
-                .cornerRadius(ResponsiveDesign.spacing(8))
-            }
-
-            // Image Preview or Upload Options
-            if let image = identificationType == .passport ? passportFrontImage : idCardFrontImage {
-                VStack(spacing: ResponsiveDesign.spacing(16)) {
-                    Image(uiImage: image)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(maxHeight: 200)
-                        .cornerRadius(ResponsiveDesign.spacing(12))
-
-                    HStack(spacing: ResponsiveDesign.spacing(16)) {
-                        Button("Neues Foto aufnehmen") {
-                            self.showingCameraPicker = true
-                        }
-                        .foregroundColor(AppTheme.accentLightBlue)
-
-                        Button("Andere Datei auswählen") {
-                            self.showingDocumentPicker = true
-                        }
-                        .foregroundColor(AppTheme.accentLightBlue)
+                        .foregroundColor(AppTheme.accentRed)
                     }
                 }
-            } else {
-                // Upload Options
-                VStack(spacing: ResponsiveDesign.spacing(16)) {
-                    Text("Wählen Sie eine Upload-Methode:")
-                        .font(ResponsiveDesign.headlineFont())
-                        .foregroundColor(AppTheme.fontColor)
-                        .frame(maxWidth: .infinity, alignment: .leading)
 
-                    // Test Mode Button
-                    if !self.appServices.testModeService.isTestModeEnabled {
-                        Button(action: {
-                            self.appServices.testModeService.enableTestMode()
-                            // Use sample images for testing
-                            if self.identificationType == .passport {
-                                self.passportFrontImage = (self.appServices.testModeService as? TestModeService)?.samplePassportImage
-                            } else {
-                                self.idCardFrontImage = (self.appServices.testModeService as? TestModeService)?.sampleIDCardImage
-                            }
-                        }) {
-                            HStack {
-                                Image(systemName: "testtube.2")
-                                    .font(ResponsiveDesign.bodyFont())
-                                    .foregroundColor(AppTheme.accentOrange)
+                if let image = identificationType == .passport ? passportFrontImage : idCardFrontImage {
+                    VStack(spacing: ResponsiveDesign.spacing(16)) {
+                        Image(uiImage: image)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(maxHeight: 200)
+                            .cornerRadius(ResponsiveDesign.spacing(12))
 
-                                Text("Enable Test Mode")
-                                    .font(ResponsiveDesign.captionFont())
-                                    .foregroundColor(AppTheme.accentOrange)
+                        HStack(spacing: ResponsiveDesign.spacing(16)) {
+                            Button("Neues Foto aufnehmen") {
+                                self.showingCameraPicker = true
                             }
-                            .frame(maxWidth: .infinity)
-                            .padding(ResponsiveDesign.spacing(8))
-                            .background(AppTheme.accentOrange.opacity(0.1))
-                            .cornerRadius(ResponsiveDesign.spacing(8))
+                            .foregroundColor(AppTheme.accentLightBlue)
+
+                            Button("Andere Datei auswählen") {
+                                self.showingDocumentPicker = true
+                            }
+                            .foregroundColor(AppTheme.accentLightBlue)
                         }
-                        .buttonStyle(PlainButtonStyle())
                     }
+                } else {
+                    // Upload Options
+                    VStack(spacing: ResponsiveDesign.spacing(16)) {
+                        Text("Wählen Sie eine Upload-Methode:")
+                            .font(ResponsiveDesign.headlineFont())
+                            .foregroundColor(AppTheme.fontColor)
+                            .frame(maxWidth: .infinity, alignment: .leading)
 
-                    HStack(spacing: ResponsiveDesign.spacing(16)) {
-                        // Camera Button
-                        Button(action: {
-                            self.showingCameraPicker = true
-                        }) {
-                            VStack(spacing: ResponsiveDesign.spacing(12)) {
-                                Image(systemName: "camera.fill")
-                                    .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2))
-                                    .foregroundColor(AppTheme.accentLightBlue)
+                        // Test Mode Button
+                        if !self.appServices.testModeService.isTestModeEnabled {
+                            Button(action: {
+                                self.appServices.testModeService.enableTestMode()
+                                // Use sample images for testing
+                                if self.identificationType == .passport {
+                                    self.passportFrontImage = (self.appServices.testModeService as? TestModeService)?.samplePassportImage
+                                } else {
+                                    self.idCardFrontImage = (self.appServices.testModeService as? TestModeService)?.sampleIDCardImage
+                                }
+                            }) {
+                                HStack {
+                                    Image(systemName: "testtube.2")
+                                        .font(ResponsiveDesign.bodyFont())
+                                        .foregroundColor(AppTheme.accentOrange)
 
-                                Text("Foto aufnehmen")
-                                    .font(ResponsiveDesign.headlineFont())
-                                    .foregroundColor(AppTheme.accentLightBlue)
-
-                                #if targetEnvironment(simulator)
-                                Text("Simulator")
-                                    .font(ResponsiveDesign.captionFont())
-                                    .foregroundColor(AppTheme.accentOrange)
-                                #else
-                                Text("Kamera öffnen")
-                                    .font(ResponsiveDesign.captionFont())
-                                    .foregroundColor(AppTheme.fontColor.opacity(0.7))
-                                #endif
+                                    Text("Enable Test Mode")
+                                        .font(ResponsiveDesign.captionFont())
+                                        .foregroundColor(AppTheme.accentOrange)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(ResponsiveDesign.spacing(8))
+                                .background(AppTheme.accentOrange.opacity(0.1))
+                                .cornerRadius(ResponsiveDesign.spacing(8))
                             }
-                            .frame(maxWidth: .infinity)
-                            .frame(height: ResponsiveDesign.spacing(120))
-                            .background(AppTheme.sectionBackground)
-                            .cornerRadius(ResponsiveDesign.spacing(12))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(12))
-                                    .stroke(AppTheme.accentLightBlue, lineWidth: 2)
-                            )
+                            .buttonStyle(PlainButtonStyle())
                         }
-                        .buttonStyle(PlainButtonStyle())
 
-                        // File Picker Button
-                        Button(action: {
-                            self.showingDocumentPicker = true
-                        }) {
-                            VStack(spacing: ResponsiveDesign.spacing(12)) {
-                                Image(systemName: "doc.text.fill")
-                                    .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2))
-                                    .foregroundColor(AppTheme.accentLightBlue)
+                        HStack(spacing: ResponsiveDesign.spacing(16)) {
+                            // Camera Button
+                            Button(action: {
+                                self.showingCameraPicker = true
+                            }) {
+                                VStack(spacing: ResponsiveDesign.spacing(12)) {
+                                    Image(systemName: "camera.fill")
+                                        .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2))
+                                        .foregroundColor(AppTheme.accentLightBlue)
 
-                                Text("Datei auswählen")
-                                    .font(ResponsiveDesign.headlineFont())
-                                    .foregroundColor(AppTheme.accentLightBlue)
+                                    Text("Foto aufnehmen")
+                                        .font(ResponsiveDesign.headlineFont())
+                                        .foregroundColor(AppTheme.accentLightBlue)
 
-                                Text("PNG, PDF")
-                                    .font(ResponsiveDesign.captionFont())
-                                    .foregroundColor(AppTheme.fontColor.opacity(0.7))
+                                    #if targetEnvironment(simulator)
+                                    Text("Simulator")
+                                        .font(ResponsiveDesign.captionFont())
+                                        .foregroundColor(AppTheme.accentOrange)
+                                    #else
+                                    Text("Kamera öffnen")
+                                        .font(ResponsiveDesign.captionFont())
+                                        .foregroundColor(AppTheme.fontColor.opacity(0.7))
+                                    #endif
+                                }
+                                .frame(maxWidth: .infinity)
+                                .frame(height: ResponsiveDesign.spacing(120))
+                                .background(AppTheme.inputFieldBackground)
+                                .cornerRadius(ResponsiveDesign.spacing(12))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(12))
+                                        .stroke(AppTheme.accentLightBlue, lineWidth: 1)
+                                )
                             }
-                            .frame(maxWidth: .infinity)
-                            .frame(height: ResponsiveDesign.spacing(120))
-                            .background(AppTheme.sectionBackground)
-                            .cornerRadius(ResponsiveDesign.spacing(12))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(12))
-                                    .stroke(AppTheme.accentLightBlue, lineWidth: 2)
-                            )
+                            .buttonStyle(PlainButtonStyle())
+
+                            // File Picker Button
+                            Button(action: {
+                                self.showingDocumentPicker = true
+                            }) {
+                                VStack(spacing: ResponsiveDesign.spacing(12)) {
+                                    Image(systemName: "doc.text.fill")
+                                        .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize() * 2))
+                                        .foregroundColor(AppTheme.accentLightBlue)
+
+                                    Text("Datei auswählen")
+                                        .font(ResponsiveDesign.headlineFont())
+                                        .foregroundColor(AppTheme.accentLightBlue)
+
+                                    Text("PNG, PDF")
+                                        .font(ResponsiveDesign.captionFont())
+                                        .foregroundColor(AppTheme.fontColor.opacity(0.7))
+                                }
+                                .frame(maxWidth: .infinity)
+                                .frame(height: ResponsiveDesign.spacing(120))
+                                .background(AppTheme.inputFieldBackground)
+                                .cornerRadius(ResponsiveDesign.spacing(12))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(12))
+                                        .stroke(AppTheme.accentLightBlue, lineWidth: 1)
+                                )
+                            }
+                            .buttonStyle(PlainButtonStyle())
                         }
-                        .buttonStyle(PlainButtonStyle())
                     }
                 }
             }
+            .signUpListSection(stripeIndex: 1)
 
-            // Instructions
             VStack(spacing: ResponsiveDesign.spacing(16)) {
                 Text("Hinweise für ein gutes Foto:")
                     .font(ResponsiveDesign.headlineFont())
@@ -187,9 +185,7 @@ struct IdentificationUploadFrontStep: View {
                     InfoBullet(text: "Nutzen Sie ausreichend Licht")
                 }
             }
-            .padding()
-            .background(AppTheme.sectionBackground)
-            .cornerRadius(ResponsiveDesign.spacing(16))
+            .signUpListSection(stripeIndex: 2)
         }
         .sheet(isPresented: self.$showingCameraPicker) {
             CameraPicker(selectedImage: Binding(

@@ -13,53 +13,42 @@ struct CitizenshipTaxStep: View {
     @Binding var showAdditionalFields: Bool
 
     var body: some View {
-        VStack(spacing: ResponsiveDesign.spacing(24)) {
+        SignUpStepList {
             Text("Staatsbürgerschaft - Steuer")
                 .font(ResponsiveDesign.headlineFont())
                 .fontWeight(.bold)
                 .foregroundColor(AppTheme.fontColor)
-                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .signUpListSection(stripeIndex: 0)
 
-            // US Citizenship Declaration
-            VStack(spacing: ResponsiveDesign.spacing(16)) {
+            Button(action: { self.isNotUSCitizen = true }, label: {
                 HStack {
-                    Button(action: { self.isNotUSCitizen = true }, label: {
-                        HStack {
-                            InteractiveElement(
-                                isSelected: self.isNotUSCitizen,
-                                type: .confirmationCircle
-                            )
+                    InteractiveElement(
+                        isSelected: self.isNotUSCitizen,
+                        type: .confirmationCircle
+                    )
 
-                            Text("Ich bin kein US Staatsbürger und auch nicht in den USA geboren.")
-                                .font(ResponsiveDesign.bodyFont())
-                                .foregroundColor(AppTheme.fontColor)
-                                .multilineTextAlignment(.leading)
+                    Text("Ich bin kein US Staatsbürger und auch nicht in den USA geboren.")
+                        .font(ResponsiveDesign.bodyFont())
+                        .foregroundColor(AppTheme.fontColor)
+                        .multilineTextAlignment(.leading)
 
-                            Spacer()
-                        }
-                    })
-                    .buttonStyle(PlainButtonStyle())
+                    Spacer()
                 }
-                .responsivePadding()
-                .background(self.isNotUSCitizen ? AppTheme.accentGreen.opacity(0.1) : AppTheme.sectionBackground)
-                .cornerRadius(ResponsiveDesign.spacing(12))
-                .overlay(
-                    RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(12))
-                        .stroke(self.isNotUSCitizen ? AppTheme.accentGreen : Color.clear, lineWidth: 2)
-                )
-            }
-            .responsivePadding()
-            .background(AppTheme.sectionBackground)
-            .cornerRadius(ResponsiveDesign.spacing(16))
+            })
+            .buttonStyle(PlainButtonStyle())
+            .signUpListSection(
+                stripeIndex: 1,
+                isSelected: self.isNotUSCitizen,
+                selectionAccent: AppTheme.accentGreen
+            )
 
-            // Citizenship & Tax Information (unified section)
             VStack(spacing: ResponsiveDesign.spacing(20)) {
                 Text("Staatsangehörigkeit & Steuer")
                     .font(ResponsiveDesign.headlineFont())
                     .foregroundColor(AppTheme.fontColor)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                // Primary fields
                 VStack(spacing: ResponsiveDesign.spacing(16)) {
                     LabeledInputField(
                         label: "Staatsangehörigkeit",
@@ -76,7 +65,6 @@ struct CitizenshipTaxStep: View {
                     )
                 }
 
-                // Additional fields (shown when + button is pressed)
                 if self.showAdditionalFields {
                     VStack(spacing: ResponsiveDesign.spacing(16)) {
                         LabeledInputField(
@@ -96,13 +84,14 @@ struct CitizenshipTaxStep: View {
                     .transition(.opacity.combined(with: .move(edge: .top)))
                 }
 
-                // Single unified + button
                 Button(action: { self.showAdditionalFields.toggle() }, label: {
                     HStack {
                         Image(systemName: self.showAdditionalFields ? "minus.circle" : "plus.circle")
                             .foregroundColor(AppTheme.accentLightBlue)
                         Text(
-                            self.showAdditionalFields ? "Zusätzliche Felder ausblenden" : "Zusätzlichen steuerlichen Wohnsitz & Steuernummer hinzufügen"
+                            self.showAdditionalFields
+                                ? "Zusätzliche Felder ausblenden"
+                                : "Zusätzlichen steuerlichen Wohnsitz & Steuernummer hinzufügen"
                         )
                         .foregroundColor(AppTheme.accentLightBlue)
                     }
@@ -110,9 +99,7 @@ struct CitizenshipTaxStep: View {
                 })
                 .buttonStyle(PlainButtonStyle())
             }
-            .responsivePadding()
-            .background(AppTheme.sectionBackground)
-            .cornerRadius(ResponsiveDesign.spacing(16))
+            .signUpListSection(stripeIndex: 2)
         }
         .animation(.easeInOut(duration: 0.3), value: self.showAdditionalFields)
     }
