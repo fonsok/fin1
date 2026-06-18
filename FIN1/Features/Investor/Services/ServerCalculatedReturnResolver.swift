@@ -23,6 +23,28 @@ struct ServerInvestmentCanonicalSummary: Equatable {
 /// Resolves investment return percentages strictly from backend-provided return metadata.
 /// No client-side return formula is applied here.
 enum ServerCalculatedReturnResolver {
+    /// Sums booked Total Buy Cost from all collection bills — also bills without `returnPercentage`.
+    static func aggregateBookedTotalBuyCost(fromCollectionBills bills: [BackendCollectionBill]) -> Double {
+        var sum = 0.0
+        for bill in bills {
+            guard let metadata = bill.metadata else { continue }
+            if let totalBuyCost = metadata.totalBuyCost?.doubleValue, totalBuyCost > 0.005 {
+                sum += totalBuyCost
+                continue
+            }
+            if let poolTradingAmount = metadata.poolTradingAmount?.doubleValue, poolTradingAmount > 0.005 {
+                sum += poolTradingAmount
+                continue
+            }
+            if let nominal = metadata.investmentNominal?.doubleValue,
+               let residual = metadata.residualAmount?.doubleValue {
+                let activeAmount = nominal - residual
+                if activeAmount > 0.005 { sum += activeAmount }
+            }
+        }
+        return sum
+    }
+
     /// Aggregates `getInvestorCollectionBills` rows that carry canonical `metadata.returnPercentage`
     /// (settlement / Teil-Sell-Deltas). Same rules as `resolveCanonicalSummary` after fetch.
     static func canonicalSummary(
@@ -30,6 +52,8 @@ enum ServerCalculatedReturnResolver {
         allowUnweightedReturnFallback: Bool = true
     ) -> ServerInvestmentCanonicalSummary? {
         guard !bills.isEmpty else { return nil }
+
+        let bookedTotalBuyCostFallback = self.aggregateBookedTotalBuyCost(fromCollectionBills: bills)
 
         var grossProfitSum = 0.0
         var commissionSum = 0.0
@@ -81,7 +105,7 @@ enum ServerCalculatedReturnResolver {
             }
         }
 
-        guard billCount > 0 else { return nil }
+        guard billCount > 0 || bookedTotalBuyCostFallback > 0.005 else { return nil }
 
         let resolvedReturn: Double?
         if totalInvestedAmount > 0 {
@@ -92,16 +116,60 @@ enum ServerCalculatedReturnResolver {
             resolvedReturn = nil
         }
 
+        let resolvedTotalBuyCost = totalBuyCostSum > 0.005 ? totalBuyCostSum : bookedTotalBuyCostFallback
+
         return ServerInvestmentCanonicalSummary(
             grossProfit: grossProfitSum,
             commission: commissionSum,
             netProfit: netProfitSum,
-            totalBuyCost: totalBuyCostSum,
+            totalBuyCost: resolvedTotalBuyCost,
             netSellAmount: netSellAmountSum,
             returnPercentage: resolvedReturn ?? 0,
             hasReturnPercentage: resolvedReturn != nil,
             billCount: billCount
         )
+    }
+
+    /// Batched variant of `resolveCanonicalSummary` with bounded concurrency (default 5).
+    static func resolveCanonicalSummaries(
+        investmentIds: [String],
+        settlementAPIService: (any SettlementAPIServiceProtocol)?,
+        allowUnweightedReturnFallback: Bool = true,
+        maxConcurrent: Int = 5
+    ) async -> [String: ServerInvestmentCanonicalSummary] {
+        guard let settlementAPIService, !investmentIds.isEmpty else { return [:] }
+
+        let batchSize = max(1, maxConcurrent)
+        var result: [String: ServerInvestmentCanonicalSummary] = [:]
+
+        var batchStart = investmentIds.startIndex
+        while batchStart < investmentIds.endIndex {
+            let batchEnd = investmentIds.index(batchStart, offsetBy: batchSize, limitedBy: investmentIds.endIndex)
+                ?? investmentIds.endIndex
+            let batch = Array(investmentIds[batchStart..<batchEnd])
+
+            await withTaskGroup(of: (String, ServerInvestmentCanonicalSummary?).self) { group in
+                for id in batch {
+                    group.addTask {
+                        let summary = await self.resolveCanonicalSummary(
+                            investmentId: id,
+                            settlementAPIService: settlementAPIService,
+                            allowUnweightedReturnFallback: allowUnweightedReturnFallback
+                        )
+                        return (id, summary)
+                    }
+                }
+                for await (id, summary) in group {
+                    if let summary {
+                        result[id] = summary
+                    }
+                }
+            }
+
+            batchStart = batchEnd
+        }
+
+        return result
     }
 
     /// Returns backend-authoritative return percentage (ROI2), or nil when backend data

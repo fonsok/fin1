@@ -46,9 +46,9 @@ struct CompletedInvestmentsTable: View {
                     columnWidths: self.columnWidths,
                     forMeasurement: false
                 )
-                .padding(.horizontal, ResponsiveDesign.horizontalPadding())
-                .padding(.vertical, ResponsiveDesign.spacing(4))
-                .background(AppTheme.sectionBackground.opacity(0.5))
+                .investmentsTableHeaderBand()
+
+                InvestmentsTableDivider()
 
                 ForEach(Array(self.investments.enumerated()), id: \.element.id) { index, investment in
                     let rowModel = CompletedInvestmentsTableRowModel(

@@ -37,9 +37,12 @@ struct CompletedInvestmentsTableDataRow: View {
             self.detailsView
                 .modifier(self.cellFrame("details", .center))
         }
-        .padding(.horizontal, ResponsiveDesign.horizontalPadding())
-        .padding(.vertical, ResponsiveDesign.spacing(4))
-        .background(self.forMeasurement ? Color.clear : (self.isEven ? AppTheme.screenBackground : AppTheme.sectionBackground.opacity(0.3)))
+        .frame(minHeight: InvestmentsTableStyle.headerMinHeight)
+        .padding(.horizontal, InvestmentsTableStyle.cellHorizontalPadding)
+        .padding(.vertical, InvestmentsTableStyle.cellVerticalPadding)
+        .background(
+            self.forMeasurement ? Color.clear : InvestmentsTableStyle.dataRowBackground(isEven: self.isEven)
+        )
     }
 
     @ViewBuilder

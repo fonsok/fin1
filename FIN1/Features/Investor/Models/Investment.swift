@@ -47,6 +47,7 @@ struct Investment: Identifiable, Codable, Sendable {
 
     /// Position amount SSOT (aligned with Admin `investmentDisplayAmount.js` + Collection Bills):
     /// Beleg totalBuyCost → poolTradingAmount → nominal (reserved).
+    /// Ledger shows individual legs; this is the single position figure per investment.
     func displayEffectiveInvestmentAmount(
         summary: InvestorInvestmentStatementSummary? = nil,
         canonical: ServerInvestmentCanonicalSummary? = nil
@@ -61,6 +62,7 @@ struct Investment: Identifiable, Codable, Sendable {
             let activeAmount = self.amount - summary.statementResidualAmount
             if activeAmount > 0.005 { return activeAmount }
         }
+        // Gleiche SSOT wie Active Investments („Total buy“): gebuchte Kaufseite statt Nominal.
         if self.reservationStatus != .reserved {
             return self.displayAmountForOpenPositions
         }

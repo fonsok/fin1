@@ -226,21 +226,16 @@ final class CompletedInvestmentsViewModel: ObservableObject {
         guard let service = self.settlementAPIService else { return }
         let relevantIds = investments
             .filter { $0.status == .completed || $0.reservationStatus == .completed }
-            .map { $0.id }
+            .map(\.id)
         guard !relevantIds.isEmpty else { return }
         let allowUnweightedFallback = !self.monetaryServerOnly
 
         Task { [weak self] in
-            var result: [String: ServerInvestmentCanonicalSummary] = [:]
-            for id in relevantIds {
-                if let summary = await ServerCalculatedReturnResolver.resolveCanonicalSummary(
-                    investmentId: id,
-                    settlementAPIService: service,
-                    allowUnweightedReturnFallback: allowUnweightedFallback
-                ) {
-                    result[id] = summary
-                }
-            }
+            let result = await ServerCalculatedReturnResolver.resolveCanonicalSummaries(
+                investmentIds: relevantIds,
+                settlementAPIService: service,
+                allowUnweightedReturnFallback: allowUnweightedFallback
+            )
             await MainActor.run { [weak self] in
                 self?.canonicalSummaries = result
             }
