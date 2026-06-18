@@ -14,7 +14,7 @@ struct CustomerSupportDashboardRecentTicketsSection: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(0)) {
             self.sectionTitleBlock
                 .stripedListSection(stripeIndex: self.titleStripeIndex)
 

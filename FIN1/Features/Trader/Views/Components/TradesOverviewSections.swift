@@ -8,7 +8,7 @@ struct OngoingTradesSection: View {
     let ongoingTrades: [TradeOverviewItem]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(0)) {
             self.sectionTitleBlock
                 .stripedListSection(stripeIndex: self.titleStripeIndex)
 
@@ -75,7 +75,7 @@ struct CompletedTradesSection: View {
     private let pageSize = ClientSideListPagination.defaultPageSize
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(0)) {
             self.sectionTitleBlock
                 .stripedListSection(stripeIndex: self.titleStripeIndex)
 
