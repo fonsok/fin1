@@ -54,6 +54,33 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # PR checkout uses refs/pull/N/merge — github.ref_name is "N/merge" (invalid Docker tag).
+      # On PR: build-only tags (ci + pr-N + sha). On main/master push: also ref_name (branch).
+      - name: Docker image tags
+        id: docker_tags
+        env:
+          REPO: ${{ steps.ghcr_repo.outputs.repo }}
+          SHA: ${{ github.sha }}
+          REF_NAME: ${{ github.ref_name }}
+          EVENT: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          tags="${REPO}:${SHA}
+          ${REPO}:ci"
+          if [ "$EVENT" = "pull_request" ] && [ -n "${PR_NUMBER}" ]; then
+            tags="${tags}
+          ${REPO}:pr-${PR_NUMBER}"
+          elif [ "$REF_NAME" = "main" ] || [ "$REF_NAME" = "master" ]; then
+            tags="${tags}
+          ${REPO}:${REF_NAME}"
+          fi
+          {
+            echo 'tags<<EOF'
+            echo "$tags"
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
       # Tags must be registry-qualified on push: an unqualified name like `fin1-parse-server:ci`
       # resolves to Docker Hub `library/fin1-parse-server` and triggers hub auth (401 vs GHCR login).
       - name: Build parse-server image (push to GHCR on main/master, non-PR)
@@ -62,10 +89,7 @@ jobs:
           context: backend/parse-server
           file: backend/node-service.Dockerfile
           push: ${{ github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') }}
-          tags: |
-            ${{ steps.ghcr_repo.outputs.repo }}:${{ github.sha }}
-            ${{ steps.ghcr_repo.outputs.repo }}:${{ github.ref_name }}
-            ${{ steps.ghcr_repo.outputs.repo }}:ci
+          tags: ${{ steps.docker_tags.outputs.tags }}
           build-args: |
             SERVICE_PORT=1337
             EXTRA_DIR=certs
