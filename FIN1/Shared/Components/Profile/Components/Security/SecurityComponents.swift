@@ -55,9 +55,12 @@ struct TwoFactorMethodRow: View {
                 }
             }
             .padding(ResponsiveDesign.spacing(12))
-            .background(self.isSelected ? AppTheme.accentLightBlue.opacity(0.1) : AppTheme.systemTertiaryBackground)
+            .background(self.isSelected ? AppTheme.accentLightBlue.opacity(0.1) : Color.clear)
             .cornerRadius(ResponsiveDesign.spacing(8))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
     }
 }
 
@@ -65,6 +68,7 @@ struct TwoFactorMethodRow: View {
 
 struct SecurityEventRow: View {
     let event: SecurityEvent
+    var flatStyle: Bool = false
 
     var body: some View {
         HStack(spacing: ResponsiveDesign.spacing(12)) {
@@ -95,9 +99,9 @@ struct SecurityEventRow: View {
 
             Spacer()
         }
-        .padding(ResponsiveDesign.spacing(8))
-        .background(AppTheme.systemTertiaryBackground)
-        .cornerRadius(ResponsiveDesign.spacing(6))
+        .padding(self.flatStyle ? 0 : ResponsiveDesign.spacing(8))
+        .background(self.flatStyle ? Color.clear : AppTheme.systemTertiaryBackground)
+        .cornerRadius(self.flatStyle ? 0 : ResponsiveDesign.spacing(6))
     }
 
     private var eventColor: Color {

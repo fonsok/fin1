@@ -863,7 +863,9 @@ catch {
 
 **Default for scrollable feature screens:** screen background → `ScrollView` → `StripedStepList` → sections via `stripedListSection(stripeIndex:)`. No outer scroll card wrapping inner section cards.
 
-**SSOT:** `FIN1/Shared/Components/StripedListSection.swift` (`StripedStepList`, `stripedListSection`, `PaddedFormSectionList`).
+**SSOT:** `FIN1/Shared/Components/StripedListSection.swift` (`StripedStepList`, `stripedListSection`, `PaddedFormSectionList`, `StripedListStyle.canvasBackgroundColor`).
+
+**Zebra bands:** even indices = `ScreenBackground` (matches status bar / window); odd indices = same base + 28% black overlay — no light/white stripes.
 
 **Prefer flat when:**
 - Dashboard, sign-up steps, profile, notification lists, settings-style flows

@@ -49,7 +49,7 @@ struct SettingsRow: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: self.action, label: {
+        Button(action: self.action) {
             HStack(spacing: ResponsiveDesign.spacing(12)) {
                 Image(systemName: self.icon)
                     .font(ResponsiveDesign.headlineFont())
@@ -67,15 +67,17 @@ struct SettingsRow: View {
                         .foregroundColor(AppTheme.fontColor.opacity(0.7))
                 }
 
-                Spacer()
+                Spacer(minLength: 0)
 
                 Image(systemName: "chevron.right")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.5))
             }
             .padding(ResponsiveDesign.spacing(12))
-        })
-        .buttonStyle(PlainButtonStyle())
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }
 

@@ -188,8 +188,10 @@ struct ModularProfileView: View {
             }
             .padding(.horizontal, ResponsiveDesign.spacing(16))
             .padding(.vertical, ResponsiveDesign.spacing(12))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(.plain)
     }
 }
 

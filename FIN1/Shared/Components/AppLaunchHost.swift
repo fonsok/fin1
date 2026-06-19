@@ -19,7 +19,7 @@ struct AppLaunchHost: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(AppTheme.screenBackground.ignoresSafeArea())
+        .background(AppTheme.stripedCanvasBackground.ignoresSafeArea())
         .task {
             await self.launchModel.bootstrapIfNeeded()
         }
@@ -32,7 +32,7 @@ struct AppLaunchHost: View {
 private struct AppLaunchPlaceholderView: View {
     var body: some View {
         ZStack {
-            AppTheme.screenBackground
+            AppTheme.stripedCanvasBackground
                 .ignoresSafeArea()
             VStack(spacing: ResponsiveDesign.spacing(16)) {
                 ProgressView()

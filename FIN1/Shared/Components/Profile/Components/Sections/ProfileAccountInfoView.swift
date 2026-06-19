@@ -16,13 +16,16 @@ struct ProfileAccountInfoView: View {
                     Text("Account Information")
                         .font(ResponsiveDesign.headlineFont())
                         .foregroundColor(AppTheme.fontColor)
-                    Spacer()
+                    Spacer(minLength: 0)
                     Image(systemName: self.isExpanded ? "chevron.up" : "chevron.down")
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.6))
                 }
+                .padding(.bottom, ResponsiveDesign.spacing(12))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
             }
-            .buttonStyle(PlainButtonStyle())
+            .buttonStyle(.plain)
 
             if self.isExpanded {
                 ProfileSectionDivider()

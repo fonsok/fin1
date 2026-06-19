@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 // MARK: - Shared striped list layout (sign-up, dashboard, learning pages, …)
 //
@@ -6,15 +7,28 @@ import SwiftUI
 // Feature modules may expose domain aliases (e.g. `signUpListSection`) — logic stays here.
 
 enum StripedListStyle {
+    /// Screen canvas + even stripe bands (`ScreenBackground` asset; Standard theme `primaryBackground`).
+    static var canvasBackgroundColor: Color { Color("ScreenBackground") }
+
+    static var canvasBackgroundUIColor: UIColor {
+        UIColor(named: "ScreenBackground")
+            ?? UIColor(red: 25.0 / 255.0, green: 51.0 / 255.0, blue: 102.0 / 255.0, alpha: 1)
+    }
+
+    /// Even stripes use plain `screenBackground` (matches status bar / window).
+    /// Odd stripes add a dark overlay for band contrast.
+    private static let stripeOverlayBase: Double = 0
+    private static let stripeOverlayDarker: Double = 0.28
+
     @ViewBuilder
     @MainActor
     static func listRowBackground(index: Int) -> some View {
         ZStack {
             AppTheme.screenBackground
             if index.isMultiple(of: 2) {
-                Color.white.opacity(0.035)
+                Color.black.opacity(self.stripeOverlayBase)
             } else {
-                Color.black.opacity(0.03)
+                Color.black.opacity(self.stripeOverlayDarker)
             }
         }
     }

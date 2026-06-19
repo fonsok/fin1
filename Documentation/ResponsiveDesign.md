@@ -55,6 +55,7 @@ ScrollView {
 
 - Each `.stripedListSection` applies `ResponsiveDesign.mainHorizontalPadding()` and vertical band padding internally.
 - Stack sections with `VStack(spacing: ResponsiveDesign.spacing(0))` inside `StripedStepList` (never raw `spacing: 0`).
+- **Screen canvas:** status bar, window, and **even** zebra bands (`stripeIndex` 0, 2, …) = `ScreenBackground` via `StripedListStyle.canvasBackgroundColor` / `AppTheme.stripedCanvasBackground`. **Odd** bands add a 28% black overlay (see `FIN1/Documentation/COLOR_SETUP.md`).
 - **Data tables:** title/metadata in `stripedListSection`; table rows in a separate shell (`InvestmentsTableStyle`, `solidBackground:` on rows). See `.cursor/rules/architecture.md` → *Flat list layout*.
 - **Deprecated:** `scrollSection()` / `ScrollSectionModifier`, outer card wrapping inner section cards.
 

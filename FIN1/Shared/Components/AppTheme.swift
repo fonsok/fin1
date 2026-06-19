@@ -58,6 +58,8 @@ struct AppTheme {
 
     // MARK: - FIN1 Compatibility (maps to existing Color.fin1* names)
     static var screenBackground: Color { ThemeManager.shared.colors.primaryBackground }
+    /// Matches zebra stripe 0 (status bar + screen canvas behind `StripedStepList`).
+    static var stripedCanvasBackground: Color { StripedListStyle.canvasBackgroundColor }
     static var sectionBackground: Color { ThemeManager.shared.colors.cardBackground }
     static var fontColor: Color { ThemeManager.shared.colors.primaryText }
     static var accentLightBlue: Color { ThemeManager.shared.colors.infoBlue }

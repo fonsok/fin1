@@ -22,6 +22,17 @@
 | `InputText` | `#f5f5f5` | Input text |
 | `FontColor` | `#f5f5f5` | Main text |
 
+### Zebra stripes (`StripedListSection`)
+
+**SSOT:** `FIN1/Shared/Components/StripedListSection.swift` (`StripedListStyle`).
+
+| Band | Background |
+|------|------------|
+| **Even** (`stripeIndex` 0, 2, …) | `ScreenBackground` — same as status bar / window (`canvasBackgroundColor`) |
+| **Odd** (1, 3, …) | `ScreenBackground` + **28%** black overlay |
+
+Standard theme `AppTheme.screenBackground` / `ThemeManager.primaryBackground` = `Color("ScreenBackground")`. No light/white stripe bands.
+
 ### Step 3: Set HEX values
 1. Double-click the color swatch
 2. Click gear icon → "Other..."
