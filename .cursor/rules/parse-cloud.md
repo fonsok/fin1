@@ -24,6 +24,7 @@ Gilt bei Arbeit an **Parse Cloud Functions**, **Triggers** und **`cloud/utils/**
 - Nach Änderungen: vgl. **`ci-cd.md`** → Abschnitt **FIN1-Server Deploy** (rsync `cloud/`, Parse-Restart, ggf. `rm` Legacy-Datei wie in `scripts/deploy-to-ubuntu.sh`).
 - Betrieb: **`Documentation/FIN1_APP_DOCS/06A_BACKEND_UBUNTU_IOBOX_RUNBOOK.md`** **§ 8.2.1**.
 - **Buchungen / Beleg / SSOT (GoB):** `Documentation/BOOKING_AND_BELEG_SSOT.md` — `collectionBillBelegSnapshot.js`, Invarianten fail-closed, Buchungen nur aus Beleg-`metadata`.
+- **Investor Positionsbetrag (Tabellen/Reports, nicht Ledger-Zeilen):** `Documentation/INVESTOR_POSITION_AMOUNT_SSOT.md` — SSOT-Modul `cloud/utils/investmentDisplayAmount.js`; Consumer u. a. Summary Report (Liste + Overview-KPI), `usersDetailInvestor.js` (User Detail). Bei Betrags-Anzeige **nie** rohes `Investment.amount` für aktivierte/abgeschlossene Zeilen ohne diese Kette.
 - **Kontoauszug / Settlement-GL:** unter `utils/accountingHelper/` — `statements.js` ist die **Fassade** (gleiche öffentliche API / `require('…/statements')` unverändert); Implementierung in **`accountStatementWriter.js`** (Kontoauszugszeilen, Cash/Chain/Kompensation), **`settlementGLRules.js`** (`SETTLEMENT_GL_RULES`, Regel-Lookup), **`settlementGLPoster.js`** (Settlement-Posting, Order-Fee-Breakdown).
 
 ## Stil im Cloud-Code

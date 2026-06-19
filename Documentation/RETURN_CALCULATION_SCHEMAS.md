@@ -179,10 +179,15 @@ These fields MUST remain stable; any consumer (bill/invoice PDF, admin report, C
 | Consumer | Field | Source | Value |
 |---|---|---|---|
 | `InvestorCollectionBill` PDF | `Gross Profit (€)`, `Commission (€)`, `Net Profit (€)`, `Total Buy Cost (€)` | Backend settlement → bill line items | — |
+| Investor `OpenInvestmentsTable` (Active) | Total buy / amount | `Investment.displayAmountForOpenPositions` | Position SSOT — see [`INVESTOR_POSITION_AMOUNT_SSOT.md`](INVESTOR_POSITION_AMOUNT_SSOT.md) |
+| Investor `CompletedInvestmentsTable` | InvestAmount | `Investment.displayEffectiveInvestmentAmount` (Beleg canonical → pool → nominal) | Position SSOT |
 | Investor `CompletedInvestmentsTable` | `Gross Profit (€)` | `InvestorInvestmentStatementSummary.statementGrossProfit` (same aggregator that feeds the bill) | — |
 | Investor `CompletedInvestmentsTable` | `Return (%)` | Derived: `(Gross Profit − Commission) / Total Buy Cost × 100` from the same statement summary | ROI2 |
 | Investor `CommissionCalculationExplanationSheet` | `Gross Profit (%)` | Derived: `Gross Profit / Total Buy Cost × 100` | ROI1 |
 | Investor `CommissionCalculationExplanationSheet` | `Return (%) after commission` | Derived: `(Gross Profit − Commission) / Total Buy Cost × 100` | ROI2 |
+| Admin Summary Report → Investments tab | Betrag | `getSummaryReportInvestmentsPage` → `resolveInvestmentPositionAmount` + Collection Bill metrics | Position SSOT |
+| Admin Summary Report → Overview KPI | Investiertes Kapital | `getSummaryReport` → `investmentAggPipeline` (`$lookup` bills + position amount) | Position SSOT |
+| Admin User Detail → InvestmentTable / KPI Investiert | InvestAmount | `getUserDetails` → `usersDetailInvestor.js` | Position SSOT |
 | Admin `AdminSummaryReportView` | `Return (%)` | `getSummaryReportInvestmentsPage` (ROI2 formula) | ROI2 |
 | CSR `CSRInvestmentDetailSheet` | `Return (%)` | Backend metadata (ROI2) | ROI2 |
 | CSR `CSRTradeDetailSheet` | `Return (%)` | Trade-level (trader perspective ROI1) | Trader-side ROI1 |
@@ -191,6 +196,7 @@ These fields MUST remain stable; any consumer (bill/invoice PDF, admin report, C
 
 ## Change log
 
+- 2026-06-18: Documented **InvestAmount / Betrag** position SSOT across iOS and Admin Summary Report (`INVESTOR_POSITION_AMOUNT_SSOT.md`); extended consistency map above.
 - 2026-04-20: Initial version. Aligned terminology (Gross Profit, Net Profit, ROI1, ROI2), added Residual Credit as separate item in the Investment schema, and fixed admin summary report to use ROI2 (SSOT).
 - 2026-04-20 (update): **Corrected SSOT direction.** QA identified that a stored
   `metadata.returnPercentage` (34,51 %) disagreed with the corresponding bill

@@ -13,6 +13,7 @@ Die Menge an `.md` Dateien in diesem Workspace ist sehr groß. Damit es nicht ve
 - **Return%-Contract Monitoring & Alerting:** `Documentation/RETURN_PERCENTAGE_MONITORING_AND_ALERTING.md`
 - **Return%-Incident SOP:** `Documentation/RETURN_PERCENTAGE_INCIDENT_SOP.md`
 - **Return%-Release Verification:** `Documentation/RELEASE_VERIFICATION_RETURN_PERCENTAGE_CONTRACT_2026-04-20.md`
+- **Investor Positionsbetrag (Anzeige-SSOT, iOS + Admin Summary Report):** `Documentation/INVESTOR_POSITION_AMOUNT_SSOT.md`
 
 ## ✅ Regel: “Current” ohne Versionssuffix
 

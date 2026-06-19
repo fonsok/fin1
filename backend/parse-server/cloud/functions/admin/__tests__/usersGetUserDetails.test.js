@@ -82,7 +82,7 @@ describe('handleGetUserDetails integration', () => {
     jest.doMock('../usersDetailInvestor', () => ({
       loadInvestorInvestmentLists: jest.fn(async (user) => (
         user.get('role') === 'investor'
-          ? { investments: [{ id: 'inv1' }], investmentSummary: { totalInvestments: 1 } }
+          ? { investments: [{ id: 'inv1' }], investmentSummary: { totalInvestments: 1 }, canonicalByInvestmentId: {} }
           : { investments: [], investmentSummary: null }
       )),
       mapInvestmentsForAdminDetail: jest.fn(async (investments) => investments),

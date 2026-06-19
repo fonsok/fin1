@@ -34,6 +34,7 @@ Wenn Dokumente und Code/Configs widersprechen, gilt:
 3. **Technische Spezifikation (Architektur/Backend/API/Datenmodell/Security)**
    Siehe [`03_TECHNISCHE_SPEZIFIKATION.md`](03_TECHNISCHE_SPEZIFIKATION.md) — **canonical** für iOS-Client ↔ Backend (Schichten, Parse REST/Live Query, **Swift 6 / Sendable / Parse-DTO** unter Abschnitt 1).
    - Belege, Rechnungen, Emittent/Handelsplatz: Abschnitt 6 in 03
+   - **Investor Positionsbetrag (Anzeige vs. Ledger):** [`../INVESTOR_POSITION_AMOUNT_SSOT.md`](../INVESTOR_POSITION_AMOUNT_SSOT.md); GoB-Buchungen: [`../BOOKING_AND_BELEG_SSOT.md`](../BOOKING_AND_BELEG_SSOT.md)
    - Onboarding (Cloud Functions + Joi-Validierung): Abschnitt 3.2 „User/FAQ“ und 3.3 in 03; ADR: [`../ADR-002-Onboarding-Codable-DTO.md`](../ADR-002-Onboarding-Codable-DTO.md)
    - **Company / KYB (Firmen-Onboarding, implementiert):** [`../COMPANY_KYB_ONBOARDING.md`](../COMPANY_KYB_ONBOARDING.md), ADR: [`../ADR-003-Company-KYB-Onboarding.md`](../ADR-003-Company-KYB-Onboarding.md)
 4. **Entwicklernähere Dokumentation (Setup/Guides/Build & Deployment)**

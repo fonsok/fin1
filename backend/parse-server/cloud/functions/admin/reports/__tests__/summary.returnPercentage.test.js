@@ -49,7 +49,7 @@ describe('admin summary report returnPercentage (ROI2, SSOT)', () => {
     const inv = fakeInvestment({ id: 'inv-1', amount: 200, currentValue: 220 });
     // grossProfit = 20, commission = 2, netProfit = 18 ⇒ ROI2 = 9.00 %
     // But canonical value (from CollectionBill) is 8.50 % — we must prefer it.
-    const canonical = { 'inv-1': 8.5 };
+    const canonical = { 'inv-1': { returnPercentage: 8.5 } };
     const row = mapInvestmentRow(inv, commissionRate, canonical);
     expect(row.returnPercentage).toBeCloseTo(8.5, 6);
     expect(row.grossProfit).toBeCloseTo(20, 6);
