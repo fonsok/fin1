@@ -32,17 +32,6 @@ struct CompletedInvestmentsTableHeaderRow: View {
             ))
 
             Group {
-                Text("Trade Nr.")
-                    .font(ResponsiveDesign.captionFont())
-            }
-            .modifier(CompletedInvestmentsHeaderCellModifier(
-                columnKey: "tradeNr",
-                columnWidths: self.columnWidths,
-                forMeasurement: self.forMeasurement,
-                alignment: .leading
-            ))
-
-            Group {
                 Text("InvestAmount (€)")
                     .font(ResponsiveDesign.captionFont())
             }

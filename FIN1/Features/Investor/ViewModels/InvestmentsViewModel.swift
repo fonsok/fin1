@@ -31,9 +31,6 @@ final class InvestmentsViewModel: ObservableObject {
     var currentRole: UserRole? // Track current role to detect role changes
     var dataProcessor: InvestmentsDataProcessor
 
-    /// Display-Daten für Completed-Tabelle (MVVM: View bindet nur daran).
-    @Published var completedTraderUsernames: [String: String] = [:]
-    @Published var completedTradeNumbers: [String: String] = [:]
     /// Local summaries for completed-list fallback (preview / tests). Empty when server-only.
     @Published var completedInvestmentSummaries: [String: InvestorInvestmentStatementSummary] = [:]
     /// Server-canonical totals + ROI2. SSOT for completed lists when `investorMonetaryServerOnly`.

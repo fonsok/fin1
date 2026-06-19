@@ -45,6 +45,28 @@ struct Investment: Identifiable, Codable, Sendable {
         return self.amount
     }
 
+    /// Position amount SSOT (aligned with Admin `investmentDisplayAmount.js` + Collection Bills):
+    /// Beleg totalBuyCost → poolTradingAmount → nominal (reserved).
+    func displayEffectiveInvestmentAmount(
+        summary: InvestorInvestmentStatementSummary? = nil,
+        canonical: ServerInvestmentCanonicalSummary? = nil
+    ) -> Double {
+        if let canonical, canonical.totalBuyCost > 0.005 {
+            return canonical.totalBuyCost
+        }
+        if let summary, summary.statementTotalBuyCost > 0.005 {
+            return summary.statementTotalBuyCost
+        }
+        if let summary {
+            let activeAmount = self.amount - summary.statementResidualAmount
+            if activeAmount > 0.005 { return activeAmount }
+        }
+        if self.reservationStatus != .reserved {
+            return self.displayAmountForOpenPositions
+        }
+        return self.amount
+    }
+
     var investedAmount: Double {
         self.amount
     }

@@ -214,8 +214,7 @@ struct InvestmentsView: View {
             allCompletedCount: self.viewModel.completedInvestments.count,
             completedInvestmentsByTimePeriod: self.viewModel.completedInvestmentsByTimePeriod,
             completedInvestmentDocRefs: self.viewModel.completedInvestmentDocRefs,
-            completedTraderUsernames: self.viewModel.completedTraderUsernames,
-            completedTradeNumbers: self.viewModel.completedTradeNumbers,
+            traderDataService: self.appServices.traderDataService,
             completedInvestmentSummaries: self.viewModel.completedInvestmentSummaries,
             completedCanonicalSummaries: self.viewModel.completedCanonicalSummaries,
             onTimePeriodChanged: { period in

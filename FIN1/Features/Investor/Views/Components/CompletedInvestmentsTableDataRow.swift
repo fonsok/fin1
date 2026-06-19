@@ -17,13 +17,8 @@ struct CompletedInvestmentsTableDataRow: View {
 
             Text(self.model.traderUsername)
                 .font(ResponsiveDesign.bodyFont())
-                .foregroundColor(self.forMeasurement ? nil : AppTheme.fontColor)
+                .foregroundColor(self.forMeasurement ? nil : DataTableColors.traderNameColor)
                 .modifier(self.cellFrame("traderUsername", .leading))
-
-            Text(self.model.tradeNumberText)
-                .font(ResponsiveDesign.bodyFont())
-                .foregroundColor(self.forMeasurement ? nil : AppTheme.fontColor)
-                .modifier(self.cellFrame("tradeNr", .leading))
 
             Text(self.model.amount.formattedAsLocalizedCurrency())
                 .font(ResponsiveDesign.bodyFont())

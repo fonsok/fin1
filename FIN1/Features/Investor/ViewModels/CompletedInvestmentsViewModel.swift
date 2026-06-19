@@ -31,10 +31,6 @@ final class CompletedInvestmentsViewModel: ObservableObject {
 
     /// Beleg-/Rechnungsnummern pro Investment (MVVM: View bindet nur daran).
     @Published var investmentDocRefs: [String: (docNumber: String?, invoiceNumber: String?)] = [:]
-    /// Trader-Username pro Investment-ID (MVVM: keine Service-Aufrufe in der View).
-    @Published var traderUsernames: [String: String] = [:]
-    /// Trade-Nummer pro Investment-ID (MVVM: keine Service-Aufrufe in der View).
-    @Published var tradeNumbers: [String: String] = [:]
     /// Local statement summaries for completed-list fallback (preview / tests only).
     /// Empty when `investorMonetaryServerOnly` — lists use `canonicalSummaries` only.
     @Published var investmentSummaries: [String: InvestorInvestmentStatementSummary] = [:]
@@ -219,40 +215,10 @@ final class CompletedInvestmentsViewModel: ObservableObject {
         self.investmentDocRefs = refs
     }
 
-    /// Trader-Usernames, Trade-Nummern und Statement-Summaries aus Services (MVVM: keine Logik in der View).
+    /// Statement-Summaries und kanonische Server-Totals für Completed-Tabelle (MVVM).
     private func refreshDisplayData() {
-        Task { @MainActor [weak self] in
-            guard let self else { return }
-            var tradeIds: Set<String> = []
-            for inv in self.investments {
-                for p in self.poolTradeParticipationService.getParticipations(forInvestmentId: inv.id) {
-                    tradeIds.insert(p.tradeId)
-                }
-            }
-            let tradesById = await InvestorInvestmentStatementAggregator.resolveTradesForPoolParticipations(
-                investedTradeIds: tradeIds,
-                localTrades: self.tradeLifecycleService.completedTrades,
-                tradeAPIService: self.tradeAPIService
-            )
-            var usernames: [String: String] = [:]
-            var tradeNums: [String: String] = [:]
-
-            for inv in self.investments {
-                usernames[inv.id] = self.traderDataService.getTrader(by: inv.traderId)?.username ?? "---"
-                let participations = self.poolTradeParticipationService.getParticipations(forInvestmentId: inv.id)
-
-                if let first = participations.first,
-                   let trade = tradesById[first.tradeId] {
-                    tradeNums[inv.id] = String(format: "%03d", trade.tradeNumber)
-                } else {
-                    tradeNums[inv.id] = "---"
-                }
-            }
-            self.traderUsernames = usernames
-            self.tradeNumbers = tradeNums
-            self.investmentSummaries = [:]
-            self.refreshCanonicalSummaries(for: self.investments)
-        }
+        self.investmentSummaries = [:]
+        self.refreshCanonicalSummaries(for: self.investments)
     }
 
     /// Lädt server-kanonische Summaries (ROI2 + Totals) in `canonicalSummaries`.

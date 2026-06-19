@@ -231,8 +231,7 @@ struct InvestmentsCompletedSectionView: View {
     let allCompletedCount: Int
     let completedInvestmentsByTimePeriod: [Investment]
     let completedInvestmentDocRefs: [String: (docNumber: String?, invoiceNumber: String?)]
-    let completedTraderUsernames: [String: String]
-    let completedTradeNumbers: [String: String]
+    let traderDataService: any TraderDataServiceProtocol
     let completedInvestmentSummaries: [String: InvestorInvestmentStatementSummary]
     let completedCanonicalSummaries: [String: ServerInvestmentCanonicalSummary]
     let onTimePeriodChanged: (InvestmentTimePeriod) -> Void
@@ -254,8 +253,7 @@ struct InvestmentsCompletedSectionView: View {
                 CompletedInvestmentsTable(
                     investments: self.completedInvestmentsByTimePeriod,
                     investmentDocRefs: self.completedInvestmentDocRefs,
-                    traderUsernames: self.completedTraderUsernames,
-                    tradeNumbers: self.completedTradeNumbers,
+                    traderDataService: self.traderDataService,
                     investmentSummaries: self.completedInvestmentSummaries,
                     canonicalSummaries: self.completedCanonicalSummaries,
                     monetaryServerOnly: self.services.configurationService.investorMonetaryServerOnly,

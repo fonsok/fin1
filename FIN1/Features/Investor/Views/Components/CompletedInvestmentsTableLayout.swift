@@ -25,7 +25,6 @@ struct CompletedInvestmentsHeaderCellModifier: ViewModifier {
         switch self.columnKey {
         case "investmentNr": return 80
         case "traderUsername": return 60
-        case "tradeNr": return 50
         case "amount": return 80
         case "profit": return 80
         case "return": return 60

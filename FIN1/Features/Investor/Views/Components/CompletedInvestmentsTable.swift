@@ -17,10 +17,7 @@ struct CompletedInvestmentsTable: View {
     let investments: [Investment]
     /// Beleg-/Rechnungsnummern pro Investment-ID (aus ViewModel, MVVM).
     let investmentDocRefs: [String: (docNumber: String?, invoiceNumber: String?)]
-    /// Trader-Username pro Investment-ID (aus ViewModel, MVVM).
-    let traderUsernames: [String: String]
-    /// Trade-Nummer pro Investment-ID (aus ViewModel, MVVM).
-    let tradeNumbers: [String: String]
+    let traderDataService: (any TraderDataServiceProtocol)?
     /// Local statement summaries (preview/tests). Empty when `monetaryServerOnly`.
     let investmentSummaries: [String: InvestorInvestmentStatementSummary]
     /// Server-canonical totals + ROI2. SSOT for € columns when `monetaryServerOnly`.
@@ -59,8 +56,7 @@ struct CompletedInvestmentsTable: View {
                         summary: investmentSummaries[investment.id],
                         canonical: self.canonicalSummaries[investment.id],
                         returnPercentage: self.returnPercentage(for: investment),
-                        traderUsername: self.traderUsernames[investment.id] ?? "---",
-                        tradeNumberText: self.tradeNumbers[investment.id] ?? "---",
+                        traderDataService: self.traderDataService,
                         docNumber: self.investmentDocRefs[investment.id]?.docNumber,
                         invoiceNumber: self.investmentDocRefs[investment.id]?.invoiceNumber
                     )
@@ -93,8 +89,7 @@ struct CompletedInvestmentsTable: View {
                             summary: investmentSummaries[investment.id],
                             canonical: self.canonicalSummaries[investment.id],
                             returnPercentage: self.returnPercentage(for: investment),
-                            traderUsername: self.traderUsernames[investment.id] ?? "---",
-                            tradeNumberText: self.tradeNumbers[investment.id] ?? "---",
+                            traderDataService: self.traderDataService,
                             docNumber: self.investmentDocRefs[investment.id]?.docNumber,
                             invoiceNumber: self.investmentDocRefs[investment.id]?.invoiceNumber
                         )

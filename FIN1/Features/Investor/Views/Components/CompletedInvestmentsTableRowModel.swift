@@ -8,7 +8,6 @@ struct CompletedInvestmentsTableRowModel {
     let returnPercentage: Double?
     let isCancelled: Bool
     let traderUsername: String
-    let tradeNumberText: String
     let docNumber: String?
     let invoiceNumber: String?
 
@@ -17,19 +16,17 @@ struct CompletedInvestmentsTableRowModel {
         summary: InvestorInvestmentStatementSummary?,
         canonical: ServerInvestmentCanonicalSummary? = nil,
         returnPercentage: Double?,
-        traderUsername: String,
-        tradeNumberText: String,
+        traderDataService: (any TraderDataServiceProtocol)? = nil,
         docNumber: String?,
         invoiceNumber: String?
     ) {
         self.id = investment.id
         self.investmentNumber = investment.canonicalDisplayReference
-        self.amount = investment.amount
+        self.amount = investment.displayEffectiveInvestmentAmount(summary: summary, canonical: canonical)
         self.grossProfit = canonical.map(\.grossProfit) ?? summary?.statementGrossProfit
         self.returnPercentage = returnPercentage
         self.isCancelled = investment.status == .cancelled
-        self.traderUsername = traderUsername
-        self.tradeNumberText = tradeNumberText
+        self.traderUsername = investment.displayTraderUsername(using: traderDataService)
         self.docNumber = docNumber
         self.invoiceNumber = invoiceNumber
     }
