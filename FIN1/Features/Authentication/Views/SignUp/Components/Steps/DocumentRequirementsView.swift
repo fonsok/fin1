@@ -50,9 +50,6 @@ struct DocumentRequirementsView: View {
                 ]
             )
         }
-        .padding()
-        .background(AppTheme.sectionBackground)
-        .cornerRadius(ResponsiveDesign.spacing(16))
     }
 }
 

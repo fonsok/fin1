@@ -3,8 +3,8 @@ import SwiftUI
 @MainActor
 enum OpenInvestmentsTableLayout {
     static var columnSpacing: CGFloat { ResponsiveDesign.spacing(16) }
-    static var cellHorizontalPadding: CGFloat { ResponsiveDesign.spacing(12) }
-    static var cellVerticalPadding: CGFloat { ResponsiveDesign.spacing(6) }
+    static var cellHorizontalPadding: CGFloat { InvestmentsTableStyle.cellHorizontalPadding }
+    static var cellVerticalPadding: CGFloat { InvestmentsTableStyle.cellVerticalPadding }
 }
 
 struct OpenInvestmentsHeaderCellModifier: ViewModifier {

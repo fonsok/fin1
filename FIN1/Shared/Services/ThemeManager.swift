@@ -108,8 +108,8 @@ final class ThemeManager: ObservableObject, @unchecked Sendable {
     private let themes: [TargetGroup: ThemeColors] = [
         .standard: ThemeColors(
             // Primary Colors - Dark blue theme (VVaaa exact values)
-            primaryBackground: Color(hex: "#1A3366"), // Dark blue background
-            cardBackground: Color(hex: "#0D1A33"), // Darker blue for cards
+            primaryBackground: Color("ScreenBackground"),
+            cardBackground: Color("SectionBackground"),
             accentColor: Color.orange,
 
             // Text Colors
@@ -126,20 +126,20 @@ final class ThemeManager: ObservableObject, @unchecked Sendable {
             infoBlue: Color.blue,
 
             // System Component Colors
-            systemBackground: Color(hex: "#1A3366"), // Same as primary
-            systemSecondaryBackground: Color(hex: "#0D1A33"), // Same as card
+            systemBackground: Color("ScreenBackground"), // Same as primary
+            systemSecondaryBackground: Color("SectionBackground"), // Same as card
             systemTertiaryBackground: Color(hex: "#14264D"), // Medium blue
             systemText: Color.white,
             systemSecondaryText: Color.white.opacity(0.8),
             systemTertiaryText: Color.white.opacity(0.6),
             systemSeparator: Color.white.opacity(0.2),
-            systemGroupedBackground: Color(hex: "#1A3366"), // Same as primary
-            systemSecondaryGroupedBackground: Color(hex: "#0D1A33"), // Same as card
+            systemGroupedBackground: Color("ScreenBackground"), // Same as primary
+            systemSecondaryGroupedBackground: Color("SectionBackground"), // Same as card
 
             // Tab Bar Colors
             tabBarActive: Color.white,
             tabBarInactive: Color.white.opacity(0.6),
-            tabBarBackground: Color(hex: "#0D1A33"), // Same as card
+            tabBarBackground: Color("SectionBackground"), // Same as card
 
             // Input Field Colors
             inputFieldBackground: Color(hex: "#8EA0AE"), // Gray-blue input field

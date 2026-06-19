@@ -34,36 +34,25 @@ struct SignUpView: View {
                 }
 
                 VStack(spacing: ResponsiveDesign.spacing(0)) {
-                    // Progress Bar
                     SignUpProgressBar(
                         progress: self.coordinator.progress,
                         currentStep: self.coordinator.currentStepNumber,
                         totalSteps: self.coordinator.totalStepsForRole,
                         phase: self.coordinator.currentStep.phase
                     )
-                    .padding(.horizontal, ResponsiveDesign.lightBlueAreaHorizontalPadding())
+                    .padding(.horizontal, ResponsiveDesign.mainHorizontalPadding())
+                    .padding(.top, ResponsiveDesign.spacing(8))
+                    .padding(.bottom, ResponsiveDesign.spacing(12))
 
-                    // Step Content
                     ScrollView {
-                        VStack(spacing: ResponsiveDesign.spacing(24)) {
+                        VStack(spacing: ResponsiveDesign.spacing(0)) {
                             self.currentStepView
                         }
-                        .padding(.top, ResponsiveDesign.spacing(8))
-                        .padding(.bottom, ResponsiveDesign.spacing(8))
-                        .padding(.horizontal, ResponsiveDesign.scrollSectionHorizontalPadding())
-                        .background(AppTheme.systemSecondaryBackground)
-                        .cornerRadius(ResponsiveDesign.spacing(12))
+                        .padding(.bottom, ResponsiveDesign.spacing(16))
                     }
-                    .padding(.horizontal, ResponsiveDesign.lightBlueAreaHorizontalPadding())
+                    .scrollIndicators(.hidden)
 
-                    // Navigation Buttons
-                    SignUpNavigationButtons(
-                        coordinator: self.coordinator,
-                        signUpData: self.signUpData,
-                        onComplete: self.completeRegistration,
-                        onShowTermsOfService: { self.showTermsOfService = true }
-                    )
-                    .padding(.horizontal, ResponsiveDesign.lightBlueAreaHorizontalPadding())
+                    self.signUpFooter
                 }
                 .opacity(self.coordinator.isResuming ? 0 : 1)
             }
@@ -168,6 +157,27 @@ struct SignUpView: View {
                 configurationService: self.appServices.configurationService,
                 termsContentService: self.appServices.termsContentService
             )
+        }
+    }
+
+    private var signUpFooter: some View {
+        SignUpNavigationButtons(
+            coordinator: self.coordinator,
+            signUpData: self.signUpData,
+            onComplete: self.completeRegistration,
+            onShowTermsOfService: { self.showTermsOfService = true }
+        )
+        .padding(.horizontal, ResponsiveDesign.mainHorizontalPadding())
+        .padding(.top, ResponsiveDesign.spacing(12))
+        .padding(.bottom, ResponsiveDesign.spacing(8))
+        .background {
+            VStack(spacing: ResponsiveDesign.spacing(0)) {
+                Rectangle()
+                    .fill(AppTheme.fontColor.opacity(0.1))
+                    .frame(height: 1)
+                AppTheme.screenBackground.opacity(0.96)
+            }
+            .ignoresSafeArea(edges: .bottom)
         }
     }
 

@@ -24,7 +24,7 @@ struct DashboardQuickActionCard: View {
             }
             .frame(maxWidth: .infinity)
             .frame(height: ResponsiveDesign.spacing(80))
-            .background(AppTheme.sectionBackground)
+            .background(AppTheme.inputFieldBackground.opacity(0.5))
             .cornerRadius(ResponsiveDesign.spacing(12))
         })
         .accessibilityLabel(self.title)

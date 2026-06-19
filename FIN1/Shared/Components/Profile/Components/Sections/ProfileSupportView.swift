@@ -8,55 +8,57 @@ struct ProfileSupportView: View {
     let onImprint: () -> Void
 
     var body: some View {
-        VStack(spacing: ResponsiveDesign.spacing(16)) {
-            HStack {
-                Text("Support & Legal")
-                    .font(ResponsiveDesign.headlineFont())
-                    .foregroundColor(AppTheme.fontColor)
-                Spacer()
-            }
+        VStack(spacing: ResponsiveDesign.spacing(0)) {
+            ProfileSectionTitle(title: "Support & Legal")
+            ProfileSectionDivider()
 
-            VStack(spacing: ResponsiveDesign.spacing(12)) {
-                SettingsRow(
-                    title: "Help Center",
-                    subtitle: "FAQs and support articles",
-                    icon: "questionmark.circle.fill",
-                    color: AppTheme.accentLightBlue,
-                    action: self.onHelpCenter
-                )
+            SettingsRow(
+                title: "Help Center",
+                subtitle: "FAQs and support articles",
+                icon: "questionmark.circle.fill",
+                color: AppTheme.accentLightBlue,
+                action: self.onHelpCenter
+            )
 
-                SettingsRow(
-                    title: "Contact Support",
-                    subtitle: "Get in touch with our team",
-                    icon: "message.fill",
-                    color: AppTheme.accentGreen,
-                    action: self.onContactSupport
-                )
+            ProfileSectionDivider()
 
-                SettingsRow(
-                    title: "Terms of Service",
-                    subtitle: "Read our terms and conditions",
-                    icon: "doc.text.fill",
-                    color: AppTheme.accentOrange,
-                    action: self.onTermsOfService
-                )
+            SettingsRow(
+                title: "Contact Support",
+                subtitle: "Get in touch with our team",
+                icon: "message.fill",
+                color: AppTheme.accentGreen,
+                action: self.onContactSupport
+            )
 
-                SettingsRow(
-                    title: "Privacy Policy",
-                    subtitle: "Learn about data protection",
-                    icon: "hand.raised.slash.fill",
-                    color: AppTheme.accentRed,
-                    action: self.onPrivacyPolicy
-                )
+            ProfileSectionDivider()
 
-                SettingsRow(
-                    title: "Imprint",
-                    subtitle: "Legal disclosure (Impressum)",
-                    icon: "building.2.fill",
-                    color: AppTheme.accentLightBlue,
-                    action: self.onImprint
-                )
-            }
+            SettingsRow(
+                title: "Terms of Service",
+                subtitle: "Read our terms and conditions",
+                icon: "doc.text.fill",
+                color: AppTheme.accentOrange,
+                action: self.onTermsOfService
+            )
+
+            ProfileSectionDivider()
+
+            SettingsRow(
+                title: "Privacy Policy",
+                subtitle: "Learn about data protection",
+                icon: "hand.raised.slash.fill",
+                color: AppTheme.accentRed,
+                action: self.onPrivacyPolicy
+            )
+
+            ProfileSectionDivider()
+
+            SettingsRow(
+                title: "Imprint",
+                subtitle: "Legal disclosure (Impressum)",
+                icon: "building.2.fill",
+                color: AppTheme.accentLightBlue,
+                action: self.onImprint
+            )
         }
     }
 }

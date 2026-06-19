@@ -6,7 +6,7 @@ struct PostidentConfirmationStep: View {
     @State private var postidentCode: String = "\(LegalIdentity.documentPrefix)-\(Int.random(in: 100_000...999_999))"
 
     var body: some View {
-        VStack(spacing: ResponsiveDesign.spacing(24)) {
+        SignUpStepList {
             Text("Postident Identifikation")
                 .font(ResponsiveDesign.headlineFont())
                 .fontWeight(.bold)
@@ -53,9 +53,7 @@ struct PostidentConfirmationStep: View {
                         .cornerRadius(ResponsiveDesign.spacing(8))
                 }
             }
-            .padding()
-            .background(AppTheme.sectionBackground)
-            .cornerRadius(ResponsiveDesign.spacing(16))
+            .signUpListSection(stripeIndex: 0)
 
             // Postident Options
             VStack(spacing: ResponsiveDesign.spacing(16)) {
@@ -88,9 +86,7 @@ struct PostidentConfirmationStep: View {
                         Image(systemName: "chevron.right")
                             .foregroundColor(AppTheme.accentLightBlue)
                     }
-                    .padding()
-                    .background(AppTheme.sectionBackground)
-                    .cornerRadius(ResponsiveDesign.spacing(12))
+                    .signUpListSection(stripeIndex: 1)
                     .overlay(
                         RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(12))
                             .stroke(AppTheme.accentLightBlue, lineWidth: 1)
@@ -122,9 +118,7 @@ struct PostidentConfirmationStep: View {
                         Image(systemName: "chevron.right")
                             .foregroundColor(AppTheme.accentLightBlue)
                     }
-                    .padding()
-                    .background(AppTheme.sectionBackground)
-                    .cornerRadius(ResponsiveDesign.spacing(12))
+                    .signUpListSection(stripeIndex: 2)
                     .overlay(
                         RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(12))
                             .stroke(AppTheme.accentLightBlue, lineWidth: 1)
@@ -156,9 +150,7 @@ struct PostidentConfirmationStep: View {
                         Image(systemName: "chevron.right")
                             .foregroundColor(AppTheme.accentLightBlue)
                     }
-                    .padding()
-                    .background(AppTheme.sectionBackground)
-                    .cornerRadius(ResponsiveDesign.spacing(12))
+                    .signUpListSection(stripeIndex: 3)
                     .overlay(
                         RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(12))
                             .stroke(AppTheme.accentLightBlue, lineWidth: 1)
@@ -166,9 +158,7 @@ struct PostidentConfirmationStep: View {
                 }
                 .buttonStyle(PlainButtonStyle())
             }
-            .padding()
-            .background(AppTheme.sectionBackground)
-            .cornerRadius(ResponsiveDesign.spacing(16))
+            .signUpListSection(stripeIndex: 4)
 
             // Confirmation
             VStack(spacing: ResponsiveDesign.spacing(16)) {
@@ -189,9 +179,7 @@ struct PostidentConfirmationStep: View {
                 })
                 .buttonStyle(PlainButtonStyle())
             }
-            .padding()
-            .background(AppTheme.sectionBackground)
-            .cornerRadius(ResponsiveDesign.spacing(16))
+            .signUpListSection(stripeIndex: 5)
         }
         .sheet(isPresented: self.$showingPostidentWebView) {
             // In a real app, this would be a WebView showing the Postident video identification process

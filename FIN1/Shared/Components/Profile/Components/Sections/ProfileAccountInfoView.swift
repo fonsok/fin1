@@ -6,7 +6,7 @@ struct ProfileAccountInfoView: View {
     @State private var isExpanded = false
 
     var body: some View {
-        VStack(spacing: ResponsiveDesign.spacing(16)) {
+        VStack(spacing: ResponsiveDesign.spacing(0)) {
             Button(action: {
                 withAnimation(.easeInOut(duration: 0.2)) {
                     self.isExpanded.toggle()
@@ -16,71 +16,85 @@ struct ProfileAccountInfoView: View {
                     Text("Account Information")
                         .font(ResponsiveDesign.headlineFont())
                         .foregroundColor(AppTheme.fontColor)
-                    Spacer()
+                    Spacer(minLength: 0)
                     Image(systemName: self.isExpanded ? "chevron.up" : "chevron.down")
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.6))
                 }
+                .padding(.bottom, ResponsiveDesign.spacing(12))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
             }
-            .buttonStyle(PlainButtonStyle())
+            .buttonStyle(.plain)
 
             if self.isExpanded {
-                VStack(spacing: ResponsiveDesign.spacing(12)) {
-                    SettingsRow(
-                        title: "Edit Profile",
-                        subtitle: "Update your account information",
-                        icon: "person.circle.fill",
-                        color: AppTheme.accentLightBlue,
-                        action: self.onEditProfile
-                    )
+                ProfileSectionDivider()
+
+                SettingsRow(
+                    title: "Edit Profile",
+                    subtitle: "Update your account information",
+                    icon: "person.circle.fill",
+                    color: AppTheme.accentLightBlue,
+                    action: self.onEditProfile
+                )
+
+                ProfileSectionDivider()
+
+                InfoRow(
+                    title: "Account Type",
+                    value: self.user?.role.displayName ?? "N/A",
+                    icon: "person.badge.shield.checkmark.fill",
+                    iconColor: AppTheme.accentLightBlue
+                )
+
+                ProfileSectionDivider()
+
+                InfoRow(
+                    title: "Member Since",
+                    value: self.formatMemberSinceDate(self.user?.createdAt),
+                    icon: "calendar.badge.clock",
+                    iconColor: AppTheme.accentLightBlue
+                )
+
+                ProfileSectionDivider()
+
+                InfoRow(
+                    title: "Last Login",
+                    value: self.formatLastLoginDate(self.user?.lastLoginDate),
+                    icon: "clock.arrow.circlepath",
+                    iconColor: AppTheme.accentLightBlue
+                )
+
+                if let employmentStatus = user?.employmentStatus {
+                    ProfileSectionDivider()
 
                     InfoRow(
-                        title: "Account Type",
-                        value: self.user?.role.displayName ?? "N/A",
-                        icon: "person.badge.shield.checkmark.fill",
-                        iconColor: AppTheme.accentLightBlue
-                    )
-
-                    InfoRow(
-                        title: "Member Since",
-                        value: self.formatMemberSinceDate(self.user?.createdAt),
-                        icon: "calendar.badge.clock",
-                        iconColor: AppTheme.accentLightBlue
-                    )
-
-                    InfoRow(
-                        title: "Last Login",
-                        value: self.formatLastLoginDate(self.user?.lastLoginDate),
-                        icon: "clock.arrow.circlepath",
-                        iconColor: AppTheme.accentLightBlue
-                    )
-
-                    if let employmentStatus = user?.employmentStatus {
-                        InfoRow(
-                            title: "Employment",
-                            value: employmentStatus.displayName,
-                            icon: "briefcase.fill",
-                            iconColor: AppTheme.accentLightBlue
-                        )
-                    }
-
-                    if let income = user?.income, income > 0 {
-                        InfoRow(
-                            title: "Annual Income",
-                            value: self.formatAnnualIncome(income),
-                            icon: "dollarsign.circle.fill",
-                            iconColor: AppTheme.accentLightBlue
-                        )
-                    }
-
-                    InfoRow(
-                        title: "Risk Tolerance",
-                        value: self.user?.riskToleranceDescription ?? "N/A",
-                        icon: "chart.line.uptrend.xyaxis",
+                        title: "Employment",
+                        value: employmentStatus.displayName,
+                        icon: "briefcase.fill",
                         iconColor: AppTheme.accentLightBlue
                     )
                 }
-                .transition(.opacity.combined(with: .move(edge: .top)))
+
+                if let income = user?.income, income > 0 {
+                    ProfileSectionDivider()
+
+                    InfoRow(
+                        title: "Annual Income",
+                        value: self.formatAnnualIncome(income),
+                        icon: "dollarsign.circle.fill",
+                        iconColor: AppTheme.accentLightBlue
+                    )
+                }
+
+                ProfileSectionDivider()
+
+                InfoRow(
+                    title: "Risk Tolerance",
+                    value: self.user?.riskToleranceDescription ?? "N/A",
+                    icon: "chart.line.uptrend.xyaxis",
+                    iconColor: AppTheme.accentLightBlue
+                )
             }
         }
     }
@@ -138,9 +152,8 @@ struct InfoRow: View {
 
             Spacer()
         }
-        .padding(ResponsiveDesign.spacing(12))
-        .background(AppTheme.systemTertiaryBackground)
-        .cornerRadius(ResponsiveDesign.spacing(8))
+        .padding(.horizontal, ResponsiveDesign.spacing(12))
+        .padding(.vertical, ResponsiveDesign.spacing(12))
     }
 }
 

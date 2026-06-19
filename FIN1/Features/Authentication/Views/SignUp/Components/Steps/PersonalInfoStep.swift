@@ -18,7 +18,7 @@ struct PersonalInfoStep: View {
     @Binding var countryOfBirth: String
     
     var body: some View {
-        VStack(spacing: ResponsiveDesign.spacing(20)) {
+        SignUpFormStepList {
             VStack(spacing: ResponsiveDesign.spacing(4)) {
                 Text("Persönliche Daten")
                     .font(ResponsiveDesign.headlineFont())

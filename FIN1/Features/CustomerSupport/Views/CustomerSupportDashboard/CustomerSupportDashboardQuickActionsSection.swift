@@ -144,8 +144,6 @@ struct CustomerSupportDashboardQuickActionsSection: View {
                 }
             }
         }
-        .padding()
-        .background(AppTheme.sectionBackground)
-        .cornerRadius(ResponsiveDesign.spacing(12))
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

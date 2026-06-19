@@ -73,8 +73,7 @@ struct InvestorDiscoveryView: View {
 
     private var investorDiscoveryContent: some View {
         ScrollView {
-            VStack(spacing: ResponsiveDesign.spacing(24)) {
-                // Search Section
+            StripedStepList {
                 SearchSection(
                     searchText: self.$searchText,
                     onSearchChange: { newValue in
@@ -85,12 +84,8 @@ struct InvestorDiscoveryView: View {
                         self.viewModel.clearSearch()
                     }
                 )
+                .stripedListSection(stripeIndex: 0)
 
-                Divider()
-                    .background(AppTheme.fontColor.opacity(0.5))
-                    .padding(.vertical, ResponsiveDesign.spacing(8))
-
-                // Saved Filters Section
                 SavedFiltersSection(
                     savedFilters: self.savedFiltersManager.savedFilters,
                     activeFilters: self.activeFilters,
@@ -104,12 +99,8 @@ struct InvestorDiscoveryView: View {
                     },
                     currentlyAppliedFilterID: self.viewModel.getAppliedFilterID()
                 )
+                .stripedListSection(stripeIndex: 1)
 
-                Divider()
-                    .background(AppTheme.fontColor.opacity(0.5))
-                    .padding(.vertical, ResponsiveDesign.spacing(8))
-
-                // Active Filters Section
                 if !self.activeFilters.isEmpty {
                     ActiveFiltersSection(
                         activeFilters: self.activeFilters,
@@ -122,13 +113,9 @@ struct InvestorDiscoveryView: View {
                             self.viewModel.handleRemoveFilter(filterType, from: &self.activeFilters)
                         }
                     )
-
-                    Divider()
-                        .background(AppTheme.fontColor.opacity(0.5))
-                        .padding(.vertical, ResponsiveDesign.spacing(8))
+                    .stripedListSection(stripeIndex: 2)
                 }
 
-                // Individual Filters Section
                 IndividualFiltersSection(
                     activeFilters: self.activeFilters,
                     onAddFilter: { filter in
@@ -141,30 +128,24 @@ struct InvestorDiscoveryView: View {
                         self.showMoreFilters = true
                     }
                 )
+                .stripedListSection(stripeIndex: self.activeFilters.isEmpty ? 2 : 3)
 
-                // Hitlist Table Section - Show results when filters are active OR when search query exists
-                if !self.activeFilters.isEmpty || !self.viewModel.searchQuery.isEmpty {
-                    Divider()
-                        .background(AppTheme.fontColor.opacity(0.5))
-                        .padding(.vertical, ResponsiveDesign.spacing(8))
-                }
-
-                // Hitlist Table Section - Show results when filters are active OR when search query exists
                 if !self.activeFilters.isEmpty || !self.viewModel.searchQuery.isEmpty {
                     HitlistTableSection(
-                        traders: self.viewModel.filteredTraders(by: self.activeFilters, searchQuery: self.viewModel.searchQuery),
+                        traders: self.viewModel.filteredTraders(
+                            by: self.activeFilters,
+                            searchQuery: self.viewModel.searchQuery
+                        ),
                         activeFilters: self.activeFilters,
                         appServices: self.appServices,
-                        viewModel: self.viewModel
+                        viewModel: self.viewModel,
+                        startStripeIndex: self.activeFilters.isEmpty ? 3 : 4
                     )
-                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
-            .padding(.horizontal, ResponsiveDesign.horizontalPadding())
-            .padding(.top, ResponsiveDesign.spacing(8))
             .padding(.bottom, ResponsiveDesign.spacing(16))
         }
-        .scrollDismissesKeyboard(.interactively) // iOS 16+ native keyboard dismissal - no gesture conflicts
+        .scrollDismissesKeyboard(.interactively)
         .sheet(isPresented: self.$showMoreFilters) {
             AdvancedFiltersView()
         }
@@ -184,6 +165,7 @@ struct HitlistTableSection: View {
     let traders: [InvestorTrader]
     let appServices: AppServices
     let viewModel: InvestorDiscoveryViewModel
+    let startStripeIndex: Int
     @State private var selectedTraderID: TraderIDItem?
     @State private var watchlistTick: Int = 0
     @State private var showConfirmation: Bool = false
@@ -197,16 +179,18 @@ struct HitlistTableSection: View {
         traders: [InvestorTrader],
         activeFilters: [IndividualFilterCriteria],
         appServices: AppServices,
-        viewModel: InvestorDiscoveryViewModel
+        viewModel: InvestorDiscoveryViewModel,
+        startStripeIndex: Int
     ) {
         self.traders = traders
         self.appServices = appServices
         self.viewModel = viewModel
+        self.startStripeIndex = startStripeIndex
         // Note: activeFilters parameter kept for API consistency but not used
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(16)) {
+        VStack(spacing: ResponsiveDesign.spacing(0)) {
             HStack {
                 Text("Results (\(self.traders.count))")
                     .font(ResponsiveDesign.headlineFont())
@@ -214,34 +198,28 @@ struct HitlistTableSection: View {
                     .foregroundColor(AppTheme.fontColor)
                 Spacer()
             }
+            .stripedListSection(stripeIndex: self.startStripeIndex)
 
             if self.traders.isEmpty {
-                VStack(spacing: ResponsiveDesign.spacing(8)) {
-                    Text("No traders match the current filter criteria")
-                        .font(ResponsiveDesign.bodyFont())
-                        .foregroundColor(AppTheme.tertiaryText)
-                        .multilineTextAlignment(.center)
-                }
-                .frame(maxWidth: .infinity)
-                .responsivePadding()
-                .background(AppTheme.systemTertiaryBackground)
-                .cornerRadius(ResponsiveDesign.spacing(8))
+                Text("No traders match the current filter criteria")
+                    .font(ResponsiveDesign.bodyFont())
+                    .foregroundColor(AppTheme.tertiaryText)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .stripedListSection(stripeIndex: self.startStripeIndex + 1)
             } else {
-                // Use the same table format as "Top Recent Trades"
                 ScrollView(.horizontal, showsIndicators: false) {
                     DataTable.traderPerformanceTable(
                         rows: TableDataFactory.createTraderPerformanceRows(
                             from: self.viewModel.createTraderPerformanceData(from: self.traders),
                             onTraderTap: { username in
                                 print("📌 [Hitlist] onTraderTap username=\(username)")
-                                // Find the trader ID from the username
                                 if let traderID = viewModel.getTraderID(for: username, traderDataService: appServices.traderDataService) {
                                     self.selectedTraderID = TraderIDItem(id: traderID)
                                 }
                             },
                             onWatchlistToggle: { username, isWatched in
                                 print("⭐️ [Hitlist] onWatchlistToggle username=\(username), isWatched(next)=\(isWatched)")
-                                // Find the trader ID from the username
                                 if let traderID = viewModel.getTraderID(for: username, traderDataService: appServices.traderDataService) {
                                     self.busyUsernames.insert(username)
                                     self.handleWatchlistToggle(traderID: traderID, isWatched: isWatched, username: username)
@@ -254,7 +232,8 @@ struct HitlistTableSection: View {
                             busyStatus: self.viewModel.getBusyStatus(from: self.busyUsernames)
                         ),
                         showTraderColumn: true,
-                        isInteractive: false
+                        isInteractive: false,
+                        layout: .flatList
                     )
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }

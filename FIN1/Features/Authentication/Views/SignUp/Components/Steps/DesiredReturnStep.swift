@@ -7,21 +7,35 @@ struct DesiredReturnStep: View {
     @State private var showLearningPage = false
 
     var body: some View {
-        VStack(spacing: ResponsiveDesign.spacing(24)) {
+        SignUpStepList {
             self.knowledgeTestSection
 
+            self.desiredReturnSection
+                .signUpListSection(stripeIndex: 1)
+
+            self.lossToleranceSection
+                .signUpListSection(stripeIndex: 2)
+        }
+        .sheet(isPresented: self.$showLearningPage) {
+            LeveragedProductsLearningView()
+        }
+    }
+
+    private var desiredReturnSection: some View {
+        VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(16)) {
             Text("Gewinnziel")
                 .font(ResponsiveDesign.headlineFont())
                 .fontWeight(.bold)
                 .foregroundColor(AppTheme.fontColor)
-                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
             Text("Welche Renditeerwartung haben Sie an Ihren Anlagen?")
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.8))
-                .multilineTextAlignment(.center)
+                .multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
                 Text("Gewünschte Rendite:")
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
@@ -47,46 +61,42 @@ struct DesiredReturnStep: View {
                     .cornerRadius(ResponsiveDesign.spacing(12))
                 }
             }
-
-            VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(16)) {
-                Text("Verlusttragfähigkeit & Risikobereitschaft")
-                    .font(ResponsiveDesign.headlineFont())
-                    .fontWeight(.semibold)
-                    .foregroundColor(AppTheme.fontColor)
-
-                Text(
-                    "Sind Sie sich bewusst, dass die hier gehandelten Hebelprodukte ein Totalverlustrisiko bergen?"
-                )
-                .font(ResponsiveDesign.bodyFont())
-                .foregroundColor(AppTheme.fontColor.opacity(0.9))
-                .multilineTextAlignment(.leading)
-
-                VStack(spacing: ResponsiveDesign.spacing(8)) {
-                    self.confirmationOption(
-                        label: "Ja",
-                        isSelected: self.leveragedProductsTotalLossRiskAcknowledged == true,
-                        action: { self.leveragedProductsTotalLossRiskAcknowledged = true }
-                    )
-                    self.confirmationOption(
-                        label: "Nein",
-                        isSelected: self.leveragedProductsTotalLossRiskAcknowledged == false,
-                        action: { self.leveragedProductsTotalLossRiskAcknowledged = false }
-                    )
-                }
-
-                if self.leveragedProductsTotalLossRiskAcknowledged == nil {
-                    Text("Bitte wählen Sie „Ja“ oder „Nein“.")
-                        .font(ResponsiveDesign.captionFont())
-                        .foregroundColor(AppTheme.fontColor.opacity(0.6))
-                        .multilineTextAlignment(.leading)
-                }
-            }
-            .padding()
-            .background(AppTheme.sectionBackground)
-            .cornerRadius(ResponsiveDesign.spacing(12))
         }
-        .sheet(isPresented: self.$showLearningPage) {
-            LeveragedProductsLearningView()
+    }
+
+    private var lossToleranceSection: some View {
+        VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(16)) {
+            Text("Verlusttragfähigkeit & Risikobereitschaft")
+                .font(ResponsiveDesign.headlineFont())
+                .fontWeight(.semibold)
+                .foregroundColor(AppTheme.fontColor)
+
+            Text(
+                "Sind Sie sich bewusst, dass die hier gehandelten Hebelprodukte ein Totalverlustrisiko bergen?"
+            )
+            .font(ResponsiveDesign.bodyFont())
+            .foregroundColor(AppTheme.fontColor.opacity(0.9))
+            .multilineTextAlignment(.leading)
+
+            VStack(spacing: ResponsiveDesign.spacing(8)) {
+                self.confirmationOption(
+                    label: "Ja",
+                    isSelected: self.leveragedProductsTotalLossRiskAcknowledged == true,
+                    action: { self.leveragedProductsTotalLossRiskAcknowledged = true }
+                )
+                self.confirmationOption(
+                    label: "Nein",
+                    isSelected: self.leveragedProductsTotalLossRiskAcknowledged == false,
+                    action: { self.leveragedProductsTotalLossRiskAcknowledged = false }
+                )
+            }
+
+            if self.leveragedProductsTotalLossRiskAcknowledged == nil {
+                Text("Bitte wählen Sie „Ja“ oder „Nein“.")
+                    .font(ResponsiveDesign.captionFont())
+                    .foregroundColor(AppTheme.fontColor.opacity(0.6))
+                    .multilineTextAlignment(.leading)
+            }
         }
     }
 
@@ -108,9 +118,7 @@ struct DesiredReturnStep: View {
                 self.knowledgeTestQuestion(question)
             }
         }
-        .padding()
-        .background(AppTheme.sectionBackground)
-        .cornerRadius(ResponsiveDesign.spacing(12))
+        .signUpListSection(stripeIndex: 0)
     }
 
     private func knowledgeTestQuestion(_ question: LeveragedProductsKnowledgeQuestion) -> some View {
@@ -208,29 +216,27 @@ struct DesiredReturnStep: View {
             answers[questionId] = option.id
             self.leveragedProductsKnowledgeTestAnswers = answers
         } label: {
-            HStack(alignment: .top, spacing: ResponsiveDesign.spacing(12)) {
-                InteractiveElement(isSelected: isSelected, type: .radioButton)
-                Text(option.label)
-                    .font(ResponsiveDesign.bodyFont())
-                    .foregroundColor(AppTheme.fontColor)
-                    .multilineTextAlignment(.leading)
-                Spacer(minLength: 0)
-            }
+            self.radioOptionRow(label: option.label, isSelected: isSelected)
         }
         .buttonStyle(PlainButtonStyle())
     }
 
     private func confirmationOption(label: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: ResponsiveDesign.spacing(12)) {
-                InteractiveElement(isSelected: isSelected, type: .radioButton)
-                Text(label)
-                    .font(ResponsiveDesign.bodyFont())
-                    .foregroundColor(AppTheme.fontColor)
-                Spacer()
-            }
+            self.radioOptionRow(label: label, isSelected: isSelected)
         }
         .buttonStyle(PlainButtonStyle())
+    }
+
+    private func radioOptionRow(label: String, isSelected: Bool) -> some View {
+        HStack(spacing: ResponsiveDesign.spacing(12)) {
+            InteractiveElement(isSelected: isSelected, type: .radioButton)
+            Text(label)
+                .font(ResponsiveDesign.bodyFont())
+                .foregroundColor(AppTheme.fontColor)
+                .multilineTextAlignment(.leading)
+            Spacer()
+        }
     }
 }
 

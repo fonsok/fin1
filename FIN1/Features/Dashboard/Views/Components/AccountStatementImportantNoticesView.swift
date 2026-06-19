@@ -21,10 +21,7 @@ struct AccountStatementImportantNoticesView: View {
             self.noticeSection(title: self.germanTitle, paragraphs: self.germanParagraphs)
             self.noticeSection(title: self.englishTitle, paragraphs: self.englishParagraphs)
         }
-        .padding(ResponsiveDesign.spacing(20))
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(AppTheme.sectionBackground.opacity(0.3))
-        .cornerRadius(ResponsiveDesign.spacing(16))
         .task {
             let termsService = self.services.termsContentService
             let provider = LegalSnippetProvider(termsContentService: termsService)

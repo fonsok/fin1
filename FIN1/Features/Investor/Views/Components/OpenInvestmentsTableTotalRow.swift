@@ -60,7 +60,7 @@ struct OpenInvestmentsTableTotalRow: View {
         .frame(minHeight: 44)
         .padding(.horizontal, OpenInvestmentsTableLayout.cellHorizontalPadding)
         .padding(.vertical, OpenInvestmentsTableLayout.cellVerticalPadding)
-        .background(self.forMeasurement ? Color.clear : AppTheme.screenBackground.opacity(0.2))
+        .background(self.forMeasurement ? Color.clear : InvestmentsTableStyle.headerBandBackground)
     }
 
     private func cellFrame(_ key: String, _ alignment: Alignment) -> some ViewModifier {

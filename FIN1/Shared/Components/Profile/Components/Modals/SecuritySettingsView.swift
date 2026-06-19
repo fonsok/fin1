@@ -21,16 +21,28 @@ struct SecuritySettingsView: View {
                     .ignoresSafeArea()
 
                 ScrollView {
-                    VStack(spacing: ResponsiveDesign.spacing(24)) {
+                    StripedStepList {
                         self.headerSection
+                            .stripedListSection(stripeIndex: 0)
+
                         self.biometricSection
+                            .stripedListSection(stripeIndex: 1)
+
                         self.twoFactorSection
+                            .stripedListSection(stripeIndex: 2)
+
                         self.passwordSection
+                            .stripedListSection(stripeIndex: 3)
+
                         self.sessionSecuritySection
+                            .stripedListSection(stripeIndex: 4)
+
                         self.securityActivitySection
+                            .stripedListSection(stripeIndex: 5)
+
                         self.quickActionsSection
+                            .stripedListSection(stripeIndex: 6)
                     }
-                    .padding(.horizontal, ResponsiveDesign.spacing(16))
                     .padding(.bottom, ResponsiveDesign.spacing(16))
                 }
             }
@@ -91,30 +103,41 @@ struct SecuritySettingsView: View {
                 .font(ResponsiveDesign.headlineFont())
                 .fontWeight(.bold)
                 .foregroundColor(AppTheme.fontColor)
+                .multilineTextAlignment(.center)
 
             Text("Protect your account with advanced security features")
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
                 .multilineTextAlignment(.center)
         }
-        .padding(.top, ResponsiveDesign.spacing(16))
+        .frame(maxWidth: .infinity, alignment: .center)
     }
 
     // MARK: - Biometric Section
 
     private var biometricSection: some View {
-        self.securitySection(title: "Biometric Authentication", icon: self.viewModel.biometricType.iconName, color: AppTheme.accentGreen) {
-            VStack(spacing: ResponsiveDesign.spacing(16)) {
-                if self.viewModel.isBiometricAvailable {
-                    self.biometricToggle
-                    SecurityToggleRow(
-                        title: "Require Password on Launch",
-                        subtitle: "Always require password when opening the app",
-                        isEnabled: self.$viewModel.requirePasswordOnLaunch
-                    )
-                } else {
-                    self.biometricUnavailableMessage
-                }
+        VStack(spacing: ResponsiveDesign.spacing(0)) {
+            ProfileIconSectionTitle(
+                title: "Biometric Authentication",
+                icon: self.viewModel.biometricType.iconName,
+                color: AppTheme.accentGreen
+            )
+
+            if self.viewModel.isBiometricAvailable {
+                ProfileSectionDivider()
+                self.biometricToggle
+                    .padding(.vertical, ResponsiveDesign.spacing(12))
+                ProfileSectionDivider()
+                SecurityToggleRow(
+                    title: "Require Password on Launch",
+                    subtitle: "Always require password when opening the app",
+                    isEnabled: self.$viewModel.requirePasswordOnLaunch
+                )
+                .padding(.vertical, ResponsiveDesign.spacing(12))
+            } else {
+                ProfileSectionDivider()
+                self.biometricUnavailableMessage
+                    .padding(.vertical, ResponsiveDesign.spacing(12))
             }
         }
     }
@@ -152,30 +175,40 @@ struct SecuritySettingsView: View {
     // MARK: - Two-Factor Section
 
     private var twoFactorSection: some View {
-        self.securitySection(title: "Two-Factor Authentication", icon: "shield.checkered", color: AppTheme.accentLightBlue) {
-            VStack(spacing: ResponsiveDesign.spacing(16)) {
-                SecurityToggleRow(
-                    title: "Enable 2FA",
-                    subtitle: "Add an extra layer of security to your account",
-                    isEnabled: self.$viewModel.twoFactorEnabled
-                )
-                if self.viewModel.twoFactorEnabled {
-                    self.twoFactorMethodPicker
-                    self.configure2FAButton
-                }
+        VStack(spacing: ResponsiveDesign.spacing(0)) {
+            ProfileIconSectionTitle(title: "Two-Factor Authentication", icon: "shield.checkered", color: AppTheme.accentLightBlue)
+            ProfileSectionDivider()
+            SecurityToggleRow(
+                title: "Enable 2FA",
+                subtitle: "Add an extra layer of security to your account",
+                isEnabled: self.$viewModel.twoFactorEnabled
+            )
+            .padding(.vertical, ResponsiveDesign.spacing(12))
+
+            if self.viewModel.twoFactorEnabled {
+                ProfileSectionDivider()
+                self.twoFactorMethodPicker
+                ProfileSectionDivider()
+                self.configure2FAButton
             }
         }
     }
 
     private var twoFactorMethodPicker: some View {
-        VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
+        VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(0)) {
             Text("Verification Method")
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
-            ForEach(TwoFactorMethod.allCases, id: \.self) { method in
+                .padding(.vertical, ResponsiveDesign.spacing(8))
+
+            ForEach(Array(TwoFactorMethod.allCases.enumerated()), id: \.element) { index, method in
+                if index > 0 {
+                    ProfileSectionDivider()
+                }
                 TwoFactorMethodRow(method: method, isSelected: self.viewModel.twoFactorMethod == method) {
                     self.viewModel.twoFactorMethod = method
                 }
+                .padding(.vertical, ResponsiveDesign.spacing(8))
             }
         }
     }
@@ -189,20 +222,23 @@ struct SecuritySettingsView: View {
                 Image(systemName: "chevron.right").font(ResponsiveDesign.captionFont())
             }
             .foregroundColor(AppTheme.accentLightBlue)
-            .padding(ResponsiveDesign.spacing(12))
-            .background(AppTheme.systemTertiaryBackground)
-            .cornerRadius(ResponsiveDesign.spacing(8))
+            .padding(.vertical, ResponsiveDesign.spacing(12))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Password Section
 
     private var passwordSection: some View {
-        self.securitySection(title: "Password", icon: "key.fill", color: AppTheme.accentOrange) {
-            VStack(spacing: ResponsiveDesign.spacing(12)) {
-                self.changePasswordButton
-                self.autoLockPicker
-            }
+        VStack(spacing: ResponsiveDesign.spacing(0)) {
+            ProfileIconSectionTitle(title: "Password", icon: "key.fill", color: AppTheme.accentOrange)
+            ProfileSectionDivider()
+            self.changePasswordButton
+            ProfileSectionDivider()
+            self.autoLockPicker
+                .padding(.vertical, ResponsiveDesign.spacing(12))
         }
     }
 
@@ -215,10 +251,11 @@ struct SecuritySettingsView: View {
                 Image(systemName: "chevron.right").font(ResponsiveDesign.captionFont())
             }
             .foregroundColor(AppTheme.fontColor)
-            .padding(ResponsiveDesign.spacing(12))
-            .background(AppTheme.systemTertiaryBackground)
-            .cornerRadius(ResponsiveDesign.spacing(8))
+            .padding(.vertical, ResponsiveDesign.spacing(12))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
     }
 
     private var autoLockPicker: some View {
@@ -237,20 +274,24 @@ struct SecuritySettingsView: View {
     // MARK: - Session Security Section
 
     private var sessionSecuritySection: some View {
-        self.securitySection(title: "Session Security", icon: "desktopcomputer", color: AppTheme.accentRed) {
-            VStack(spacing: ResponsiveDesign.spacing(16)) {
-                SecurityToggleRow(
-                    title: "Login Alerts",
-                    subtitle: "Get notified when your account is accessed",
-                    isEnabled: self.$viewModel.loginAlertsEnabled
-                )
-                SecurityToggleRow(
-                    title: "Remember This Device",
-                    subtitle: "Skip 2FA on trusted devices",
-                    isEnabled: self.$viewModel.rememberDevice
-                )
-                self.signOutAllButton
-            }
+        VStack(spacing: ResponsiveDesign.spacing(0)) {
+            ProfileIconSectionTitle(title: "Session Security", icon: "desktopcomputer", color: AppTheme.accentRed)
+            ProfileSectionDivider()
+            SecurityToggleRow(
+                title: "Login Alerts",
+                subtitle: "Get notified when your account is accessed",
+                isEnabled: self.$viewModel.loginAlertsEnabled
+            )
+            .padding(.vertical, ResponsiveDesign.spacing(12))
+            ProfileSectionDivider()
+            SecurityToggleRow(
+                title: "Remember This Device",
+                subtitle: "Skip 2FA on trusted devices",
+                isEnabled: self.$viewModel.rememberDevice
+            )
+            .padding(.vertical, ResponsiveDesign.spacing(12))
+            ProfileSectionDivider()
+            self.signOutAllButton
         }
     }
 
@@ -263,25 +304,45 @@ struct SecuritySettingsView: View {
                 Image(systemName: "chevron.right").font(ResponsiveDesign.captionFont())
             }
             .foregroundColor(AppTheme.accentRed)
-            .padding(ResponsiveDesign.spacing(12))
-            .background(AppTheme.systemTertiaryBackground)
-            .cornerRadius(ResponsiveDesign.spacing(8))
+            .padding(.vertical, ResponsiveDesign.spacing(12))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Security Activity Section
 
     private var securityActivitySection: some View {
-        self.securitySection(title: "Recent Security Activity", icon: "clock.fill", color: AppTheme.accentLightBlue) {
-            VStack(spacing: ResponsiveDesign.spacing(12)) {
-                ForEach(self.viewModel.recentSecurityEvents.prefix(3)) { SecurityEventRow(event: $0) }
-                Button(action: { self.viewModel.showSecurityActivityLog = true }) {
-                    Text("View All Activity")
-                        .font(ResponsiveDesign.bodyFont())
-                        .fontWeight(.medium)
-                        .foregroundColor(AppTheme.accentLightBlue)
+        VStack(spacing: ResponsiveDesign.spacing(0)) {
+            ProfileIconSectionTitle(title: "Recent Security Activity", icon: "clock.fill", color: AppTheme.accentLightBlue)
+
+            if self.viewModel.recentSecurityEvents.isEmpty {
+                ProfileSectionDivider()
+                Text("No recent activity")
+                    .font(ResponsiveDesign.bodyFont())
+                    .foregroundColor(AppTheme.fontColor.opacity(0.6))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, ResponsiveDesign.spacing(12))
+            } else {
+                ForEach(Array(self.viewModel.recentSecurityEvents.prefix(3).enumerated()), id: \.element.id) { index, event in
+                    ProfileSectionDivider()
+                    SecurityEventRow(event: event, flatStyle: true)
+                        .padding(.vertical, ResponsiveDesign.spacing(8))
                 }
             }
+
+            ProfileSectionDivider()
+            Button(action: { self.viewModel.showSecurityActivityLog = true }) {
+                Text("View All Activity")
+                    .font(ResponsiveDesign.bodyFont())
+                    .fontWeight(.medium)
+                    .foregroundColor(AppTheme.accentLightBlue)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, ResponsiveDesign.spacing(12))
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
         }
     }
 
@@ -292,29 +353,14 @@ struct SecuritySettingsView: View {
             HStack {
                 Image(systemName: "arrow.clockwise").font(ResponsiveDesign.bodyFont())
                 Text("Reset to Defaults").font(ResponsiveDesign.bodyFont()).fontWeight(.medium)
-            }
-            .foregroundColor(AppTheme.accentLightBlue)
-            .padding()
-            .frame(maxWidth: .infinity)
-            .background(AppTheme.sectionBackground)
-            .cornerRadius(ResponsiveDesign.spacing(8))
-        }
-    }
-
-    // MARK: - Helper Methods
-
-    private func securitySection<Content: View>(title: String, icon: String, color: Color, @ViewBuilder content: () -> Content) -> some View {
-        VStack(spacing: ResponsiveDesign.spacing(16)) {
-            HStack {
-                Image(systemName: icon).font(ResponsiveDesign.headlineFont()).foregroundColor(color).frame(width: 24)
-                Text(title).font(ResponsiveDesign.headlineFont()).foregroundColor(AppTheme.fontColor)
                 Spacer()
             }
-            content()
+            .foregroundColor(AppTheme.accentLightBlue)
+            .padding(.vertical, ResponsiveDesign.spacing(4))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
         }
-        .padding(ResponsiveDesign.spacing(16))
-        .background(AppTheme.sectionBackground)
-        .cornerRadius(ResponsiveDesign.spacing(12))
+        .buttonStyle(.plain)
     }
 }
 

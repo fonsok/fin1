@@ -58,22 +58,21 @@ private struct NotificationsInvestorContentView: View {
 
                     // Notifications List
                     ScrollView {
-                        LazyVStack(spacing: ResponsiveDesign.spacing(16)) {
-                            ForEach(self.filteredNotifications) { notification in
+                        StripedStepList {
+                            ForEach(Array(self.filteredNotifications.enumerated()), id: \.element.id) { index, notification in
                                 NotificationCardView(
                                     notification: notification,
                                     notificationService: self.notificationService,
                                     userId: self.appServices.userService.currentUser?.id ?? "",
                                     customerSupportService: self.appServices.customerSupportService,
                                     satisfactionSurveyService: self.appServices.satisfactionSurveyService,
-                                    documentService: self.appServices.documentService
+                                    documentService: self.appServices.documentService,
+                                    rowStyle: .flatList
                                 )
+                                .stripedListSection(stripeIndex: index)
                             }
                         }
-                        .padding(.horizontal, ResponsiveDesign.spacing(16))
-                        .padding(.top, ResponsiveDesign.spacing(16))
                         .padding(.bottom, ResponsiveDesign.spacing(16))
-                        .scrollSection()
                     }
                 }
             }

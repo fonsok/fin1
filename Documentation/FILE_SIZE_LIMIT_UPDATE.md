@@ -55,7 +55,8 @@ Some files currently exceed the 400-line limit. These should be refactored:
 - `ConfigurationSettingsView.swift` (443 lines)
 - `InvestmentsViewModel.swift` (408 lines)
 - `Investment.swift` (422 lines)
-- `CompletedInvestmentsTable.swift` (461 lines)
+
+**Resolved (split):** `CompletedInvestmentsTable` was refactored into `CompletedInvestmentsTable.swift` (~122 lines) plus `CompletedInvestmentsTableDataRow`, `CompletedInvestmentsTableHeaderRow`, `CompletedInvestmentsTableLayout`, `CompletedInvestmentsTableRowModel` (2026-06).
 
 ## Refactoring Strategy
 

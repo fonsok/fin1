@@ -9,7 +9,7 @@ struct WelcomePage: View {
             Spacer()
 
             // Success icon
-            VStack(spacing: ResponsiveDesign.spacing(24)) {
+            SignUpStepList {
                 Image(systemName: "checkmark.circle.fill")
                     .font(ResponsiveDesign.scaledSystemFont(size: 80))
                     .foregroundColor(AppTheme.accentGreen)

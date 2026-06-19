@@ -35,9 +35,7 @@ struct OpenInvestmentsTableDataRow: View {
         .padding(.horizontal, OpenInvestmentsTableLayout.cellHorizontalPadding)
         .padding(.vertical, OpenInvestmentsTableLayout.cellVerticalPadding)
         .background(
-            self.forMeasurement ? Color.clear : (
-                self.isEven ? AppTheme.screenBackground.opacity(0.3) : AppTheme.screenBackground.opacity(0.1)
-            )
+            self.forMeasurement ? Color.clear : InvestmentsTableStyle.dataRowBackground(isEven: self.isEven)
         )
     }
 

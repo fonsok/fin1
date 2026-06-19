@@ -22,15 +22,25 @@ struct PrivacySettingsView: View {
                     .ignoresSafeArea()
 
                 ScrollView {
-                    VStack(spacing: ResponsiveDesign.spacing(24)) {
+                    StripedStepList {
                         self.headerSection
+                            .stripedListSection(stripeIndex: 0)
+
                         self.dataCollectionSection
+                            .stripedListSection(stripeIndex: 1)
+
                         self.dataVisibilitySection
+                            .stripedListSection(stripeIndex: 2)
+
                         self.communicationSection
+                            .stripedListSection(stripeIndex: 3)
+
                         self.dataManagementSection
+                            .stripedListSection(stripeIndex: 4)
+
                         self.quickActionsSection
+                            .stripedListSection(stripeIndex: 5)
                     }
-                    .padding(.horizontal, ResponsiveDesign.spacing(16))
                     .padding(.bottom, ResponsiveDesign.spacing(16))
                 }
             }
@@ -89,149 +99,134 @@ struct PrivacySettingsView: View {
                 .font(ResponsiveDesign.headlineFont())
                 .fontWeight(.bold)
                 .foregroundColor(AppTheme.fontColor)
+                .multilineTextAlignment(.center)
             Text("Control how your data is collected and used")
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
                 .multilineTextAlignment(.center)
         }
-        .padding(.top, ResponsiveDesign.spacing(16))
+        .frame(maxWidth: .infinity, alignment: .center)
     }
 
     // MARK: - Data Collection Section
 
     private var dataCollectionSection: some View {
-        self.privacySection(title: "Data Collection", icon: "chart.bar.doc.horizontal.fill", color: AppTheme.accentLightBlue) {
-            VStack(spacing: ResponsiveDesign.spacing(16)) {
-                SettingsToggleRow(
-                    title: "Analytics",
-                    subtitle: "Help improve the app by sharing usage statistics",
-                    isEnabled: self.$viewModel.analyticsEnabled,
-                    tintColor: AppTheme.accentGreen
-                )
-                SettingsToggleRow(
-                    title: "Crash Reporting",
-                    subtitle: "Automatically send crash reports to help fix issues",
-                    isEnabled: self.$viewModel.crashReportingEnabled,
-                    tintColor: AppTheme.accentGreen
-                )
-                SettingsToggleRow(
-                    title: "Usage Data Sharing",
-                    subtitle: "Share anonymous usage data with our partners",
-                    isEnabled: self.$viewModel.usageDataSharingEnabled,
-                    tintColor: AppTheme.accentGreen
-                )
-                SettingsToggleRow(
-                    title: "Personalized Ads",
-                    subtitle: "Show ads based on your interests and activity",
-                    isEnabled: self.$viewModel.personalizedAdsEnabled,
-                    tintColor: AppTheme.accentGreen
-                )
-            }
+        VStack(spacing: ResponsiveDesign.spacing(0)) {
+            ProfileIconSectionTitle(
+                title: "Data Collection",
+                icon: "chart.bar.doc.horizontal.fill",
+                color: AppTheme.accentLightBlue
+            )
+            ProfileSectionDivider()
+            self.privacyToggle(
+                self.$viewModel.analyticsEnabled,
+                title: "Analytics",
+                subtitle: "Help improve the app by sharing usage statistics"
+            )
+            ProfileSectionDivider()
+            self.privacyToggle(
+                self.$viewModel.crashReportingEnabled,
+                title: "Crash Reporting",
+                subtitle: "Automatically send crash reports to help fix issues"
+            )
+            ProfileSectionDivider()
+            self.privacyToggle(
+                self.$viewModel.usageDataSharingEnabled,
+                title: "Usage Data Sharing",
+                subtitle: "Share anonymous usage data with our partners"
+            )
+            ProfileSectionDivider()
+            self.privacyToggle(
+                self.$viewModel.personalizedAdsEnabled,
+                title: "Personalized Ads",
+                subtitle: "Show ads based on your interests and activity"
+            )
         }
     }
 
     // MARK: - Data Visibility Section
 
     private var dataVisibilitySection: some View {
-        self.privacySection(title: "Data Visibility", icon: "eye.fill", color: AppTheme.accentOrange) {
-            VStack(spacing: ResponsiveDesign.spacing(16)) {
-                SettingsToggleRow(
-                    title: "Profile Visible to Traders",
-                    subtitle: "Allow traders to see your investor profile",
-                    isEnabled: self.$viewModel.profileVisibleToTraders,
-                    tintColor: AppTheme.accentGreen
-                )
-                SettingsToggleRow(
-                    title: "Investment History",
-                    subtitle: "Show your investment history to connected traders",
-                    isEnabled: self.$viewModel.investmentHistoryVisible,
-                    tintColor: AppTheme.accentGreen
-                )
-                SettingsToggleRow(
-                    title: "Performance Metrics",
-                    subtitle: "Display your investment performance publicly",
-                    isEnabled: self.$viewModel.performanceMetricsVisible,
-                    tintColor: AppTheme.accentGreen
-                )
-            }
+        VStack(spacing: ResponsiveDesign.spacing(0)) {
+            ProfileIconSectionTitle(title: "Data Visibility", icon: "eye.fill", color: AppTheme.accentOrange)
+            ProfileSectionDivider()
+            self.privacyToggle(
+                self.$viewModel.profileVisibleToTraders,
+                title: "Profile Visible to Traders",
+                subtitle: "Allow traders to see your investor profile"
+            )
+            ProfileSectionDivider()
+            self.privacyToggle(
+                self.$viewModel.investmentHistoryVisible,
+                title: "Investment History",
+                subtitle: "Show your investment history to connected traders"
+            )
+            ProfileSectionDivider()
+            self.privacyToggle(
+                self.$viewModel.performanceMetricsVisible,
+                title: "Performance Metrics",
+                subtitle: "Display your investment performance publicly"
+            )
         }
     }
 
     // MARK: - Communication Section
 
     private var communicationSection: some View {
-        self.privacySection(title: "Communication Preferences", icon: "envelope.fill", color: AppTheme.accentGreen) {
-            VStack(spacing: ResponsiveDesign.spacing(16)) {
-                SettingsToggleRow(
-                    title: "Marketing Emails",
-                    subtitle: "Receive promotional emails and offers",
-                    isEnabled: self.$viewModel.marketingEmailsEnabled,
-                    tintColor: AppTheme.accentGreen
-                )
-                SettingsToggleRow(
-                    title: "Third-Party Data Sharing",
-                    subtitle: "Allow sharing data with trusted partners",
-                    isEnabled: self.$viewModel.thirdPartyDataSharingEnabled,
-                    tintColor: AppTheme.accentGreen
-                )
-                SettingsToggleRow(
-                    title: "Newsletter",
-                    subtitle: "Receive our weekly investment newsletter",
-                    isEnabled: self.$viewModel.newsletterSubscribed,
-                    tintColor: AppTheme.accentGreen
-                )
-            }
+        VStack(spacing: ResponsiveDesign.spacing(0)) {
+            ProfileIconSectionTitle(title: "Communication Preferences", icon: "envelope.fill", color: AppTheme.accentGreen)
+            ProfileSectionDivider()
+            self.privacyToggle(
+                self.$viewModel.marketingEmailsEnabled,
+                title: "Marketing Emails",
+                subtitle: "Receive promotional emails and offers"
+            )
+            ProfileSectionDivider()
+            self.privacyToggle(
+                self.$viewModel.thirdPartyDataSharingEnabled,
+                title: "Third-Party Data Sharing",
+                subtitle: "Allow sharing data with trusted partners"
+            )
+            ProfileSectionDivider()
+            self.privacyToggle(
+                self.$viewModel.newsletterSubscribed,
+                title: "Newsletter",
+                subtitle: "Receive our weekly investment newsletter"
+            )
         }
     }
 
     // MARK: - Data Management Section
 
     private var dataManagementSection: some View {
-        self.privacySection(title: "Your Data Rights", icon: "doc.text.fill", color: AppTheme.accentRed) {
-            VStack(spacing: ResponsiveDesign.spacing(12)) {
-                self.dataActionButton(
-                    icon: "square.and.arrow.up.fill",
-                    title: "Export My Data",
-                    color: AppTheme.accentLightBlue,
-                    isLoading: self.viewModel.isExportingData
-                ) {
-                    self.viewModel.showDataExportConfirmation = true
-                }
-                self.dataActionButton(
-                    icon: "trash.fill",
-                    title: "Delete My Data",
-                    color: AppTheme.accentRed,
-                    isLoading: self.viewModel.isDeletingData
-                ) {
-                    self.viewModel.showDataDeletionConfirmation = true
-                }
-                Text("Under GDPR and CCPA, you have the right to access, export, and delete your personal data.")
-                    .font(ResponsiveDesign.captionFont())
-                    .foregroundColor(AppTheme.fontColor.opacity(0.6))
-                    .multilineTextAlignment(.center)
-                    .padding(.top, ResponsiveDesign.spacing(8))
+        VStack(spacing: ResponsiveDesign.spacing(0)) {
+            ProfileIconSectionTitle(title: "Your Data Rights", icon: "doc.text.fill", color: AppTheme.accentRed)
+            ProfileSectionDivider()
+            self.dataActionRow(
+                icon: "square.and.arrow.up.fill",
+                title: "Export My Data",
+                color: AppTheme.accentLightBlue,
+                isLoading: self.viewModel.isExportingData
+            ) {
+                self.viewModel.showDataExportConfirmation = true
             }
-        }
-    }
-
-    private func dataActionButton(icon: String, title: String, color: Color, isLoading: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack {
-                Image(systemName: icon).font(ResponsiveDesign.bodyFont())
-                Text(title).font(ResponsiveDesign.bodyFont()).fontWeight(.medium)
-                Spacer()
-                if isLoading {
-                    ProgressView().progressViewStyle(CircularProgressViewStyle()).scaleEffect(0.8)
-                } else {
-                    Image(systemName: "chevron.right").font(ResponsiveDesign.captionFont())
-                }
+            ProfileSectionDivider()
+            self.dataActionRow(
+                icon: "trash.fill",
+                title: "Delete My Data",
+                color: AppTheme.accentRed,
+                isLoading: self.viewModel.isDeletingData
+            ) {
+                self.viewModel.showDataDeletionConfirmation = true
             }
-            .foregroundColor(color)
-            .padding(ResponsiveDesign.spacing(12))
-            .background(AppTheme.systemTertiaryBackground)
-            .cornerRadius(ResponsiveDesign.spacing(8))
+            ProfileSectionDivider()
+            Text("Under GDPR and CCPA, you have the right to access, export, and delete your personal data.")
+                .font(ResponsiveDesign.captionFont())
+                .foregroundColor(AppTheme.fontColor.opacity(0.6))
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.vertical, ResponsiveDesign.spacing(12))
         }
-        .disabled(isLoading)
     }
 
     // MARK: - Quick Actions Section
@@ -241,29 +236,53 @@ struct PrivacySettingsView: View {
             HStack {
                 Image(systemName: "arrow.clockwise").font(ResponsiveDesign.bodyFont())
                 Text("Reset to Defaults").font(ResponsiveDesign.bodyFont()).fontWeight(.medium)
-            }
-            .foregroundColor(AppTheme.accentLightBlue)
-            .padding()
-            .frame(maxWidth: .infinity)
-            .background(AppTheme.sectionBackground)
-            .cornerRadius(ResponsiveDesign.spacing(8))
-        }
-    }
-
-    // MARK: - Helper Methods
-
-    private func privacySection<Content: View>(title: String, icon: String, color: Color, @ViewBuilder content: () -> Content) -> some View {
-        VStack(spacing: ResponsiveDesign.spacing(16)) {
-            HStack {
-                Image(systemName: icon).font(ResponsiveDesign.headlineFont()).foregroundColor(color).frame(width: 24)
-                Text(title).font(ResponsiveDesign.headlineFont()).foregroundColor(AppTheme.fontColor)
                 Spacer()
             }
-            content()
+            .foregroundColor(AppTheme.accentLightBlue)
+            .padding(.vertical, ResponsiveDesign.spacing(4))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
         }
-        .padding(ResponsiveDesign.spacing(16))
-        .background(AppTheme.sectionBackground)
-        .cornerRadius(ResponsiveDesign.spacing(12))
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Helpers
+
+    private func privacyToggle(_ binding: Binding<Bool>, title: String, subtitle: String) -> some View {
+        SettingsToggleRow(
+            title: title,
+            subtitle: subtitle,
+            isEnabled: binding,
+            tintColor: AppTheme.accentGreen
+        )
+        .padding(.vertical, ResponsiveDesign.spacing(12))
+    }
+
+    private func dataActionRow(
+        icon: String,
+        title: String,
+        color: Color,
+        isLoading: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack {
+                Image(systemName: icon).font(ResponsiveDesign.bodyFont())
+                Text(title).font(ResponsiveDesign.bodyFont()).fontWeight(.medium)
+                Spacer(minLength: 0)
+                if isLoading {
+                    ProgressView().progressViewStyle(CircularProgressViewStyle()).scaleEffect(0.8)
+                } else {
+                    Image(systemName: "chevron.right").font(ResponsiveDesign.captionFont())
+                }
+            }
+            .foregroundColor(color)
+            .padding(.vertical, ResponsiveDesign.spacing(12))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .disabled(isLoading)
+        .buttonStyle(.plain)
     }
 }
 

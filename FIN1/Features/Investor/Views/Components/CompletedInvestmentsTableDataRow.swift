@@ -17,13 +17,8 @@ struct CompletedInvestmentsTableDataRow: View {
 
             Text(self.model.traderUsername)
                 .font(ResponsiveDesign.bodyFont())
-                .foregroundColor(self.forMeasurement ? nil : AppTheme.fontColor)
+                .foregroundColor(self.forMeasurement ? nil : DataTableColors.traderNameColor)
                 .modifier(self.cellFrame("traderUsername", .leading))
-
-            Text(self.model.tradeNumberText)
-                .font(ResponsiveDesign.bodyFont())
-                .foregroundColor(self.forMeasurement ? nil : AppTheme.fontColor)
-                .modifier(self.cellFrame("tradeNr", .leading))
 
             Text(self.model.amount.formattedAsLocalizedCurrency())
                 .font(ResponsiveDesign.bodyFont())
@@ -42,9 +37,12 @@ struct CompletedInvestmentsTableDataRow: View {
             self.detailsView
                 .modifier(self.cellFrame("details", .center))
         }
-        .padding(.horizontal, ResponsiveDesign.horizontalPadding())
-        .padding(.vertical, ResponsiveDesign.spacing(4))
-        .background(self.forMeasurement ? Color.clear : (self.isEven ? AppTheme.screenBackground : AppTheme.sectionBackground.opacity(0.3)))
+        .frame(minHeight: InvestmentsTableStyle.headerMinHeight)
+        .padding(.horizontal, InvestmentsTableStyle.cellHorizontalPadding)
+        .padding(.vertical, InvestmentsTableStyle.cellVerticalPadding)
+        .background(
+            self.forMeasurement ? Color.clear : InvestmentsTableStyle.dataRowBackground(isEven: self.isEven)
+        )
     }
 
     @ViewBuilder

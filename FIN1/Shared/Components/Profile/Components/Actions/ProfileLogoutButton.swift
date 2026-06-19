@@ -16,8 +16,6 @@ struct ProfileLogoutButton: View {
             .foregroundColor(AppTheme.accentRed)
             .frame(maxWidth: .infinity)
             .frame(height: 50)
-            .background(AppTheme.accentRed.opacity(0.2))
-            .cornerRadius(ResponsiveDesign.spacing(12))
         })
     }
 }

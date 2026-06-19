@@ -14,29 +14,32 @@ struct ProfileHeaderView: View {
                         .font(ResponsiveDesign.scaledSystemFont(size: 40))
                         .foregroundColor(AppTheme.accentLightBlue)
                 )
-            
+
             // User Info
             VStack(spacing: ResponsiveDesign.spacing(8)) {
                 Text(self.user?.fullName ?? "User Name")
                     .font(ResponsiveDesign.headlineFont())
                     .fontWeight(.bold)
                     .foregroundColor(AppTheme.fontColor)
-                
+                    .multilineTextAlignment(.center)
+
                 Text(self.user?.email ?? "user@example.com")
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.8))
-                
+                    .multilineTextAlignment(.center)
+
                 // Role Badge
                 Text(self.user?.role.displayName ?? "User")
                     .font(ResponsiveDesign.captionFont())
                     .fontWeight(.medium)
-                    .foregroundColor(AppTheme.screenBackground)
+                    .foregroundColor(AppTheme.inputText)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
                     .background(AppTheme.accentLightBlue)
                     .cornerRadius(ResponsiveDesign.spacing(12))
             }
-            
+            .frame(maxWidth: .infinity)
+
             // Verification Status
             HStack(spacing: ResponsiveDesign.spacing(16)) {
                 VerificationBadge(
@@ -44,17 +47,17 @@ struct ProfileHeaderView: View {
                     isVerified: self.user?.isEmailVerified ?? false,
                     icon: "envelope.fill"
                 )
-                
+
                 VerificationBadge(
                     title: "KYC",
                     isVerified: self.user?.isKYCCompleted ?? false,
                     icon: "checkmark.shield.fill"
                 )
             }
+            .frame(maxWidth: .infinity, alignment: .center)
         }
+        .frame(maxWidth: .infinity, alignment: .center)
         .padding(ResponsiveDesign.spacing(20))
-        .background(AppTheme.sectionBackground)
-        .cornerRadius(ResponsiveDesign.spacing(16))
     }
 }
 
@@ -68,11 +71,12 @@ struct VerificationBadge: View {
             Image(systemName: self.icon)
                 .font(ResponsiveDesign.headlineFont())
                 .foregroundColor(self.isVerified ? AppTheme.accentGreen : AppTheme.accentOrange)
-            
+
             Text(self.title)
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor)
-            
+                .multilineTextAlignment(.center)
+
             Text(self.isVerified ? "Verified" : "Pending")
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(self.isVerified ? AppTheme.accentGreen : AppTheme.accentOrange)
@@ -81,6 +85,7 @@ struct VerificationBadge: View {
                 .background((self.isVerified ? AppTheme.accentGreen : AppTheme.accentOrange).opacity(0.2))
                 .cornerRadius(ResponsiveDesign.spacing(8))
         }
+        .frame(minWidth: 80)
     }
 }
 

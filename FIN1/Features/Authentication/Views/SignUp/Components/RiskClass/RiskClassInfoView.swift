@@ -10,7 +10,7 @@ struct RiskClassInfoView: View {
                     .ignoresSafeArea()
 
                 ScrollView {
-                    VStack(spacing: ResponsiveDesign.spacing(20)) {
+                    SignUpStepList {
                         // Header
                         VStack(spacing: ResponsiveDesign.spacing(12)) {
                             Text("Risikoklassen")
@@ -92,9 +92,7 @@ struct RiskClassCard: View {
                     .multilineTextAlignment(.leading)
             }
         }
-        .padding()
-        .background(AppTheme.sectionBackground)
-        .cornerRadius(ResponsiveDesign.spacing(12))
+        .signUpListSection(stripeIndex: 0)
         .overlay(
             RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(12))
                 .stroke(self.riskClass.color.opacity(0.3), lineWidth: 1)

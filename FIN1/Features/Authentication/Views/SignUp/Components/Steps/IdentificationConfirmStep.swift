@@ -12,8 +12,7 @@ struct IdentificationConfirmStep: View {
     @Binding var identificationConfirmed: Bool
 
     var body: some View {
-        VStack(spacing: ResponsiveDesign.spacing(24)) {
-            // Success Header
+        SignUpStepList {
             VStack(spacing: ResponsiveDesign.spacing(12)) {
                 Image(systemName: "checkmark.circle.fill")
                     .font(ResponsiveDesign.scaledSystemFont(size: 60))
@@ -23,17 +22,16 @@ struct IdentificationConfirmStep: View {
                     .font(ResponsiveDesign.headlineFont())
                     .fontWeight(.bold)
                     .foregroundColor(AppTheme.fontColor)
-                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
                 Text("Bitte überprüfen Sie kurz Ihre Dokumente")
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.8))
-                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .signUpListSection(stripeIndex: 0)
 
-            // Document Preview - Side by Side
             HStack(spacing: ResponsiveDesign.spacing(12)) {
-                // Front Side
                 VStack(spacing: ResponsiveDesign.spacing(8)) {
                     Text("Vorderseite")
                         .font(ResponsiveDesign.headlineFont())
@@ -53,7 +51,6 @@ struct IdentificationConfirmStep: View {
                 }
                 .frame(maxWidth: .infinity)
 
-                // Back Side
                 VStack(spacing: ResponsiveDesign.spacing(8)) {
                     Text("Rückseite")
                         .font(ResponsiveDesign.headlineFont())
@@ -73,11 +70,8 @@ struct IdentificationConfirmStep: View {
                 }
                 .frame(maxWidth: .infinity)
             }
-            .padding()
-            .background(AppTheme.sectionBackground)
-            .cornerRadius(ResponsiveDesign.spacing(16))
+            .signUpListSection(stripeIndex: 1)
 
-            // Quality Check List
             VStack(spacing: ResponsiveDesign.spacing(16)) {
                 Text("Qualitätsprüfung")
                     .font(ResponsiveDesign.headlineFont())
@@ -103,11 +97,8 @@ struct IdentificationConfirmStep: View {
                     )
                 }
             }
-            .padding()
-            .background(AppTheme.sectionBackground)
-            .cornerRadius(ResponsiveDesign.spacing(16))
+            .signUpListSection(stripeIndex: 2)
 
-            // Confirmation Button
             Button(action: { self.identificationConfirmed.toggle() }, label: {
                 HStack {
                     InteractiveElement(
@@ -127,15 +118,13 @@ struct IdentificationConfirmStep: View {
                             .font(ResponsiveDesign.headlineFont())
                     }
                 }
-                .padding()
-                .background(self.identificationConfirmed ? AppTheme.accentGreen.opacity(0.1) : AppTheme.sectionBackground)
-                .cornerRadius(ResponsiveDesign.spacing(12))
-                .overlay(
-                    RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(12))
-                        .stroke(self.identificationConfirmed ? AppTheme.accentGreen : Color.clear, lineWidth: 2)
-                )
             })
             .buttonStyle(PlainButtonStyle())
+            .signUpListSection(
+                stripeIndex: 3,
+                isSelected: self.identificationConfirmed,
+                selectionAccent: AppTheme.accentGreen
+            )
         }
     }
 }

@@ -21,20 +21,9 @@ struct DashboardStatsSection: View {
     var body: some View {
         Group {
             if self.viewModel.isInvestor {
-                VStack(spacing: ResponsiveDesign.spacing(12)) {
-                    self.investorStatsContent
-                }
-                .padding(ResponsiveDesign.spacing(16))
-                .background(AppTheme.sectionBackground.opacity(0.5))
-                .cornerRadius(ResponsiveDesign.spacing(12))
+                self.investorStatsContent
             } else {
-                // Trader: Show rows with section wrapper matching welcome section
-                VStack(spacing: ResponsiveDesign.spacing(12)) {
-                    self.traderStatsContent
-                }
-                .padding(ResponsiveDesign.spacing(16))
-                .background(AppTheme.sectionBackground.opacity(0.5))
-                .cornerRadius(ResponsiveDesign.spacing(12))
+                self.traderStatsContent
             }
         }
         .task {

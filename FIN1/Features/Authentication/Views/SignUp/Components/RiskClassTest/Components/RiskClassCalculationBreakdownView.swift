@@ -54,9 +54,7 @@ struct RiskClassCalculationBreakdownView: View {
                 }
             }
         }
-        .padding()
-        .background(AppTheme.sectionBackground)
-        .cornerRadius(ResponsiveDesign.spacing(12))
+        .signUpListSection(stripeIndex: 0)
     }
     
     private func getIncomePoints() -> Int {

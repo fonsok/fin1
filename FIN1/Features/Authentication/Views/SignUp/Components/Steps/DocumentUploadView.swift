@@ -53,9 +53,6 @@ struct DocumentUploadView: View {
                 )
             }
         }
-        .padding()
-        .background(AppTheme.sectionBackground)
-        .cornerRadius(ResponsiveDesign.spacing(16))
         .sheet(isPresented: self.$showingCameraPicker) {
             CameraPicker(selectedImage: self.$selectedImage)
         }

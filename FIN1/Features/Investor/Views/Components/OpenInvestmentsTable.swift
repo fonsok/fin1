@@ -20,9 +20,9 @@ struct OpenInvestmentsTable: View {
                     forMeasurement: false,
                     onShowStatusInfo: self.onShowStatusInfo
                 )
-                .frame(minHeight: 44)
-                .padding(.horizontal, ResponsiveDesign.spacing(12))
-                .padding(.vertical, ResponsiveDesign.spacing(6))
+                .investmentsTableHeaderBand()
+
+                InvestmentsTableDivider()
 
                 ForEach(Array(self.pools.enumerated()), id: \.element.id) { index, pool in
                     OpenInvestmentsTableDataRow(
@@ -35,6 +35,8 @@ struct OpenInvestmentsTable: View {
                     )
                 }
 
+                InvestmentsTableDivider()
+
                 OpenInvestmentsTableTotalRow(
                     columnWidths: self.columnWidths,
                     totalAmount: self.totalAmount,
@@ -42,6 +44,8 @@ struct OpenInvestmentsTable: View {
                     totalReturn: self.totalReturn,
                     forMeasurement: false
                 )
+
+                InvestmentsTableDivider()
             }
         }
         .overlay(alignment: .topLeading) {

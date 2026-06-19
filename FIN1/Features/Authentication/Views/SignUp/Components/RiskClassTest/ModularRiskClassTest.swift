@@ -10,7 +10,7 @@ struct ModularRiskClassTest: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: ResponsiveDesign.spacing(20)) {
+            SignUpStepList {
                 Text("Risk Class Test")
                     .font(ResponsiveDesign.titleFont())
                     .fontWeight(.bold)

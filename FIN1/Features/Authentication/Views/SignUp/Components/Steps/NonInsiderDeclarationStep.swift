@@ -7,24 +7,24 @@ struct NonInsiderDeclarationStep: View {
     @Binding var insiderTradingOptions: [String: Bool]
     
     var body: some View {
-        VStack(spacing: ResponsiveDesign.spacing(24)) {
-            Text("Insider-Handel vermeiden")
-                .font(ResponsiveDesign.headlineFont())
-                .fontWeight(.bold)
-                .foregroundColor(AppTheme.fontColor)
-                .multilineTextAlignment(.center)
-            
-            Text("Kennzeichnen Sie die korrekten Aussagen.")
-                .font(ResponsiveDesign.bodyFont())
-                .foregroundColor(AppTheme.fontColor.opacity(0.8))
-                .multilineTextAlignment(.center)
-            
-            Text("(Auf die meisten Personen wird keine der folgenden Aussagen zutreffen.)")
-                .font(ResponsiveDesign.captionFont())
-                .foregroundColor(AppTheme.fontColor.opacity(0.7))
-                .multilineTextAlignment(.center)
-            
-            VStack(alignment: .leading, spacing: 16) {
+        SignUpStepList {
+            VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
+                Text("Insider-Handel vermeiden")
+                    .font(ResponsiveDesign.headlineFont())
+                    .fontWeight(.bold)
+                    .foregroundColor(AppTheme.fontColor)
+
+                Text("Kennzeichnen Sie die korrekten Aussagen.")
+                    .font(ResponsiveDesign.bodyFont())
+                    .foregroundColor(AppTheme.fontColor.opacity(0.8))
+
+                Text("(Auf die meisten Personen wird keine der folgenden Aussagen zutreffen.)")
+                    .font(ResponsiveDesign.captionFont())
+                    .foregroundColor(AppTheme.fontColor.opacity(0.7))
+            }
+            .signUpListSection(stripeIndex: 0)
+
+            VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(16)) {
                 Text("Ich oder eines meiner unmittelbaren Familienmitglieder sind:")
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
@@ -131,9 +131,7 @@ struct NonInsiderDeclarationStep: View {
                     .buttonStyle(PlainButtonStyle())
                 }
             }
-            .padding()
-            .background(AppTheme.sectionBackground)
-            .cornerRadius(ResponsiveDesign.spacing(16))
+            .signUpListSection(stripeIndex: 1)
         }
     }
 }

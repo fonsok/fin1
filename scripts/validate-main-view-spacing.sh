@@ -37,13 +37,25 @@ check_main_view_spacing() {
         VIOLATIONS=$((VIOLATIONS + 1))
     fi
 
-    # Check for correct padding pattern
-    if ! grep -q "\.padding(\.horizontal, ResponsiveDesign\.horizontalPadding())" "$file"; then
+    # Check for correct padding pattern (legacy VStack) or StripedStepList (padding per section)
+    local has_horizontal_padding=false
+    local has_top_padding=false
+    if grep -q "\.padding(\.horizontal, ResponsiveDesign\.horizontalPadding())" "$file"; then
+        has_horizontal_padding=true
+    elif grep -q "StripedStepList" "$file" && grep -q "stripedListSection" "$file"; then
+        has_horizontal_padding=true
+    fi
+    if ! $has_horizontal_padding; then
         echo -e "${RED}❌ VIOLATION: $view_name missing correct horizontal padding pattern${NC}"
         VIOLATIONS=$((VIOLATIONS + 1))
     fi
 
-    if ! grep -q "\.padding(\.top, ResponsiveDesign\.spacing(8))" "$file"; then
+    if grep -q "\.padding(\.top, ResponsiveDesign\.spacing(8))" "$file"; then
+        has_top_padding=true
+    elif grep -q "StripedStepList" "$file" && grep -q "stripedListSection" "$file"; then
+        has_top_padding=true
+    fi
+    if ! $has_top_padding; then
         echo -e "${RED}❌ VIOLATION: $view_name missing correct top padding pattern${NC}"
         VIOLATIONS=$((VIOLATIONS + 1))
     fi

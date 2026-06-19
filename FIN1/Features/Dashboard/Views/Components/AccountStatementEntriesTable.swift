@@ -1,9 +1,17 @@
 import SwiftUI
 
+enum AccountStatementEntriesTableStyle {
+    /// Rounded table shell with border.
+    case card
+    /// Full-width table block — same row/header band colors, no outer card wrapper.
+    case flatList
+}
+
 struct AccountStatementEntriesTable<TopContent: View>: View {
     private let entries: [AccountStatementEntry]
     private let dividerColor: Color
     private let showDocumentReferenceLinks: Bool
+    private let style: AccountStatementEntriesTableStyle
     private let topContent: TopContent?
     private let onEntryTap: ((AccountStatementEntry) -> Void)?
 
@@ -11,12 +19,14 @@ struct AccountStatementEntriesTable<TopContent: View>: View {
         entries: [AccountStatementEntry],
         dividerColor: Color = Color.white.opacity(0.08),
         showDocumentReferenceLinks: Bool = true,
+        style: AccountStatementEntriesTableStyle = .card,
         onEntryTap: ((AccountStatementEntry) -> Void)? = nil,
         @ViewBuilder topContent: () -> TopContent
     ) {
         self.entries = entries
         self.dividerColor = dividerColor
         self.showDocumentReferenceLinks = showDocumentReferenceLinks
+        self.style = style
         self.onEntryTap = onEntryTap
         self.topContent = topContent()
     }
@@ -25,41 +35,44 @@ struct AccountStatementEntriesTable<TopContent: View>: View {
         entries: [AccountStatementEntry],
         dividerColor: Color = Color.white.opacity(0.08),
         showDocumentReferenceLinks: Bool = true,
+        style: AccountStatementEntriesTableStyle = .card,
         onEntryTap: ((AccountStatementEntry) -> Void)? = nil
     ) where TopContent == EmptyView {
         self.entries = entries
         self.dividerColor = dividerColor
         self.showDocumentReferenceLinks = showDocumentReferenceLinks
+        self.style = style
         self.onEntryTap = onEntryTap
         self.topContent = nil
     }
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: true) {
-            VStack(spacing: ResponsiveDesign.spacing(0)) {
-                if let topContent {
-                    topContent
-                }
-
-                self.tableHeader
-
-                ForEach(Array(self.entries.enumerated()), id: \.element.id) { index, entry in
-                    self.tableRow(entry)
-                    if index < self.entries.count - 1 {
-                        Divider()
-                            .background(self.dividerColor)
-                    }
-                }
-            }
-            .frame(minWidth: AccountStatementTableLayout.totalTableWidth, alignment: .leading)
-            .background(AppTheme.sectionBackground.opacity(0.25))
-            .cornerRadius(ResponsiveDesign.spacing(12))
-            .overlay(
-                RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(12))
-                    .stroke(Color.white.opacity(0.05), lineWidth: 1)
-            )
+            self.tableContent
+                .frame(minWidth: AccountStatementTableLayout.totalTableWidth, alignment: .leading)
+                .background(AppTheme.sectionBackground.opacity(0.25))
+                .modifier(AccountStatementTableShellModifier(style: self.style))
         }
         .scrollTargetBehavior(.viewAligned)
+    }
+
+    @ViewBuilder
+    private var tableContent: some View {
+        VStack(spacing: ResponsiveDesign.spacing(0)) {
+            if let topContent {
+                topContent
+            }
+
+            self.tableHeader
+
+            ForEach(Array(self.entries.enumerated()), id: \.element.id) { index, entry in
+                self.tableRow(entry)
+                if index < self.entries.count - 1 {
+                    Divider()
+                        .background(self.dividerColor)
+                }
+            }
+        }
     }
 
     private var tableHeader: some View {
@@ -226,6 +239,24 @@ struct AccountStatementEntriesTable<TopContent: View>: View {
     private func formattedYear(_ date: Date) -> String {
         let formatter = AccountStatementTableLayout.yearFormatter
         return formatter.string(from: date)
+    }
+}
+
+private struct AccountStatementTableShellModifier: ViewModifier {
+    let style: AccountStatementEntriesTableStyle
+
+    func body(content: Content) -> some View {
+        switch self.style {
+        case .card:
+            content
+                .cornerRadius(ResponsiveDesign.spacing(12))
+                .overlay(
+                    RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(12))
+                        .stroke(Color.white.opacity(0.05), lineWidth: 1)
+                )
+        case .flatList:
+            content
+        }
     }
 }
 

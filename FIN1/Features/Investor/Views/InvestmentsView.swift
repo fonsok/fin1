@@ -55,31 +55,23 @@ struct InvestmentsView: View {
                 .ignoresSafeArea()
 
             ScrollView {
-                VStack(spacing: ResponsiveDesign.spacing(0)) {
-                    // Header
+                StripedStepList {
                     InvestmentsHeaderSectionView(currentUser: self.viewModel.currentUser)
+                        .stripedListSection(stripeIndex: 0)
 
-                    // Separator
-                    InvestmentsSectionSeparatorView()
+                    self.reservedInvestmentsSection(titleStripeIndex: 1)
 
-                    // Reserved Investments Section
-                    self.reservedInvestmentsSection
-
-                    // Separator between sections
-                    InvestmentsSectionSeparatorView()
-
-                    // Active Investments Section
-                    self.activeInvestmentsSection
+                    self.activeInvestmentsSection(titleStripeIndex: 2)
 
                     if self.appServices.configurationService.showInvestorPartialSellRealizations {
-                        InvestmentsSectionSeparatorView()
-                        self.partialSellRealizationsSection
-                        InvestmentsSectionSeparatorView()
+                        self.partialSellRealizationsSection(titleStripeIndex: 3)
                     }
 
-                    // Completed Investments Section
-                    self.completedInvestmentsSection
+                    self.completedInvestmentsSection(
+                        titleStripeIndex: self.appServices.configurationService.showInvestorPartialSellRealizations ? 4 : 3
+                    )
                 }
+                .padding(.bottom, ResponsiveDesign.spacing(16))
             }
         }
         .navigationBarTitleDisplayMode(.inline)
@@ -162,8 +154,9 @@ struct InvestmentsView: View {
 
     // MARK: - Reserved Investments Section
 
-    private var reservedInvestmentsSection: some View {
+    private func reservedInvestmentsSection(titleStripeIndex: Int) -> some View {
         InvestmentsReservedSectionView(
+            titleStripeIndex: titleStripeIndex,
             reservedInvestmentRows: self.viewModel.reservedInvestmentRows,
             sortedTraderNames: self.viewModel.sortedReservedTraderNames,
             groupedInvestments: self.viewModel.groupedReservedInvestments,
@@ -184,8 +177,9 @@ struct InvestmentsView: View {
 
     // MARK: - Active Investments Section
 
-    private var activeInvestmentsSection: some View {
+    private func activeInvestmentsSection(titleStripeIndex: Int) -> some View {
         InvestmentsActiveSectionView(
+            titleStripeIndex: titleStripeIndex,
             activeInvestmentRows: self.viewModel.activeInvestmentRows,
             sortedTraderNames: self.viewModel.sortedActiveTraderNames,
             groupedInvestments: self.viewModel.groupedActiveInvestments,
@@ -208,14 +202,14 @@ struct InvestmentsView: View {
 
     // MARK: - Completed Investments Section
 
-    private var completedInvestmentsSection: some View {
+    private func completedInvestmentsSection(titleStripeIndex: Int) -> some View {
         InvestmentsCompletedSectionView(
+            titleStripeIndex: titleStripeIndex,
             selectedTimePeriod: self.$viewModel.selectedTimePeriod,
             allCompletedCount: self.viewModel.completedInvestments.count,
             completedInvestmentsByTimePeriod: self.viewModel.completedInvestmentsByTimePeriod,
             completedInvestmentDocRefs: self.viewModel.completedInvestmentDocRefs,
-            completedTraderUsernames: self.viewModel.completedTraderUsernames,
-            completedTradeNumbers: self.viewModel.completedTradeNumbers,
+            traderDataService: self.appServices.traderDataService,
             completedInvestmentSummaries: self.viewModel.completedInvestmentSummaries,
             completedCanonicalSummaries: self.viewModel.completedCanonicalSummaries,
             onTimePeriodChanged: { period in
@@ -229,8 +223,9 @@ struct InvestmentsView: View {
 
     // MARK: - Partial Sell Realizations (Active)
 
-    private var partialSellRealizationsSection: some View {
+    private func partialSellRealizationsSection(titleStripeIndex: Int) -> some View {
         InvestmentsPartialSellSectionView(
+            titleStripeIndex: titleStripeIndex,
             partialSellRows: self.viewModel.partialSellActiveInvestmentRows,
             sortedTraderNames: self.viewModel.sortedPartialSellTraderNames,
             groupedInvestments: self.viewModel.groupedPartialSellActiveInvestments,

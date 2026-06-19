@@ -11,11 +11,12 @@ struct ContactStep: View {
     @Binding var confirmPassword: String
 
     var body: some View {
-        VStack(spacing: ResponsiveDesign.spacing(20)) {
+        SignUpFormStepList {
             Text("Contact Information")
                 .font(ResponsiveDesign.headlineFont())
                 .fontWeight(.bold)
                 .foregroundColor(AppTheme.fontColor)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
             LabeledInputField(
                 label: "Email Address",
@@ -105,11 +106,7 @@ struct ContactStep: View {
                     )
                 }
             }
-            .padding()
-            .background(AppTheme.sectionBackground)
-            .cornerRadius(ResponsiveDesign.spacing(12))
 
-            // 2FA Explanation
             Text("Your phone number will be used for SMS verification and two-factor authentication to secure your account.")
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))

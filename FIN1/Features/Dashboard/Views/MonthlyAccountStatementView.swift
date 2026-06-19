@@ -24,28 +24,24 @@ struct MonthlyAccountStatementView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: ResponsiveDesign.spacing(20)) {
-                // Header and summary with horizontal padding
-                VStack(spacing: ResponsiveDesign.spacing(20)) {
-                    self.header
-                    self.summarySection
-                }
-                .padding(.horizontal, ResponsiveDesign.horizontalPadding())
+            StripedStepList {
+                self.header
+                    .stripedListSection(stripeIndex: 0)
 
-                // Entries table - full width for horizontal scrolling in landscape
+                self.summarySection
+                    .stripedListSection(stripeIndex: 1)
+
                 if self.viewModel.hasTransactions {
                     self.entriesTable
-                        .padding(.horizontal, ResponsiveDesign.spacing(4))
                 } else {
                     self.emptyState
-                        .padding(.horizontal, ResponsiveDesign.horizontalPadding())
+                        .stripedListSection(stripeIndex: 2)
                 }
 
-                // Important notices with horizontal padding
                 AccountStatementImportantNoticesView()
-                    .padding(.horizontal, ResponsiveDesign.horizontalPadding())
+                    .stripedListSection(stripeIndex: 3)
             }
-            .padding(.vertical, ResponsiveDesign.spacing(20))
+            .padding(.bottom, ResponsiveDesign.spacing(16))
         }
         .background(AppTheme.screenBackground.ignoresSafeArea())
         .navigationBarTitleDisplayMode(.inline)
@@ -98,10 +94,7 @@ struct MonthlyAccountStatementView: View {
                     .foregroundColor(self.viewModel.netChange >= 0 ? AppTheme.accentGreen : AppTheme.accentRed)
             }
         }
-        .padding(ResponsiveDesign.spacing(20))
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(AppTheme.sectionBackground.opacity(0.5))
-        .cornerRadius(ResponsiveDesign.spacing(16))
     }
 
     private var summarySection: some View {
@@ -135,6 +128,7 @@ struct MonthlyAccountStatementView: View {
         AccountStatementEntriesTable(
             entries: self.viewModel.entries,
             showDocumentReferenceLinks: self.services.configurationService.showDocumentReferenceLinksInAccountStatement,
+            style: .flatList,
             onEntryTap: self.openReferencedDocument(for:)
         ) {
             self.statementMetaHeader
@@ -258,9 +252,6 @@ struct MonthlyAccountStatementView: View {
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
         }
         .frame(maxWidth: .infinity)
-        .padding(ResponsiveDesign.spacing(32))
-        .background(AppTheme.sectionBackground.opacity(0.3))
-        .cornerRadius(ResponsiveDesign.spacing(16))
     }
 
     // MARK: - Helpers
@@ -280,9 +271,9 @@ struct MonthlyAccountStatementView: View {
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.6))
         }
-        .padding(ResponsiveDesign.spacing(16))
+        .padding(ResponsiveDesign.spacing(12))
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(AppTheme.sectionBackground.opacity(0.3))
-        .cornerRadius(ResponsiveDesign.spacing(12))
+        .cornerRadius(ResponsiveDesign.spacing(8))
     }
 }

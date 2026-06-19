@@ -135,8 +135,7 @@ struct CompletedInvestmentsView: View {
                 CompletedInvestmentsTable(
                     investments: self.viewModel.completedInvestmentsByTimePeriod,
                     investmentDocRefs: self.viewModel.investmentDocRefs,
-                    traderUsernames: self.viewModel.traderUsernames,
-                    tradeNumbers: self.viewModel.tradeNumbers,
+                    traderDataService: self.appServices.traderDataService,
                     investmentSummaries: self.viewModel.investmentSummaries,
                     canonicalSummaries: self.viewModel.canonicalSummaries,
                     monetaryServerOnly: self.viewModel.monetaryServerOnlyForDisplay,

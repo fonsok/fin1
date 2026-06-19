@@ -22,7 +22,7 @@ struct RiskClassSelectionView: View {
                     .ignoresSafeArea()
 
                 ScrollView {
-                    VStack(spacing: ResponsiveDesign.spacing(24)) {
+                    SignUpStepList {
                         // Header
                         VStack(spacing: ResponsiveDesign.spacing(12)) {
                             Text("Risikoklasse wählen")

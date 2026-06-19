@@ -43,40 +43,10 @@ extension InvestmentsViewModel {
         // The service will handle marking investments as completed when their status is completed.
     }
 
-    /// Trader-Usernames, Trade-Nummern und Summaries für Completed-Tabelle (MVVM: keine Logik in der View).
+    /// Summaries und kanonische Server-Totals für Completed-Tabelle (MVVM: keine Logik in der View).
     func refreshCompletedDisplayData() {
-        Task { @MainActor [weak self] in
-            guard let self else { return }
-            var tradeIds: Set<String> = []
-            for inv in investments {
-                for p in poolTradeParticipationService.getParticipations(forInvestmentId: inv.id) {
-                    tradeIds.insert(p.tradeId)
-                }
-            }
-            let tradesById = await InvestorInvestmentStatementAggregator.resolveTradesForPoolParticipations(
-                investedTradeIds: tradeIds,
-                localTrades: tradeLifecycleService.completedTrades,
-                tradeAPIService: tradeAPIService
-            )
-            var usernames: [String: String] = [:]
-            var tradeNums: [String: String] = [:]
-
-            for inv in investments {
-                usernames[inv.id] = traderDataService.getTrader(by: inv.traderId)?.username ?? "---"
-                let participations = poolTradeParticipationService.getParticipations(forInvestmentId: inv.id)
-
-                if let first = participations.first,
-                   let trade = tradesById[first.tradeId] {
-                    tradeNums[inv.id] = String(format: "%03d", trade.tradeNumber)
-                } else {
-                    tradeNums[inv.id] = "---"
-                }
-            }
-            completedTraderUsernames = usernames
-            completedTradeNumbers = tradeNums
-            completedInvestmentSummaries = [:]
-            self.refreshCompletedCanonicalSummaries(for: investments)
-        }
+        completedInvestmentSummaries = [:]
+        self.refreshCompletedCanonicalSummaries(for: investments)
     }
 
     func refreshCompletedCanonicalSummaries(for investments: [Investment]) {
@@ -84,21 +54,16 @@ extension InvestmentsViewModel {
         guard service != nil else { return }
         let relevantIds = investments
             .filter { $0.status == .completed || $0.reservationStatus == .completed }
-            .map { $0.id }
+            .map(\.id)
         guard !relevantIds.isEmpty else { return }
         let allowUnweightedFallback = !configurationService.investorMonetaryServerOnly
 
         Task { [weak self] in
-            var result: [String: ServerInvestmentCanonicalSummary] = [:]
-            for id in relevantIds {
-                if let summary = await ServerCalculatedReturnResolver.resolveCanonicalSummary(
-                    investmentId: id,
-                    settlementAPIService: service,
-                    allowUnweightedReturnFallback: allowUnweightedFallback
-                ) {
-                    result[id] = summary
-                }
-            }
+            let result = await ServerCalculatedReturnResolver.resolveCanonicalSummaries(
+                investmentIds: relevantIds,
+                settlementAPIService: service,
+                allowUnweightedReturnFallback: allowUnweightedFallback
+            )
             await MainActor.run { [weak self] in
                 self?.completedCanonicalSummaries = result
             }

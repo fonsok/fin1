@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct InvestmentsPartialSellSectionView: View {
+    let titleStripeIndex: Int
     let partialSellRows: [InvestmentRow]
     let sortedTraderNames: [String]
     let groupedInvestments: [String: [InvestmentRow]]
@@ -8,88 +9,98 @@ struct InvestmentsPartialSellSectionView: View {
     let onSelectInvestment: (Investment) -> Void
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            self.sectionTitleBlock
+                .stripedListSection(stripeIndex: self.titleStripeIndex)
+
+            if !self.partialSellRows.isEmpty {
+                self.listContent
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var sectionTitleBlock: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
             Text("Teil-Sell-Realisierungen (Active Investment)")
                 .font(ResponsiveDesign.headlineFont())
                 .foregroundColor(AppTheme.fontColor)
-                .padding(.horizontal, ResponsiveDesign.horizontalPadding())
 
             Text("Nur Investments, bei denen bereits mindestens ein Teil-Verkauf serverseitig verbucht wurde — nicht jede aktive Position.")
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.secondaryText)
-                .padding(.horizontal, ResponsiveDesign.horizontalPadding())
 
             Text("Laufende Investments ohne Teil-Verkauf stehen oben unter „Active Investments“ und bleiben bis zum Trade-Abschluss aktiv.")
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.tertiaryText)
-                .padding(.horizontal, ResponsiveDesign.horizontalPadding())
 
-            if !self.partialSellRows.isEmpty {
-                ForEach(self.sortedTraderNames, id: \.self) { traderName in
-                    let rows = self.groupedInvestments[traderName] ?? []
-                    if let firstInvestment = rows.first?.investment {
-                        let traderUsername = self.traderDataService.getTrader(by: firstInvestment.traderId)?.username ?? "---"
-                        VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(2)) {
-                            Text("\"\(traderUsername)\"")
-                                .font(ResponsiveDesign.bodyFont())
-                                .foregroundColor(AppTheme.fontColor)
-                                .padding(.horizontal, ResponsiveDesign.horizontalPadding())
-
-                            Text("\(rows.count) investment\(rows.count == 1 ? "" : "s") mit Teil-Sell")
-                                .font(ResponsiveDesign.captionFont())
-                                .foregroundColor(AppTheme.secondaryText)
-                                .padding(.horizontal, ResponsiveDesign.horizontalPadding())
-                        }
-                        .padding(.top, ResponsiveDesign.spacing(4))
-
-                        VStack(spacing: ResponsiveDesign.spacing(8)) {
-                            ForEach(rows, id: \.id) { row in
-                                Button(action: {
-                                    self.onSelectInvestment(row.investment)
-                                }, label: {
-                                    HStack {
-                                        VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(2)) {
-                                            Text(row.investment.canonicalDisplayReference)
-                                                .font(ResponsiveDesign.bodyFont())
-                                                .foregroundColor(AppTheme.fontColor)
-                                            Text(self.partialSellSummaryCaption(for: row.investment))
-                                                .font(ResponsiveDesign.captionFont())
-                                                .foregroundColor(AppTheme.secondaryText)
-                                            Text("Letzter Teil-Sell am \(self.formattedPartialSellDate(row.investment.lastPartialSellAt))")
-                                                .font(ResponsiveDesign.captionFont())
-                                                .foregroundColor(AppTheme.tertiaryText)
-                                        }
-                                        Spacer()
-                                        VStack(alignment: .trailing, spacing: ResponsiveDesign.spacing(2)) {
-                                            Text(row.investment.realizedSellAmount.formattedAsLocalizedCurrency())
-                                                .font(ResponsiveDesign.bodyFont())
-                                                .foregroundColor(AppTheme.accentLightBlue)
-                                            Image(systemName: "chevron.right")
-                                                .font(ResponsiveDesign.captionFont())
-                                                .foregroundColor(AppTheme.tertiaryText)
-                                        }
-                                    }
-                                    .padding(.horizontal, ResponsiveDesign.spacing(12))
-                                    .padding(.vertical, ResponsiveDesign.spacing(8))
-                                    .background(AppTheme.sectionBackground.opacity(0.7))
-                                    .cornerRadius(ResponsiveDesign.spacing(8))
-                                })
-                                .buttonStyle(.plain)
-                            }
-                        }
-                        .padding(.horizontal, ResponsiveDesign.horizontalPadding())
-                        .padding(.vertical, ResponsiveDesign.spacing(4))
-                    }
-                }
-            } else {
+            if self.partialSellRows.isEmpty {
                 Text("Keine Teil-Sell-Realisierungen: Für deine aktiven Investments liegt noch kein verbuchter Teil-Verkauf vor.")
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.tertiaryText)
-                    .padding(.horizontal, ResponsiveDesign.horizontalPadding())
                     .padding(.vertical, ResponsiveDesign.spacing(8))
             }
         }
-        .padding(.top, ResponsiveDesign.spacing(4))
+    }
+
+    private var listContent: some View {
+        VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
+            ForEach(self.sortedTraderNames, id: \.self) { traderName in
+                let rows = self.groupedInvestments[traderName] ?? []
+                if let firstInvestment = rows.first?.investment {
+                    let traderUsername = self.traderDataService.getTrader(by: firstInvestment.traderId)?.username ?? "---"
+                    VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(2)) {
+                        Text("\"\(traderUsername)\"")
+                            .font(ResponsiveDesign.bodyFont())
+                            .foregroundColor(AppTheme.fontColor)
+
+                        Text("\(rows.count) investment\(rows.count == 1 ? "" : "s") mit Teil-Sell")
+                            .font(ResponsiveDesign.captionFont())
+                            .foregroundColor(AppTheme.secondaryText)
+                    }
+                    .padding(.top, ResponsiveDesign.spacing(4))
+                    .padding(.horizontal, ResponsiveDesign.mainHorizontalPadding())
+
+                    VStack(spacing: ResponsiveDesign.spacing(8)) {
+                        ForEach(rows, id: \.id) { row in
+                            Button(action: {
+                                self.onSelectInvestment(row.investment)
+                            }, label: {
+                                HStack {
+                                    VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(2)) {
+                                        Text(row.investment.canonicalDisplayReference)
+                                            .font(ResponsiveDesign.bodyFont())
+                                            .foregroundColor(AppTheme.fontColor)
+                                        Text(self.partialSellSummaryCaption(for: row.investment))
+                                            .font(ResponsiveDesign.captionFont())
+                                            .foregroundColor(AppTheme.secondaryText)
+                                        Text("Letzter Teil-Sell am \(self.formattedPartialSellDate(row.investment.lastPartialSellAt))")
+                                            .font(ResponsiveDesign.captionFont())
+                                            .foregroundColor(AppTheme.tertiaryText)
+                                    }
+                                    Spacer()
+                                    VStack(alignment: .trailing, spacing: ResponsiveDesign.spacing(2)) {
+                                        Text(row.investment.realizedSellAmount.formattedAsLocalizedCurrency())
+                                            .font(ResponsiveDesign.bodyFont())
+                                            .foregroundColor(AppTheme.accentLightBlue)
+                                        Image(systemName: "chevron.right")
+                                            .font(ResponsiveDesign.captionFont())
+                                            .foregroundColor(AppTheme.tertiaryText)
+                                    }
+                                }
+                                .padding(.horizontal, ResponsiveDesign.spacing(12))
+                                .padding(.vertical, ResponsiveDesign.spacing(8))
+                                .background(AppTheme.sectionBackground.opacity(0.7))
+                                .cornerRadius(ResponsiveDesign.spacing(8))
+                            })
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.horizontal, ResponsiveDesign.mainHorizontalPadding())
+                    .padding(.vertical, ResponsiveDesign.spacing(4))
+                }
+            }
+        }
     }
 
     private func formattedPartialSellDate(_ date: Date?) -> String {

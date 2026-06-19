@@ -18,9 +18,7 @@ struct FIN1App: App {
 
     /// Matches `UILaunchScreen` / `ScreenBackground` so the window is not black before SwiftUI paints.
     private static func configureWindowBackground() {
-        let background = UIColor(named: "ScreenBackground")
-            ?? UIColor(red: 26.0 / 255.0, green: 51.0 / 255.0, blue: 102.0 / 255.0, alpha: 1)
-        UIWindow.appearance().backgroundColor = background
+        UIWindow.appearance().backgroundColor = StripedListStyle.canvasBackgroundUIColor
     }
 
     var body: some Scene {

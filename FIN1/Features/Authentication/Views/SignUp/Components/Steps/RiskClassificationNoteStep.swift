@@ -25,30 +25,32 @@ struct RiskClassificationNoteStep: View {
     }
 
     var body: some View {
-        VStack(spacing: ResponsiveDesign.spacing(24)) {
-            VStack(spacing: ResponsiveDesign.spacing(12)) {
-                Text("Note on risk classification")
-                    .font(ResponsiveDesign.titleFont())
-                    .fontWeight(.bold)
-                    .foregroundColor(AppTheme.fontColor)
-                    .multilineTextAlignment(.center)
-            }
+        SignUpStepList {
+            Text("Note on risk classification")
+                .font(ResponsiveDesign.titleFont())
+                .fontWeight(.bold)
+                .foregroundColor(AppTheme.fontColor)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .signUpListSection(stripeIndex: 0)
 
             if self.canProceedWithRegistration {
                 self.approvedRiskClassContent
+                    .signUpListSection(stripeIndex: 1, bandTint: AppTheme.accentGreen)
             } else if self.shouldReturnToLanding {
                 self.rejectedRiskClassContent(showUpgradeOption: false)
+                    .signUpListSection(stripeIndex: 1, bandTint: AppTheme.accentOrange)
             } else {
                 self.rejectedRiskClassContent(showUpgradeOption: true)
+                    .signUpListSection(stripeIndex: 1, bandTint: AppTheme.accentOrange)
             }
 
             self.riskClassIndicator
-
-            Spacer()
+                .signUpListSection(stripeIndex: 2)
 
             self.actionButtons
+                .padding(.horizontal, ResponsiveDesign.mainHorizontalPadding())
+                .padding(.vertical, ResponsiveDesign.spacing(20))
         }
-        .padding(.horizontal, ResponsiveDesign.lightBlueAreaHorizontalPadding())
         .sheet(isPresented: self.$showRiskClassSelection) {
             RiskClassSelectionView(
                 selectedRiskClass: Binding(
@@ -64,38 +66,29 @@ struct RiskClassificationNoteStep: View {
     }
 
     private var approvedRiskClassContent: some View {
-        VStack(spacing: ResponsiveDesign.spacing(20)) {
-            HStack {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundColor(AppTheme.accentGreen)
-                    .font(ResponsiveDesign.titleFont())
+        HStack(alignment: .top, spacing: ResponsiveDesign.spacing(12)) {
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundColor(AppTheme.accentGreen)
+                .font(ResponsiveDesign.titleFont())
 
-                VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
-                    Text("Ihre Risikoklasse beträgt \(self.currentRiskClass.shortName).")
-                        .font(ResponsiveDesign.headlineFont())
-                        .foregroundColor(AppTheme.fontColor)
+            VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
+                Text("Ihre Risikoklasse beträgt \(self.currentRiskClass.shortName).")
+                    .font(ResponsiveDesign.headlineFont())
+                    .foregroundColor(AppTheme.fontColor)
 
-                    Text("Sie können mit der Registrierung fortfahren.")
-                        .font(ResponsiveDesign.bodyFont())
-                        .foregroundColor(AppTheme.fontColor.opacity(0.8))
-                        .multilineTextAlignment(.leading)
-                }
-
-                Spacer()
+                Text("Sie können mit der Registrierung fortfahren.")
+                    .font(ResponsiveDesign.bodyFont())
+                    .foregroundColor(AppTheme.fontColor.opacity(0.8))
+                    .multilineTextAlignment(.leading)
             }
-            .padding()
-            .background(AppTheme.accentGreen.opacity(0.1))
-            .cornerRadius(ResponsiveDesign.spacing(12))
-            .overlay(
-                RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(12))
-                    .stroke(AppTheme.accentGreen.opacity(0.3), lineWidth: 1)
-            )
+
+            Spacer(minLength: 0)
         }
     }
 
     private func rejectedRiskClassContent(showUpgradeOption: Bool) -> some View {
-        VStack(spacing: ResponsiveDesign.spacing(20)) {
-            HStack {
+        VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(16)) {
+            HStack(alignment: .top, spacing: ResponsiveDesign.spacing(12)) {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .foregroundColor(AppTheme.accentOrange)
                     .font(ResponsiveDesign.titleFont())
@@ -115,19 +108,12 @@ struct RiskClassificationNoteStep: View {
                     .multilineTextAlignment(.leading)
                 }
 
-                Spacer()
+                Spacer(minLength: 0)
             }
-            .padding()
-            .background(AppTheme.accentOrange.opacity(0.1))
-            .cornerRadius(ResponsiveDesign.spacing(12))
-            .overlay(
-                RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(12))
-                    .stroke(AppTheme.accentOrange.opacity(0.3), lineWidth: 1)
-            )
 
             if showUpgradeOption {
-                VStack(spacing: ResponsiveDesign.spacing(12)) {
-                    HStack {
+                VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
+                    HStack(alignment: .top, spacing: ResponsiveDesign.spacing(12)) {
                         Image(systemName: "info.circle.fill")
                             .foregroundColor(AppTheme.accentLightBlue)
                             .font(ResponsiveDesign.headlineFont())
@@ -138,8 +124,6 @@ struct RiskClassificationNoteStep: View {
                         .font(ResponsiveDesign.bodyFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.8))
                         .multilineTextAlignment(.leading)
-
-                        Spacer()
                     }
 
                     Button("Hier können Sie Ihre Risikoklasse ändern.") {
@@ -149,13 +133,6 @@ struct RiskClassificationNoteStep: View {
                     .font(ResponsiveDesign.bodyFont())
                     .underline()
                 }
-                .padding()
-                .background(AppTheme.accentLightBlue.opacity(0.1))
-                .cornerRadius(ResponsiveDesign.spacing(12))
-                .overlay(
-                    RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(12))
-                        .stroke(AppTheme.accentLightBlue.opacity(0.3), lineWidth: 1)
-                )
             }
         }
     }
@@ -179,9 +156,6 @@ struct RiskClassificationNoteStep: View {
                 .fontWeight(.medium)
                 .foregroundColor(AppTheme.fontColor)
         }
-        .padding()
-        .background(AppTheme.sectionBackground)
-        .cornerRadius(ResponsiveDesign.spacing(12))
     }
 
     @ViewBuilder
