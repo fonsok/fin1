@@ -23,7 +23,7 @@ const ENTRY_TYPE_LABELS: Record<string, string> = {
   deposit: 'Einzahlung',
   withdrawal: 'Auszahlung',
   investment_activate: 'Investment aktiviert',
-  investment_return: 'Investment Rückzahlung',
+  investment_return: 'Überweisungsbetrag (Investment)',
   investment_refund: 'Investment Erstattung',
   investment_profit: 'Gewinnausschüttung',
   commission_debit: 'Provision (Abzug)',

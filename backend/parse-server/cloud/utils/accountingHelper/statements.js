@@ -13,6 +13,7 @@
 const { bookAccountStatementEntry } = require('./accountStatementWriter');
 const {
   bookSettlementEntry,
+  bookInvestorCommissionClearingGL,
   getSettlementGLRule,
   ORDER_FEE_COMPONENTS,
 } = require('./settlementGLPoster');
@@ -20,6 +21,7 @@ const {
 module.exports = {
   bookAccountStatementEntry,
   bookSettlementEntry,
+  bookInvestorCommissionClearingGL,
   getSettlementGLRule,
   ORDER_FEE_COMPONENTS,
 };

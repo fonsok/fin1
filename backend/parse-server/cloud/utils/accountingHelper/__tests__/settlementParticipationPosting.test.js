@@ -7,6 +7,10 @@ jest.mock('../statements', () => ({
   bookSettlementEntry: jest.fn().mockResolvedValue(undefined),
 }));
 
+jest.mock('../settlementGLPoster', () => ({
+  bookInvestorCommissionClearingGL: jest.fn().mockResolvedValue([]),
+}));
+
 jest.mock('../taxation', () => ({
   resolveUserTaxProfile: jest.fn().mockResolvedValue({}),
   calculateWithholdingBundle: jest.fn().mockReturnValue({
@@ -78,6 +82,7 @@ jest.mock('../investmentEscrow', () => ({
 }));
 
 const statements = require('../statements');
+const settlementGLPoster = require('../settlementGLPoster');
 const taxation = require('../taxation');
 const documents = require('../documents');
 const legs = require('../legs');
@@ -208,7 +213,7 @@ describe('settleNewParticipation', () => {
     jest.restoreAllMocks();
   });
 
-  test('proportional basis: updates participation, bills, investment_return and commission_debit', async () => {
+  test('proportional basis: updates participation, bills, investment_return and commission GL (no customer commission_debit)', async () => {
     const participation = makeParticipation();
     const investment = makeInvestment();
     const out = await settleNewParticipation({
@@ -249,11 +254,12 @@ describe('settleNewParticipation', () => {
         netProfit: 180,
       }),
     );
-    expect(statements.bookSettlementEntry).toHaveBeenCalledWith(
+    expect(settlementGLPoster.bookInvestorCommissionClearingGL).toHaveBeenCalledWith(
       expect.objectContaining({
-        entryType: 'commission_debit',
-        userRole: 'investor',
-        amount: -20,
+        userId: 'inv-user-1',
+        investmentId: 'inv-post-1',
+        tradeId: 'trade-post-1',
+        commission: 20,
       }),
     );
     expect(settlementSupport.createCommissionRecord).toHaveBeenCalled();

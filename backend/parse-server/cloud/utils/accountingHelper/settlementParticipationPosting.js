@@ -2,6 +2,7 @@
 
 const { round2 } = require('./shared');
 const { bookAccountStatementEntry, bookSettlementEntry } = require('./statements');
+const { bookInvestorCommissionClearingGL } = require('./settlementGLPoster');
 const { calculateWithholdingBundle, resolveUserTaxProfile } = require('./taxation');
 const { createCollectionBillDocument } = require('./documents');
 const { resolveDocumentReference } = require('./documentReferenceResolver');
@@ -189,29 +190,18 @@ async function settleNewParticipation({
   });
 
   if (commission > 0) {
-    const alreadyCommissionDebited = await sumStatementAmounts({
+    await bookInvestorCommissionClearingGL({
       userId: investorId,
       tradeId: trade.id,
+      tradeNumber,
       investmentId: investment.id,
-      entryType: 'commission_debit',
-      absolute: true,
+      investmentNumber,
+      commission,
+      description: `Provision Trade #${tradeNumber} (${(totalCommissionRate * 100).toFixed(0)}%)`,
+      referenceDocumentId: collectionBillRef.referenceDocumentId,
+      referenceDocumentNumber: collectionBillRef.referenceDocumentNumber,
+      businessCaseId,
     });
-    const remainingCommission = round2(Math.abs(commission) - alreadyCommissionDebited);
-    if (remainingCommission > 0) {
-      await bookSettlementEntry({
-        userId: investorId,
-        userRole: 'investor',
-        entryType: 'commission_debit',
-        amount: -Math.abs(remainingCommission),
-        tradeId: trade.id,
-        tradeNumber,
-        investmentId: investment.id,
-        investmentNumber,
-        description: `Provision Trade #${tradeNumber} (${(totalCommissionRate * 100).toFixed(0)}%)`,
-        ...collectionBillRef,
-        businessCaseId,
-      });
-    }
   }
 
   const alreadyTaxDebitsByType = await getStatementSumsByType({

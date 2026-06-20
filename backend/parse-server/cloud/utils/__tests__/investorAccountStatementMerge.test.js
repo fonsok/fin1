@@ -104,6 +104,23 @@ describe('investorAccountStatementMerge', () => {
     expect(types).toContain('investment_escrow_deployResidualToAvailable');
   });
 
+  test('customer merged timeline hides commission_debit when investment_return exists (transferAmount SSOT)', () => {
+    const t0 = new Date('2026-06-20T12:00:00Z');
+    const t1 = new Date('2026-06-20T12:01:00Z');
+    const stmtEntries = [
+      mockStmt('ret1', 'investment_return', 1175.42, t0, 'inv1', 'trade1'),
+      mockStmt('c1', 'commission_debit', -19.56, t1, 'inv1', 'trade1'),
+    ];
+    const timeline = buildInvestorMergedTimeline({
+      stmtEntries,
+      avaRows: [],
+      initialBalance: 8000,
+    });
+    expect(timeline).toHaveLength(1);
+    expect(timeline[0].stmt.get('entryType')).toBe('investment_return');
+    expect(timeline[0].balanceAfter).toBe(9175.42);
+  });
+
   test('customer merged timeline hides tradeSettlement pool/profit AVA legs (duplicate investment_return)', () => {
     const t0 = new Date('2026-05-18T12:40:00Z');
     const t1 = new Date('2026-05-18T12:41:00Z');

@@ -7,9 +7,11 @@
  * discrepancy is logged (console.error) and surfaces in App Ledger health checks.
  */
 
+const { round2 } = require('./shared');
 const { postLedgerPair, hasLeg } = require('./journal');
 const { bookAccountStatementEntry, composeStatementBusinessReference } = require('./accountStatementWriter');
 const { getSettlementGLRule, roleFromEntryType } = require('./settlementGLRules');
+const { CLT_EQT_INV_PNL } = require('./investmentEscrow/constants');
 const { resolveTraderCustomerBookingContext } = require('../../services/poolMirrorActivation/traderCustomerBookingPolicy');
 const {
   isSettlementGLOutboxEnabled,
@@ -165,6 +167,85 @@ async function bookSettlementEntry({
   }
 
   return stmt;
+}
+
+/**
+ * Investor commission clearing (GL-only): net transfer is already on `investment_return`
+ * (transferAmount = netSellAmount − commission). Debits P/L → PLT-LIAB-COM, not AVA again.
+ * Idempotent per trade + investment via `metadata.leg = commission:pnl:inv:{investmentId}`.
+ */
+async function bookInvestorCommissionClearingGL({
+  userId,
+  tradeId,
+  tradeNumber,
+  investmentId,
+  investmentNumber,
+  commission,
+  description,
+  referenceDocumentId,
+  referenceDocumentNumber,
+  businessCaseId,
+}) {
+  const amt = round2(Math.abs(commission));
+  const tid = String(tradeId || '').trim();
+  const invId = String(investmentId || '').trim();
+  if (amt <= 0 || !tid || !invId) return [];
+
+  const rule = getSettlementGLRule('commission_debit');
+  if (!rule) return [];
+
+  const leg = resolveSettlementGLLeg('commission:pnl', invId);
+  const referenceType = 'Trade';
+
+  if (await hasLeg({
+    referenceId: tid,
+    referenceType,
+    transactionType: rule.transactionType,
+    leg,
+  })) {
+    return [];
+  }
+
+  const invNumTrim = String(investmentNumber || '').trim();
+  const bcTrim = String(businessCaseId || '').trim();
+  const businessReference = composeStatementBusinessReference({
+    tradeNumber,
+    referenceDocumentNumber,
+    investmentNumber: invNumTrim,
+  });
+
+  try {
+    return await postLedgerPair({
+      debitAccount: CLT_EQT_INV_PNL,
+      creditAccount: rule.creditAccount,
+      amount: amt,
+      userId,
+      userRole: 'investor',
+      transactionType: rule.transactionType,
+      referenceId: tid,
+      referenceType,
+      description: description || `Provision Trade #${tradeNumber || tid}`,
+      metadata: {
+        accountStatementEntryType: 'commission_debit',
+        commissionClearingBasis: 'pnl',
+        tradeId: tid,
+        tradeNumber: tradeNumber || '',
+        businessReference: businessReference || '',
+        investmentId: invId,
+        investmentNumber: invNumTrim,
+        referenceDocumentId: referenceDocumentId || '',
+        referenceDocumentNumber: referenceDocumentNumber || '',
+        ...(bcTrim ? { businessCaseId: bcTrim } : {}),
+      },
+      leg,
+    });
+  } catch (err) {
+    console.error(
+      `❌ bookInvestorCommissionClearingGL failed tradeId=${tid} investmentId=${invId}:`,
+      err && err.message ? err.message : err,
+    );
+    return [];
+  }
 }
 
 async function postSettlementGLPair({
@@ -372,6 +453,7 @@ async function postOrderFeeBreakdown({
 
 module.exports = {
   bookSettlementEntry,
+  bookInvestorCommissionClearingGL,
   postSettlementGLPair,
   getSettlementGLRule,
   resolveSettlementGLLeg,

@@ -86,10 +86,11 @@ stateDiagram-v2
 | Feld | Bedeutung | Wo |
 |------|-----------|-----|
 | **`metadata.transferAmount`** | SSOT für `investment_return` | `investorCollectionBill` |
-| **`commission_debit`** | separate Zeile, eigener `entryType` | `settlementParticipationPosting.js` |
+| **Provision (Investor)** | In `transferAmount` enthalten; **GL-only** (`bookInvestorCommissionClearingGL`: P/L → `PLT-LIAB-COM`), **kein** `commission_debit` auf Kundensicht | `settlementParticipationPosting.js`, `settlementGLPoster.js` |
+| **Legacy `commission_debit`** | In Kundensicht ausgeblendet, wenn `investment_return` zum selben Trade/Investment existiert | `investorAccountStatementMerge/mergedTimeline.js` |
 | **`amount + profit` (Investment)** | Anzeige/Aggregat nach Abschluss; kann vom Pool-Kaufpreis abweichen | `Investment` |
 
-**Ops-Check `getTradeSettlementConsistencyStatus`:** Expected `grossReturn` = `transferAmount` aus Collection Bill (Fallback: `buyLeg.amount + netProfit`). **Nicht** `amount + profit + commission` — das wäre Doppelzählen der Provision.
+**Ops-Check `getTradeSettlementConsistencyStatus`:** Expected `grossReturn` = `transferAmount` aus Collection Bill (Fallback: `buyLeg.amount + netProfit`). **Nicht** `amount + profit + commission` — das wäre Doppelzählen der Provision. Auf dem Personenkonto wird **kein** separates `commission_debit` mehr erwartet (`expectedCommissionOnStatement = 0`).
 
 Siehe auch [BOOKING_AND_BELEG_SSOT.md](./BOOKING_AND_BELEG_SSOT.md) (`transferAmount = netSellAmount − commission`).
 
