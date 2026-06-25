@@ -15,7 +15,8 @@ extension Notification.Name {
     /// Triggered when a trade is completed (buy + sell matched)
     static let tradeCompleted = Notification.Name("tradeCompleted")
 
-    /// Triggered when an order is placed successfully
+    /// Deprecated: use `BuyOrderViewWrapper(onOrderPlaced:)` to dismiss parent sheets explicitly.
+    @available(*, deprecated, message: "Use BuyOrderViewWrapper(onOrderPlaced:) instead")
     static let orderPlacedSuccessfully = Notification.Name("orderPlacedSuccessfully")
 
     /// Triggered when an invoice changes

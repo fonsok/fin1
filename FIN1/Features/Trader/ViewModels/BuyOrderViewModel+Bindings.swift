@@ -10,6 +10,9 @@ extension BuyOrderViewModel {
             .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
             .map { [weak self] text -> (value: Double?, message: String?) in
                 guard let self = self else { return (nil, nil) }
+                if self.isPlacementLocked {
+                    return (nil, self.quantityConstraintMessage)
+                }
                 let parsed = OrderCalculationUtility.parseGermanQuantity(text)
                 let processedValue = self.quantityInputManager.processQuantityText(text)
                 let effectiveValue = processedValue > 0 ? processedValue : Double(parsed)
@@ -61,6 +64,7 @@ extension BuyOrderViewModel {
         )
         .sink { [weak self] _, _ in
             guard let self else { return }
+            guard !self.isPlacementLocked else { return }
             self.investmentCalculationTask?.cancel()
             self.investmentCalculationTask = Task { @MainActor [weak self] in
                 await self?.calculateInvestmentOrder()

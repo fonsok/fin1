@@ -466,6 +466,34 @@ final class InvestmentTradingUITests: XCTestCase {
         XCTAssertTrue(true, "Multiple buy orders placed - check simulator")
     }
 
+    /// Regression: first tap on KAUFEN must open a populated buy sheet (not an empty modal).
+    @MainActor
+    func testBuyOrderSheet_OpensWithContent_OnFirstTap() throws {
+        self.app.terminate()
+        self.app.launchArguments = ["--uitesting", "--reset-state", "--ui-test-entry-buy-order-sheet"]
+        self.app.launch()
+
+        let loading = self.app.otherElements["UITestBuyOrderSheetEntryLoading"].firstMatch
+        _ = self.waitForElement(loading, timeout: 5)
+
+        let kaufenButton = self.app.buttons["UITestOpenBuyOrderSheetButton"].firstMatch
+        XCTAssertTrue(self.waitForElement(kaufenButton, timeout: 45), "Buy sheet entry should be visible after trader session prep")
+        kaufenButton.tap()
+
+        let buyOrderNavBar = self.app.navigationBars["Kauf-Order"].firstMatch
+        let buyOrderRoot = self.app.otherElements["BuyOrderSheetRoot"].firstMatch
+        XCTAssertTrue(
+            self.waitForElement(buyOrderNavBar, timeout: 15) || self.waitForElement(buyOrderRoot, timeout: 5),
+            "Buy order sheet should appear on first tap"
+        )
+
+        let quantityField = self.app.textFields["QuantityInputField"].firstMatch
+        XCTAssertTrue(self.waitForElement(quantityField, timeout: 20), "Quantity field should be visible in buy sheet")
+
+        let placeOrderButton = self.app.buttons["PlaceOrderButton"].firstMatch
+        XCTAssertTrue(placeOrderButton.exists, "Place order button should be present (sheet not empty)")
+    }
+
     /// Regression test: In limit mode, buy action must remain tappable when input is valid.
     @MainActor
     func testLimitBuyOrder_ButtonEnabledWhenLimitIsSet() throws {

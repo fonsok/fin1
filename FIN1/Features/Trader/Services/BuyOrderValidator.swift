@@ -1,5 +1,18 @@
 import Foundation
 
+// MARK: - Brief-Kurs staleness (UX indicator thresholds — not placement gates)
+
+enum BuyOrderPriceStaleness {
+    /// Indicator below this value shows an elevated staleness hint in the buy form.
+    static let elevatedWarningThreshold: Double = 0.25
+
+    static let possiblyStaleMessage =
+        "Der angezeigte Kurs könnte veraltet sein. Für einen aktuellen Stand ↻ tippen."
+
+    static let likelyStaleMessage =
+        "Der angezeigte Kurs ist wahrscheinlich veraltet. ↻ neu laden wird empfohlen."
+}
+
 // MARK: - Buy Order Validator Protocol
 @MainActor
 protocol BuyOrderValidatorProtocol {
@@ -30,7 +43,9 @@ final class BuyOrderValidator: BuyOrderValidatorProtocol {
             !limit.hasSuffix(",")
 
         guard isValidGermanFormat else {
+            #if DEBUG
             print("🔍 DEBUG: Invalid German format - limit: '\(limit)'")
+            #endif
             return false
         }
 
@@ -57,9 +72,6 @@ final class BuyOrderValidator: BuyOrderValidatorProtocol {
             return self.validateLimitPrice(limit)
         }()
 
-        // Check if price data is still valid (not expired)
-        let hasValidPrice = priceValidityProgress > 0
-
         // Cash balance validation - ensure estimated balance ≥ minimum reserve
         let hasSufficientFunds: Bool
         if let currentUser = userService.currentUser {
@@ -69,12 +81,14 @@ final class BuyOrderValidator: BuyOrderValidatorProtocol {
             hasSufficientFunds = false
         }
 
-        let isValid = hasValidQuantity && hasValidOrderMode && hasValidLimitPrice && hasValidPrice && hasSufficientFunds
+        // Staleness indicator is advisory only (green → red); it does not gate placement.
+        let isValid = hasValidQuantity && hasValidOrderMode && hasValidLimitPrice && hasSufficientFunds
 
-        // Debug logging
+        #if DEBUG
         print(
-            "🔍 DEBUG: BuyOrder canPlaceOrder validation - quantity: \(quantity), orderMode: \(orderMode), limit: '\(limit)', priceValidityProgress: \(priceValidityProgress), estimatedCost: €\(estimatedCost.formatted(.currency(code: "EUR"))), hasValidQuantity: \(hasValidQuantity), hasValidOrderMode: \(hasValidOrderMode), hasValidLimitPrice: \(hasValidLimitPrice), hasValidPrice: \(hasValidPrice), hasSufficientFunds: \(hasSufficientFunds), isValid: \(isValid)"
+            "🔍 DEBUG: BuyOrder canPlaceOrder validation - quantity: \(quantity), orderMode: \(orderMode), limit: '\(limit)', priceStalenessProgress: \(priceValidityProgress), estimatedCost: €\(estimatedCost.formatted(.currency(code: "EUR"))), hasValidQuantity: \(hasValidQuantity), hasValidOrderMode: \(hasValidOrderMode), hasValidLimitPrice: \(hasValidLimitPrice), hasSufficientFunds: \(hasSufficientFunds), isValid: \(isValid)"
         )
+        #endif
 
         return isValid
     }

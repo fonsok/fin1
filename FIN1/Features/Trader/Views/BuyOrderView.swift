@@ -11,6 +11,7 @@ struct BuyOrderViewWrapper: View {
     let investmentService: any InvestmentServiceProtocol
     let userService: any UserServiceProtocol
     let traderDataService: (any TraderDataServiceProtocol)?
+    let onOrderPlaced: (() -> Void)?
     @StateObject private var viewModel: BuyOrderViewModel
 
     init(
@@ -23,7 +24,9 @@ struct BuyOrderViewWrapper: View {
         userService: any UserServiceProtocol,
         traderDataService: (any TraderDataServiceProtocol)? = nil,
         auditLoggingService: (any AuditLoggingServiceProtocol)? = nil,
-        transactionLimitService: (any TransactionLimitServiceProtocol)? = nil
+        transactionLimitService: (any TransactionLimitServiceProtocol)? = nil,
+        viewModel: BuyOrderViewModel? = nil,
+        onOrderPlaced: (() -> Void)? = nil
     ) {
         self.searchResult = searchResult
         self.traderService = traderService
@@ -33,7 +36,42 @@ struct BuyOrderViewWrapper: View {
         self.investmentService = investmentService
         self.userService = userService
         self.traderDataService = traderDataService
-        self._viewModel = StateObject(wrappedValue: BuyOrderViewModel(
+        self.onOrderPlaced = onOrderPlaced
+        self._viewModel = StateObject(
+            wrappedValue: viewModel ?? Self.makeViewModel(
+                searchResult: searchResult,
+                traderService: traderService,
+                cashBalanceService: cashBalanceService,
+                configurationService: configurationService,
+                investmentQuantityCalculationService: investmentQuantityCalculationService,
+                investmentService: investmentService,
+                userService: userService,
+                traderDataService: traderDataService,
+                auditLoggingService: auditLoggingService,
+                transactionLimitService: transactionLimitService
+            )
+        )
+    }
+
+    var body: some View {
+        BuyOrderView(viewModel: self.viewModel, onOrderPlaced: self.onOrderPlaced)
+            .id(self.searchResult.wkn)
+    }
+
+    @MainActor
+    static func makeViewModel(
+        searchResult: SearchResult,
+        traderService: any TraderServiceProtocol,
+        cashBalanceService: any CashBalanceServiceProtocol,
+        configurationService: any ConfigurationServiceProtocol,
+        investmentQuantityCalculationService: any InvestmentQuantityCalculationServiceProtocol,
+        investmentService: any InvestmentServiceProtocol,
+        userService: any UserServiceProtocol,
+        traderDataService: (any TraderDataServiceProtocol)? = nil,
+        auditLoggingService: (any AuditLoggingServiceProtocol)? = nil,
+        transactionLimitService: (any TransactionLimitServiceProtocol)? = nil
+    ) -> BuyOrderViewModel {
+        BuyOrderViewModel(
             searchResult: searchResult,
             traderService: traderService,
             cashBalanceService: cashBalanceService,
@@ -44,18 +82,32 @@ struct BuyOrderViewWrapper: View {
             traderDataService: traderDataService,
             auditLoggingService: auditLoggingService,
             transactionLimitService: transactionLimitService
-        ))
+        )
     }
 
-    var body: some View {
-        BuyOrderView(viewModel: self.viewModel)
+    /// Sheet entry: ViewModel is owned by `@StateObject` here — avoids empty sheets from split `@State` + `.sheet(item:)`.
+    init(searchResult: SearchResult, services: AppServices, onOrderPlaced: (() -> Void)? = nil) {
+        self.init(
+            searchResult: searchResult,
+            traderService: services.traderService,
+            cashBalanceService: services.cashBalanceService,
+            configurationService: services.configurationService,
+            investmentQuantityCalculationService: services.investmentQuantityCalculationService,
+            investmentService: services.investmentService,
+            userService: services.userService,
+            traderDataService: services.traderDataService,
+            auditLoggingService: services.auditLoggingService,
+            transactionLimitService: services.transactionLimitService,
+            onOrderPlaced: onOrderPlaced
+        )
     }
 }
 
 // MARK: - Buy Order View
 
 struct BuyOrderView: View {
-    @StateObject var viewModel: BuyOrderViewModel
+    @ObservedObject var viewModel: BuyOrderViewModel
+    var onOrderPlaced: (() -> Void)?
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var tabRouter: TabRouter
     @State private var isShowingConfirmation = false
@@ -64,8 +116,6 @@ struct BuyOrderView: View {
     @State private var legalNoticeText: String = ""
     @State private var transactionLimitWarningTitle: String = "Transaktionslimit erreicht"
     @State private var transactionLimitIntroText: String?
-    @State private var orderFailureAlertError: AppError?
-    @State private var showOrderFailureAlert = false
     @FocusState private var quantityFieldFocused: Bool
 
     private var isPlacingOrder: Bool { self.viewModel.isPlacingOrder }
@@ -84,9 +134,13 @@ struct BuyOrderView: View {
 
                     self.costEstimateSection
 
+                    self.priceValidityWarningSection
+
                     self.insufficientFundsWarningSection
 
                     self.transactionLimitWarningSection
+
+                    self.orderFailureSection
 
                     self.orderActionButton
 
@@ -117,36 +171,23 @@ struct BuyOrderView: View {
                 }
             }
         }
-        .task {
+        .interactiveDismissDisabled(self.isPlacingOrder)
+        .accessibilityIdentifier("BuyOrderSheetRoot")
+        .onDisappear {
+            self.viewModel.priceValidityTimerManager.cleanup()
+        }
+        .task(id: self.viewModel.searchResult.wkn) {
             print("🔍 BuyOrderView: loading trader pool investments from backend")
-            await self.viewModel.refreshInvestmentsFromBackend()
+            await self.viewModel.loadPoolInvestmentsIfNeeded()
             await self.viewModel.calculateInvestmentOrder()
         }
         .onChange(of: self.viewModel.shouldShowDepotView) { _, newValue in
             if newValue {
-                // Navigate directly to Depot; overlay will be shown in Depot view
                 self.viewModel.shouldShowDepotView = false
                 self.tabRouter.selectedTab = 1
-
-                // Post notification to dismiss the entire navigation stack
-                NotificationCenter.default.post(name: .orderPlacedSuccessfully, object: nil)
-
+                self.onOrderPlaced?()
                 self.dismiss()
             }
-        }
-        .onChange(of: self.viewModel.orderStatus) { _, newStatus in
-            if case .failed(let error) = newStatus {
-                self.orderFailureAlertError = error
-                self.showOrderFailureAlert = true
-            }
-        }
-        .alert("Kauf fehlgeschlagen", isPresented: self.$showOrderFailureAlert) {
-            Button("OK") {
-                self.viewModel.resetOrderStatus()
-                self.orderFailureAlertError = nil
-            }
-        } message: {
-            Text(self.orderFailureAlertError?.localizedDescription ?? "Unbekannter Fehler")
         }
         .onChange(of: self.viewModel.orderMode) { _, newValue in
             // Stop monitoring if switching away from limit order
@@ -392,6 +433,81 @@ struct BuyOrderView: View {
     }
 
     @ViewBuilder
+    private var priceValidityWarningSection: some View {
+        if !self.isPlacingOrder,
+           self.viewModel.priceValidityProgress > 0,
+           self.viewModel.priceValidityProgress < BuyOrderPriceStaleness.elevatedWarningThreshold {
+            HStack(alignment: .top, spacing: ResponsiveDesign.spacing(8)) {
+                Image(systemName: "clock.badge.exclamationmark")
+                    .foregroundColor(.orange)
+                Text(BuyOrderPriceStaleness.possiblyStaleMessage)
+                    .font(ResponsiveDesign.captionFont())
+                    .foregroundColor(AppTheme.primaryText)
+                    .multilineTextAlignment(.leading)
+            }
+            .padding()
+            .background(Color.orange.opacity(0.1))
+            .cornerRadius(ResponsiveDesign.spacing(10))
+        } else if !self.isPlacingOrder, self.viewModel.priceValidityProgress <= 0 {
+            HStack(alignment: .top, spacing: ResponsiveDesign.spacing(8)) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundColor(.red)
+                Text(BuyOrderPriceStaleness.likelyStaleMessage)
+                    .font(ResponsiveDesign.captionFont())
+                    .foregroundColor(AppTheme.primaryText)
+                    .multilineTextAlignment(.leading)
+            }
+            .padding()
+            .background(Color.red.opacity(0.08))
+            .cornerRadius(ResponsiveDesign.spacing(10))
+        }
+    }
+
+    @ViewBuilder
+    private var orderFailureSection: some View {
+        if self.viewModel.hasOrderFailure, let message = viewModel.orderFailureMessage {
+            VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(10)) {
+                HStack {
+                    Image(systemName: "xmark.octagon.fill")
+                        .foregroundColor(.red)
+                        .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize()))
+                    Text("Kauf fehlgeschlagen")
+                        .font(ResponsiveDesign.headlineFont())
+                        .foregroundColor(.red)
+                }
+
+                Text(message)
+                    .font(ResponsiveDesign.bodyFont())
+                    .foregroundColor(AppTheme.primaryText)
+                    .multilineTextAlignment(.leading)
+
+                Button {
+                    self.viewModel.acknowledgeOrderFailure()
+                } label: {
+                    Text("Verstanden")
+                        .font(ResponsiveDesign.bodyFont())
+                        .fontWeight(.semibold)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, ResponsiveDesign.spacing(10))
+                        .background(Color.red.opacity(0.15))
+                        .cornerRadius(ResponsiveDesign.spacing(8))
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("BuyOrderFailureAcknowledgeButton")
+            }
+            .padding()
+            .background(Color.red.opacity(0.08))
+            .overlay(
+                RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(10))
+                    .stroke(Color.red.opacity(0.35), lineWidth: 1)
+            )
+            .cornerRadius(ResponsiveDesign.spacing(10))
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Kauf fehlgeschlagen. \(message)")
+        }
+    }
+
+    @ViewBuilder
     private var orderPlacementStatusSection: some View {
         if self.isPlacingOrder {
             HStack(spacing: ResponsiveDesign.spacing(12)) {
@@ -422,6 +538,7 @@ struct BuyOrderView: View {
             isLoading: self.isPlacingOrder,
             action: {
                 print("🔘 DEBUG: Buy button tapped in form section")
+                self.viewModel.prepareForPlacement()
                 Task {
                     await self.viewModel.placeOrder()
                 }

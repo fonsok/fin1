@@ -9,6 +9,7 @@ protocol BuyOrderPlacementServiceProtocol: Sendable {
         limit: String,
         priceValidityProgress: Double,
         investmentOrderCalculation: CombinedOrderCalculationResult?,
+        clientOrderIntentId: String,
         traderService: any TraderServiceProtocol
     ) async throws -> BuyOrderPlacementResult
 }
@@ -58,13 +59,13 @@ final class BuyOrderPlacementService: BuyOrderPlacementServiceProtocol, @uncheck
         limit: String,
         priceValidityProgress: Double,
         investmentOrderCalculation: CombinedOrderCalculationResult?,
+        clientOrderIntentId: String,
         traderService: any TraderServiceProtocol
     ) async throws -> BuyOrderPlacementResult {
-        // Validate price is still valid
-        guard priceValidityProgress > 0 else {
-            return BuyOrderPlacementResult(
-                success: false,
-                error: AppError.validationError("Preis hat sich geändert. Bitte versuchen Sie es erneut.")
+        if priceValidityProgress < BuyOrderPriceStaleness.elevatedWarningThreshold {
+            print(
+                "ℹ️ BuyOrderPlacementService: placing with elevated price staleness "
+                    + "(indicator=\(String(format: "%.2f", priceValidityProgress)))"
             )
         }
 
@@ -180,7 +181,7 @@ final class BuyOrderPlacementService: BuyOrderPlacementServiceProtocol, @uncheck
                 "symbol": searchResult.wkn,
                 "price": executedPrice,
                 "orderInstruction": orderMode.rawValue,
-                "clientOrderIntentId": UUID().uuidString,
+                "clientOrderIntentId": clientOrderIntentId,
                 "traderQuantity": traderQuantity,
                 "mirrorPoolQuantity": mirrorPoolQuantity
             ]
@@ -216,7 +217,17 @@ final class BuyOrderPlacementService: BuyOrderPlacementServiceProtocol, @uncheck
                 parameters: payload
             )
 
-            guard executionResult.status.uppercased() == "COMMITTED" else {
+            let normalizedStatus = executionResult.status.uppercased()
+            if normalizedStatus == "ABORTED" {
+                return BuyOrderPlacementResult(
+                    success: false,
+                    error: AppError.validationError(
+                        "Der Kauf konnte nicht abgeschlossen werden. Bitte prüfen Sie Ihr Depot, bevor Sie erneut kaufen."
+                    )
+                )
+            }
+
+            guard normalizedStatus == "COMMITTED" else {
                 return BuyOrderPlacementResult(
                     success: false,
                     error: AppError.validationError("Paired execution nicht committed (status=\(executionResult.status)).")
@@ -250,12 +261,31 @@ final class BuyOrderPlacementService: BuyOrderPlacementServiceProtocol, @uncheck
         } catch let error as AppError {
             return BuyOrderPlacementResult(success: false, error: error)
         } catch {
-            let appError = error.toAppError()
+            let appError = Self.mapPairedBuyFailure(error.toAppError())
             return BuyOrderPlacementResult(
                 success: false,
                 error: appError
             )
         }
+    }
+
+    private static func mapPairedBuyFailure(_ error: AppError) -> AppError {
+        let message = error.errorDescription ?? ""
+        let normalized = message.lowercased()
+        if normalized.contains("duplicate value for a field with unique values")
+            || normalized.contains("duplicate key")
+            || normalized.contains("e11000") {
+            return .validationError(
+                "Der Kauf konnte wegen eines Server-Konflikts nicht abgeschlossen werden. "
+                    + "Bitte prüfen Sie zuerst Ihr Depot — der Auftrag könnte bereits eingegangen sein."
+            )
+        }
+        if normalized.contains("paired execution aborted") {
+            return .validationError(
+                "Der Kauf konnte nicht abgeschlossen werden. Bitte prüfen Sie Ihr Depot, bevor Sie erneut kaufen."
+            )
+        }
+        return error
     }
 
     /// Buy order payload shared by trader-only and paired flows.

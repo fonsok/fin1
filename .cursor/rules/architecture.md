@@ -389,6 +389,17 @@ Per [Swift API Design Guidelines](https://swift.org/documentation/api-design-gui
 
 - Use `@StateObject` for ViewModels, `@ObservedObject` for injected dependencies.
 - Implement lazy loading for large datasets.
+
+### SwiftUI Sheet Presentation (ViewModel ownership)
+
+**REQUIRED** for modal flows that own a ViewModel (buy/sell order sheets, investment sheets, etc.):
+
+- **Do not** split sheet trigger and ViewModel across two `@State` properties (e.g. `selectedItem` + `optionalViewModel`). SwiftUI can present `.sheet(item:)` before the ViewModel state is visible in the content closure → empty sheet.
+- **Do** pass the sheet `item` into a **wrapper view** that owns the ViewModel via `@StateObject` (e.g. `BuyOrderViewWrapper(searchResult: item, services: appServices)` inside `.sheet(item:) { item in … }`).
+- **Do** clear the sheet `item` binding on success via `BuyOrderViewWrapper(onOrderPlaced:)` (parent owns dismiss chain — no `NotificationCenter` for sheet teardown). The wrapper discards the ViewModel when the sheet is torn down.
+- **Do** call timer/subscription cleanup in the sheet content’s `.onDisappear` (e.g. `priceValidityTimerManager.cleanup()`).
+
+Reference: `SearchResultView`, `TraderWatchlistView`, `BuyOrderViewWrapper` in `BuyOrderView.swift`.
 - Use `@Published` sparingly - only for UI-bound properties.
 - Avoid retain cycles with `[weak self]` in closures.
 - Use `Task` for async operations, not `DispatchQueue`.

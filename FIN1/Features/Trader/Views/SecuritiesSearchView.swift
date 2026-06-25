@@ -96,7 +96,8 @@ struct SecuritiesSearchView: View {
                             results: self.viewModel.searchResults,
                             filterType: self.viewModel.direction.rawValue,
                             filterDescription: self.viewModel.getFilterDescription(),
-                            warrantDetailsViewModel: self.warrantDetailsViewModel
+                            warrantDetailsViewModel: self.warrantDetailsViewModel,
+                            onOrderPlaced: { self.dismiss() }
                         )
                         .padding(.top, ResponsiveDesign.spacing(16))
                     }
@@ -117,10 +118,6 @@ struct SecuritiesSearchView: View {
             }
             .onChange(of: self.savedFiltersRepository.savedFilters) { _, newFilters in
                 self.viewModel.setSavedFiltersToCheck(newFilters)
-            }
-            .onReceive(NotificationCenter.default.publisher(for: .orderPlacedSuccessfully)) { _ in
-                // Dismiss the entire securities search view when order is placed successfully
-                self.dismiss()
             }
             .navigationBarTitle("Wertpapiersuche", displayMode: .inline)
             .toolbar {
