@@ -127,15 +127,22 @@ jobs:
           brew update
           brew install swiftlint swiftformat
 
+      - name: Setup Node (Danger)
+        if: github.event_name == 'pull_request'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
       - name: Install Danger (pull requests)
         if: github.event_name == 'pull_request'
         run: |
           brew tap danger/tap
           brew trust danger/tap
           brew install danger/tap/danger-swift
+          # Brew's pkg-bundled danger-js can fail GitHub API fetch (undici + old Node).
+          npm install -g danger@13
 
       # Lint Swift sources only (avoid scanning local build trees; matches clean CI checkout).
-      - name: SwiftFormat
         run: |
           swiftformat FIN1 FIN1Tests FIN1UITests FIN1InvestorTests FIN1CoreRegressionTests --lint
 
@@ -197,7 +204,7 @@ jobs:
         if: github.event_name == 'pull_request'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: danger-swift ci
+        run: danger-swift ci --danger-js-path "$(command -v danger)"
 
 
 
