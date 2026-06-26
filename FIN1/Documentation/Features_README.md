@@ -44,12 +44,15 @@ Features/
 
 ## Feature Details
 
-### Admin (8 files)
-Administrative functionality for app management:
-- **RoundingDifferencesService** - Tracks and resolves rounding differences
-- **AdminSummaryReportViewModel** - Generates admin reports
-- **ConfigurationSettingsViewModel** - App configuration management
-- **BankContraLedgerViewModel** - Bank reconciliation
+### Admin (16 files)
+Read-only ops/diagnosis in the iOS app; **remote configuration writes only via Admin Web Portal** (4-eyes):
+- **AdminDashboardView** (`Dashboard/`) — system info, web-portal banner, ledger/Beleg links; Role Testing **DEBUG only**
+- **AppLedgerViewModel** / **DocumentSearchViewModel** — buchhaltungsnahe Read-only-Sicht
+- **MirrorBasisDriftHealthViewModel** — SSOT-Drift-Health (Ops)
+- **AdminAppSettingsView** — client-local themes/target groups (not server config)
+- **OpsHealthAPIService**, **DocumentSearchAPIService** — Parse Cloud read APIs
+
+Remote finanz-/Display-Parameter: **`ConfigurationService.fetchRemoteDisplayConfig()`** (`getConfig`); Schreib-SSOT siehe [`Documentation/ENGINEERING_GUIDE.md`](../../Documentation/ENGINEERING_GUIDE.md) (*Remote configuration*).
 
 ### Authentication (81 files)
 Complete authentication and onboarding flow:
@@ -165,4 +168,4 @@ All UI uses `ResponsiveDesign` for measurements:
 
 ---
 
-**Last Updated**: January 2026
+**Last Updated**: June 2026

@@ -64,25 +64,50 @@ extension SignUpData {
     }
 
     // MARK: - Financial Information Validation
+    var isFinancialStepComplete: Bool {
+        self.employmentStatus != nil &&
+            self.incomeRange != nil &&
+            self.cashAndLiquidAssets != nil &&
+            self.incomeSources.values.contains(true)
+    }
+
     var isFinancialInfoValid: Bool {
-        !income.isEmpty &&
-            !incomeSources.isEmpty &&
-            incomeSources.values.contains(true) // At least one income source selected
+        self.isFinancialStepComplete
     }
 
     // MARK: - Investment Experience Validation
+    var isStocksExperienceComplete: Bool {
+        guard let count = self.stocksTransactionsCount else { return false }
+        if count == .none { return true }
+        return self.stocksInvestmentAmount != nil
+    }
+
+    var isEtfsExperienceComplete: Bool {
+        guard let count = self.etfsTransactionsCount else { return false }
+        if count == .none { return true }
+        return self.etfsInvestmentAmount != nil
+    }
+
+    var isDerivativesExperienceComplete: Bool {
+        guard let count = self.derivativesTransactionsCount else { return false }
+        if count == .none { return true }
+        return self.derivativesInvestmentAmount != nil && self.derivativesHoldingPeriod != nil
+    }
+
+    var isExperienceStepComplete: Bool {
+        self.isStocksExperienceComplete &&
+            self.isEtfsExperienceComplete &&
+            self.isDerivativesExperienceComplete &&
+            self.otherAssets.values.contains(true)
+    }
+
     var isInvestmentExperienceValid: Bool {
-        // At least one type of investment experience should be provided
-        return stocksTransactionsCount != .none ||
-            etfsTransactionsCount != .none ||
-            derivativesTransactionsCount != .none ||
-            otherAssets.values.contains(true)
+        self.isExperienceStepComplete
     }
 
     // MARK: - Legal Declarations Validation
     var areLegalDeclarationsValid: Bool {
-        acceptedTerms &&
-            acceptedPrivacyPolicy &&
+        self.hasRequiredLegalConsents &&
             moneyLaunderingDeclaration &&
             insiderTradingOptions.values.contains(true) // At least one option selected
     }
@@ -142,13 +167,15 @@ extension SignUpData {
         case .moneyLaunderingDeclaration:
             return moneyLaunderingDeclaration
         case .terms:
-            return acceptedTerms && acceptedPrivacyPolicy
+            return self.hasRequiredLegalConsents
         case .summary:
             return self.isFormValid
         case .riskClassificationNote:
             return true // Information step
         case .riskClass7Confirmation:
-            return userSelectedRiskClass != nil
+            return userSelectedRiskClass != nil && self.hasRequiredLegalConsents
+        case .roleAgreement:
+            return self.hasRequiredRoleAgreement
         }
     }
 }

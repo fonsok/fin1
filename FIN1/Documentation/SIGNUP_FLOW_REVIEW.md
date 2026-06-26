@@ -62,8 +62,8 @@ Comprehensive review of the sign-up flow implementation against:
 **Solution**:
 - Created `RiskClassCalculationServiceProtocol` and `RiskClassCalculationService`
 - Moved all risk calculation logic (200+ lines) to dedicated service
-- `SignUpData` now uses service via dependency injection
-- Legacy methods kept for backward compatibility
+- `SignUpData` delegates to service via dependency injection (default `RiskClassCalculationService()` in init)
+- **Legacy duplicate removed (2026-06):** no `calculateRiskClassLegacy` in `SignUpDataRiskCalculation.swift`; gate/sync helpers remain on `SignUpData`
 
 **Files Created**:
 - `FIN1/Features/Authentication/Services/RiskClassCalculationServiceProtocol.swift`
@@ -81,7 +81,7 @@ Comprehensive review of the sign-up flow implementation against:
 - Created `InvestmentExperienceCalculationServiceProtocol` and `InvestmentExperienceCalculationService`
 - Moved all experience calculation methods to dedicated service
 - `SignUpData` now uses service via dependency injection
-- Legacy methods kept for backward compatibility
+- Legacy experience helpers removed from model where superseded by service
 
 **Files Created**:
 - `FIN1/Features/Authentication/Services/InvestmentExperienceCalculationServiceProtocol.swift`
@@ -226,13 +226,14 @@ The sign-up flow implementation is **generally well-structured** and follows mos
 
 **Overall Grade**: A (Excellent - All critical issues resolved)
 
-**Refactoring Status**: ✅ **COMPLETED**
-- All calculation logic extracted to dedicated services
+**Refactoring Status**: ✅ **COMPLETED** (2026-06)
+- All calculation logic in `RiskClassCalculationService` / `InvestmentExperienceCalculationService`
+- No legacy score duplication in `SignUpData`
+- Reactive RK1 sync on Step 17 gate fields
+- Role agreement finalize reconciles client + server (`applyRoleAgreementAcceptanceIfNeeded`, monotonic `getUserMe` merge)
 - Proper dependency injection implemented
 - Singleton usage eliminated
 - Architecture rules fully compliant
 
-**Next Steps**:
-- Consider removing legacy calculation methods after thorough testing
-- Add unit tests for new calculation services
+**Canonical docs**: `Documentation/FIN1_APP_DOCS/02A_FEATURE_KATALOG_GUARDRAILS.md` §3.3, `Documentation/LEGAL_DOCS_AUDIT_TRAIL.md`
 

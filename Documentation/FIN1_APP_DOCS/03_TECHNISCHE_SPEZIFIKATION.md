@@ -1,7 +1,7 @@
 ---
 title: "FIN1 – Technische Spezifikation"
 audience: ["Entwicklung", "Architektur", "Security", "QA", "Betrieb"]
-lastUpdated: "2026-06-11"
+lastUpdated: "2026-06-23"
 ---
 
 ## Konfigurierbare Finanzparameter
@@ -36,8 +36,8 @@ Diese Parameter erfordern eine Genehmigung durch einen zweiten Administrator:
 
 Diese können direkt geändert werden:
 
-- **Minimum Cash Reserve**: Standard €20,00, konfigurierbar über `ConfigurationService.updateMinimumCashReserve()`
-- **Pool Balance Distribution Threshold**: Schwellenwert für Pool-Verteilung
+- **Minimum Cash Reserve**: Standard €20,00; Schreib-SSOT **Admin Web Portal** (`requestConfigurationChange`, ggf. 4-Augen). iOS `ConfigurationService` ist **read-only** (Cache via `getConfig`).
+- **Pool Balance Distribution Threshold**: Schwellenwert für Pool-Verteilung — ebenfalls Admin Web Portal / `Configuration`.
 
 Alle Rates verwenden `effective*` Properties mit Fallback auf `CalculationConstants` Defaults, falls nicht konfiguriert.
 
@@ -90,7 +90,7 @@ Diese Spezifikation beschreibt die **Detail-Architektur**, **APIs**, **Datenmode
 
 **Feature-Module (aus `FIN1/Features/`)**
 
-- `Authentication`: Login/Signup/Onboarding, RiskClass/Experience Calculation, Token Storage (Keychain/Memory), Terms Step.
+- `Authentication`: Login/Signup/Onboarding, RiskClass/Experience Calculation, Token Storage (Keychain/Memory), Legal Gate 1 (Contact), Device-Legal-Consent-Gate nach Login.
 - `Dashboard`: Role-based Einstieg, KPIs.
 - `Investor`: Discovery/Investments/Watchlist, Investor Cash Balance.
 - `Trader`: Depot/Holdings, Orders/Trades, Live Query Subscriptions, Statistics.
@@ -101,7 +101,7 @@ Diese Spezifikation beschreibt die **Detail-Architektur**, **APIs**, **Datenmode
 
 - Parse: `ParseAPIClient` (REST), `ParseLiveQueryClient` (WebSocket).
 - Compliance: `AuditLoggingService`, `TransactionLimitService` (iOS-seitig), `BuyOrderValidator`-Pattern (Regelwerk).
-- Legal: `TermsContentService`, `TermsAcceptanceService`.
+- Legal: `TermsContentService`, `TermsAcceptanceService`, `DeviceLegalConsentStore`, `LegalConsentVersionResolver`.
 - Trading: Order/Trade Lifecycle, Invoice/Transaction IDs, CashBalance Services.
 - Backend Sync: `TradeAPIService`, `InvestmentAPIService`, `OrderAPIService` für iOS → Backend Synchronisation.
 
@@ -245,16 +245,26 @@ sequenceDiagram
 #### Health/Config
 
 - **`health`** (Cloud): returns `{status,timestamp,version,cloudCode}`
-- **`getConfig`**: params `{environment?}` → liefert **finanzielle Parameter aus der Parse-Klasse `Configuration`** (via `cloud/utils/configHelper`) sowie `features`, `limits`, `display`. Die iOS-App synchronisiert diese Werte beim Start über `ConfigurationService.fetchRemoteDisplayConfig()`.
+- **`getConfig`**: params `{environment?}` → liefert **finanzielle Parameter aus der Parse-Klasse `Configuration`** (via `cloud/utils/configHelper`) sowie `features`, `limits`, `display`. Display-Flags aus dem Admin-Portal (z. B. `showCommissionBreakdownInCreditNote`) werden aus `Configuration` in `display` **gemerged** (nicht nur aus der legacy-Klasse `Config`). Die iOS-App synchronisiert beim Start über `ConfigurationService.fetchRemoteDisplayConfig()`.
+- **`updateConfig`**: **deprecated** (seit 2026-06) — antwortet mit `OPERATION_FORBIDDEN`. Schreib-SSOT: Admin Web Portal → `requestConfigurationChange` / 4-Augen → Klasse `Configuration`.
 
 #### User/FAQ
 
 - **`getUserProfile`**: auth required → `{ user, profile, address, riskAssessment }` (volles Profil für Anzeige/Bearbeitung)
-- **`getUserMe`**: auth required → schlanker Snapshot für Session/Refresh (iOS nutzt ihn nach Login u. a. für `User`): `{ id, customerNumber, email, role, kycStatus, accountType, companyKybCompleted, companyKybStep, companyKybStatus, onboardingCompleted, onboardingStep }` (`backend/parse-server/cloud/functions/user/profile.js`)
-- **`updateProfile`**: auth required, params `{firstName?, lastName?, salutation?, dateOfBirth?, phoneNumber?}` → `{success:true}`
-- **`getOnboardingProgress`**: auth required → `{ currentStep, completedSteps, onboardingCompleted, kycStatus, savedData }`
-- **`saveOnboardingProgress`**: auth required, params `{ step, data?, partial? }` → Fortschritt speichern (partiell); `data` wird nach `sanitizeObject` mit **`validatePartialOnboardingData(step, data)`** (Joi) geprüft — ungültige Felder → `Parse.Error.INVALID_VALUE`.
+- **`getUserMe`**: auth required → schlanker Snapshot für Session/Refresh (iOS nutzt ihn nach Login u. a. für `User`): `{ id, customerNumber, email, role, kycStatus, accountType, companyKybCompleted, companyKybStep, companyKybStatus, onboardingCompleted, onboardingStep, riskTolerance, acceptedTerms, acceptedPrivacyPolicy, acceptedTermsVersion, acceptedPrivacyPolicyVersion, acceptedTermsDate, acceptedPrivacyPolicyDate, acceptedTraderAgreement, acceptedTraderAgreementVersion, acceptedTraderAgreementDate, acceptedInvestorAgreement, acceptedInvestorAgreementVersion, acceptedInvestorAgreementDate, roleAgreementRequired, roleAgreementAccepted, roleAgreementVersion }` — Legal-/Role-Agreement-Felder via `resolveUserLegalAcceptanceState` / `resolveUserRoleAgreementState` (`profile.js`, `legalConsentUserSync.js`). **`accepted*Agreement`** für die aktuelle Rolle spiegelt den aufgelösten `roleAgreement`-State (inkl. Ableitung aus `LegalConsent`, wenn `_User`-Flag fehlt); `persistResolvedRoleAgreementIfNeeded` schreibt nach.
+- **`updateProfile`**: auth required, params `{firstName?, lastName?, salutation?, dateOfBirth?, phoneNumber?, streetAndNumber?, postalCode?, city?, country?, state?, username?, email?}` → `{success:true}` — schreibt `UserProfile` (Name, Geburtsdatum, Telefon) und `_User` (Adresse, `username`, normalisierte `email`); Validierung via `validateProfileUpdate` in `validation.js`. iOS nutzt die Cloud Function (nicht `PUT /_User`) in `UserService+Profile.syncProfileToBackendIfPossible`.
+- **`_User` Trigger `beforeSave`** (`userTriggerBeforeSave.js`): bei Updates blockiert Wechsel `investor` ↔ `trader` auf bestehenden Konten → `OPERATION_FORBIDDEN` (Defense-in-Depth neben `saveOnboardingProgress`).
+- **`getOnboardingProgress`**: auth required → `{ currentStep, completedSteps, onboardingCompleted, kycStatus, savedData }`; liest neuestes `OnboardingProgress` pro `userId` (Audit-Historie begrenzt auf **32** Einträge für Chronologie).
+- **`saveOnboardingProgress`**: auth required, params `{ step, data?, partial? }` → `{ success, nextStep: null, onboardingCompleted: false }`.
+  - **Upsert:** ein `OnboardingProgress`-Dokument pro Nutzer (`userId`, neuestes `updatedAt`) — kein Dokument pro UI-Schritt.
+  - **`_User.onboardingStep`:** `user.save` nur bei echtem Schrittwechsel (nicht bei jedem Partial Save).
+  - **Position-only:** `data: { _positionOnly: true }` aktualisiert nur `step`/`updatedAt`, **ohne** Überschreiben des gespeicherten Blobs (iOS: Zurück-Navigation via `savePartialProgressPositionOnly`).
+  - **Rate-Limit:** ~40 Saves/Minute/Nutzer (`onboardingProgressRateLimit.js`); Überschreitung → `INVALID_VALUE` mit Hinweis *Too many onboarding save requests*.
+  - **Rolle immutable:** Abweichende `userRole` im `data`-Blob (Investor↔Trader) → `assertImmutableOnboardingRole` → `OPERATION_FORBIDDEN` (Code 119). `_User.role` wird hier **nicht** aktualisiert.
+  - **Sanitizing:** `data` nach `sanitizeObject` und `sanitizeOnboardingSavedData` (Legacy-Picker-Defaults); Joi via **`validatePartialOnboardingData(step, data)`** — Fehler → `INVALID_VALUE`.
 - **`completeOnboardingStep`**: auth required, params `{step, data?}` → `{success, nextStep?, onboardingCompleted}`; `data` wird mit **`validateStepData(step, data)`** (Joi in `onboardingStepSchemas.js`) validiert — Fehler → `INVALID_VALUE` mit Meldung `Validation failed: …`.
+  - Bei Schritt **`consents`:** `persistOnboardingLegalConsents` **und** `persistOnboardingRoleAgreementConsent` (Blob-Felder `acceptedTraderAgreement` / `acceptedInvestorAgreement` + `traderAgreementVersion` / `investorAgreementVersion`).
+  - Bei Schritten **`risk`** / **`verification`:** serverseitige **RC-5-Gate-Spiegelung** (`riskClass5DerivativesGate.js`, Contract `contracts/riskClass5DerivativesGate.json`) — kappt `calculatedRiskClass`/`finalRiskClass` 5 → 4 ohne passendes Step-16c-Profil (rollenspezifisch Investor vs. Trader). Siehe [`02A_FEATURE_KATALOG_GUARDRAILS.md`](02A_FEATURE_KATALOG_GUARDRAILS.md).
 - **`getCompanyKybProgress`**: auth required, nur **`accountType == company`** und **`role == investor`** → `{ currentStep, completedSteps, companyKybCompleted, companyKybStatus, savedData }` (sonst `OPERATION_FORBIDDEN`). Fortschritt in `CompanyKybProgress`, abgeschlossene Schritte in `CompanyKybAudit`.
 - **`saveCompanyKybProgress`**: auth required, gleiche Kontext-Regel, params `{ step, data?, partial? }` → speichert Blob in `CompanyKybProgress`; `data` nach `sanitizeObject` mit **`validatePartialCompanyKybData(step, data)`** (Joi in `companyKybStepSchemas.js`).
 - **`completeCompanyKybStep`**: auth required, gleiche Kontext-Regel, params `{ step, data }` ( **`data` Pflicht** ) → `{ success, nextStep?, companyKybCompleted, companyKybStatus }`; Validierung mit **`validateCompanyKybStepData`**; Schritt `submission` setzt u. a. `companyKybCompleted`, `companyKybStatus: pending_review`, optional `companyFourEyesRequestId` aus `data`.
@@ -277,6 +287,15 @@ sequenceDiagram
 - **Audit:** `completeOnboardingStep` mit `step: "risk"` persistiert Snapshot in `OnboardingAudit` (`buildAuditAnswers` in `functions/user/onboarding.js`).
 - **Dev OTP:** E-Mail-/SMS-Verifikation akzeptiert `000000`, wenn `NODE_ENV !== production` oder `ALLOW_DEV_ONBOARDING_OTP_BYPASS=true` (`utils/onboardingDevOtpBypass.js`; Env: `backend/env.example`).
 
+**Signup-Last / Client-Verhalten (seit 2026-06):**
+
+| Ebene | Maßnahme |
+|-------|----------|
+| iOS | Partial Saves debounced (~400 ms); `MainTabView` + Retail-Background erst nach `onboardingCompleted`; SLA nur Staff; `onboarding_started` beim Verlassen von Welcome |
+| Server | Upsert `OnboardingProgress`, conditional `_User.save`, Rate-Limit, Position-only, Role-Immutability (`assertImmutableOnboardingRole`) |
+| Mongo | Migration `onboarding_signup_indexes_v1` (siehe [`Documentation/SCHEMA_MIGRATIONS.md`](../SCHEMA_MIGRATIONS.md)) |
+| Ops | Load-Test: `scripts/load-test-signup-onboarding.js`; Migration: `scripts/run-onboarding-signup-indexes-migration.sh`; E2E Role-Lock: `scripts/run-smoke-signup-role-immutability.sh` |
+
 **Company-KYB (Server):** Joi in `backend/parse-server/cloud/utils/companyKybStepSchemas.js`, Einbindung in `validation.js`. Produktregeln und Schrittliste: [`Documentation/COMPANY_KYB_ONBOARDING.md`](../COMPANY_KYB_ONBOARDING.md), [`Documentation/ADR-003-Company-KYB-Onboarding.md`](../ADR-003-Company-KYB-Onboarding.md). iOS: `CompanyKybAPIService` / `SavedCompanyKybData`.
 
 #### Investment
@@ -285,7 +304,7 @@ sequenceDiagram
 - **`createInvestment`**: auth required, params `{traderId, amount}` → `{investmentId, investmentNumber, status}` (**Legacy**, ein Einzelbetrag ohne Batch-Splits)
 - **`createInvestmentSplits`**: auth required — **Primary-Path iOS** für Investment-Sheet (mehrere Splits pro Batch). Params: `{ batchId, traderId, traderUsername?, traderName?, specialization?, investorName?, splits: [{ sequenceNumber, amount }, …] }` → `{ batchId, resolvedTraderId, batchStatus: "committed"|"replayed", splits: [{ investmentId, sequenceNumber, investmentNumber?, idempotentReplay, status: "created"|"replayed" }] }`. **Atomar:** Fehler bei einem neuen Split → Rollback aller in derselben Request angelegten Splits; Client-Fehler: `Batch-Anlage fehlgeschlagen (neue Anteile zurückgenommen)`. Idempotenz: `(investorId, batchId, sequenceNumber)`. Implementierung: `functions/investmentCreateSplits.js`. Siehe [`Documentation/ENGINEERING_GUIDE.md`](../ENGINEERING_GUIDE.md) (Abschnitt *Investment anlegen*).
 - **`confirmInvestment`**: auth required, params `{investmentId}` → `{success:true, status:"active"}`
-- **`discoverTraders`**: params `{minRiskClass?, maxRiskClass?, limit?, skip?}` → `{ traders: [{ traderId, username, displayName, … }], total }` — `username` wird von iOS für `MockTrader.parseUserId`-Hydration genutzt (`TraderDataService.refreshParseUserIds`).
+- **`discoverTraders`**: params `{minRiskClass?, maxRiskClass?, limit?, skip?}` → `{ traders: [{ traderId, username, displayName, … }], total }` — Filter: `role=trader`, `status=active`, `kycStatus=verified`. `displayName` via `utils/profileDisplayName.js` (fehlende `firstName`/`lastName` z. B. vor Personal-Info-Schritt → `firstName` oder `username`, kein Crash). `username` wird von iOS für Katalog-Hydration genutzt (`TraderDataService.refreshTraderCatalog`).
 - **`getPoolMirrorCapacity`**, **`setPoolMirrorCapacityAlert`**: `traderId` und optional `traderUsername` / `traderName`; Antwort kann `resolvedTraderId` enthalten.
 
 #### Trading
@@ -326,9 +345,13 @@ sequenceDiagram
 
 #### Legal
 
-- **`getCurrentLegalDocument`**: params `{language:"de|en", documentType:"terms|privacy|imprint"}` → doc payload (siehe Code-Kommentar)
+- **`getCurrentLegalDocument`** / **`getCurrentTerms`**: params `{language:"de|en", documentType:"terms|privacy|imprint|trader_agreement|investor_agreement"}` → aktive `TermsContent`-Version inkl. `sections`, `version`, `documentHash`; Platzhalter (`{{TRADER_PERFORMANCE_FEE_RATE}}`, `{{INVESTOR_VOLUME_FEE_RATE}}`, …) serverseitig aufgelöst (`publicAudit.js`, `shared.validateDocumentType`)
 - **`logLegalDocumentDelivery`**: params `{documentType, language, servedVersion, servedHash?, source, platform, appVersion, buildNumber, deviceInstallId,...}` → `{skipped, objectId, createdAt?}`
-- **`recordLegalConsent`**: params `{consentType, version, documentHash?, documentUrl?, platform, appVersion, buildNumber, deviceInstallId, acceptedAt?}` → `{objectId, acceptedAt}`
+- **`recordLegalConsent`**: params `{consentType, version, documentHash?, documentUrl?, platform, appVersion, buildNumber, deviceInstallId, acceptedAt?}` → `{objectId, acceptedAt}`; schreibt `source: app`; idempotent pro `(userId, consentType, version, source, deviceInstallId)`; `consentType`: `terms_of_service|privacy_policy|imprint`
+- **`recordRoleAgreementConsent`**: auth required, params `{role?, version, deviceInstallId, documentHash?, platform?, appVersion?, buildNumber?, acceptedAt?, source?, sendConfirmationEmail?}` → `{objectId, acceptedAt, consentType, version, skipped?}` — Rolle aus `params.role` oder `_User.role` (`trader` → `trader_agreement`, `investor` → `investor_agreement`); schreibt `LegalConsent` mit `source: onboarding` (Default) oder `app`; synchronisiert `_User.acceptedTraderAgreement*` / `acceptedInvestorAgreement*`; optional Bestätigungs-E-Mail mit PDF (`roleAgreementEmail.js`). Idempotent pro `(userId, consentType, version, source, deviceInstallId)`.
+- **`getDeviceLegalConsentAcknowledgements`**: auth required, params `{deviceInstallId}` → `{acknowledgements:[{consentType, version}]}`; nur `source: app` (Onboarding-Zeilen ausgeschlossen)
+
+**Produkt-Zugriff (serverseitig):** `utils/productAccessGate.js` — `assertProductAccessEligible(user)` vor kritischen Trading-/Investment-Cloud-Functions (`placeOrder`, `investmentCreateSplits`, …); erfordert `onboardingCompleted === true`, `acceptedTerms` **und** `acceptedPrivacyPolicy`, passende Rollenvereinbarung (Retail), sowie für **`accountType == company`** `companyKybStatus === approved`.
 
 ### 3.3 Fehlercodes / Fehlerverhalten (Backend)
 
@@ -351,7 +374,7 @@ sequenceDiagram
 - **Dokumente**: `Document`, `Invoice`, `AccountStatement`
 - **Support**: `SupportTicket`, `TicketSLATracking`, `SatisfactionSurvey`
 - **Admin/Compliance**: `ComplianceEvent`, `AuditLog`, `FourEyesRequest`, `FourEyesAudit`
-- **Legal**: `TermsContent`, `LegalDocumentDeliveryLog`, `LegalConsent`
+- **Legal**: `TermsContent`, `LegalDocumentDeliveryLog`, `LegalConsent` (Feld `source`: `onboarding` | `app`)
 - **Push**: `PushToken`
 - **Watchlist**: `Watchlist` (Securities Watchlist), `InvestorWatchlist` (Trader Watchlist)
 - **Filter**: `SavedFilter` (Gespeicherte Filter für Securities/Trader Discovery)
@@ -479,12 +502,19 @@ sequenceDiagram
 
 ### 6.4 Mehrzeilige Beschreibung und Service Charge
 
-- Rechnungspositionen **Securities** und **Service Charge**: mehrzeilige Anzeige (InvoiceItemRowView, InvoiceItemDisplayRowView). PDF: dynamische Zeilenhöhe in PDFProfessionalComponents. Service Charge Rate konfigurierbar über `ConfigurationService.updateAppServiceChargeRate()`. Persistierung der Parse-`Invoice` für die Appgebühr wird über `getConfig.display.serviceChargeInvoiceFromBackend` gesteuert (siehe ADR-007); die PDF/Anzeige kann weiterhin clientseitig aus dem lokal gebauten `Invoice`-Wert generiert werden.
+- Rechnungspositionen **Securities** und **Service Charge**: mehrzeilige Anzeige (InvoiceItemRowView, InvoiceItemDisplayRowView). PDF: dynamische Zeilenhöhe in PDFProfessionalComponents. Service Charge Rate: **Admin Web Portal** (`requestConfigurationChange` / 4-Augen). Persistierung der Parse-`Invoice` für die Appgebühr wird über `getConfig.display.serviceChargeInvoiceFromBackend` gesteuert (siehe ADR-007); die PDF/Anzeige kann weiterhin clientseitig aus dem lokal gebauten `Invoice`-Wert generiert werden.
 
 ### 6.5 Trader-Gutschrift (Commission Credit Note)
 
 - **Investment-Nr. in der Commission-Breakdown-Tabelle**: In der Gutschrift-Detailansicht (`TraderCreditNoteDetailView`) zeigt die Commission-Breakdown-Tabelle pro Zeile die **Investment-Nr.** (abgeleitet aus `investmentId` via `String.extractInvestmentNumber()`), sodass eindeutig ist, welches Investment der jeweiligen Provision zugrunde liegt (GoB-Nachvollziehbarkeit). Komponente: `CreditNoteCommissionTableView`; Datenmodell: `CreditNoteBreakdownItem.investmentNumber`.
-- **Admin-Option: Commission-Breakdown ein-/ausblendbar**: `ConfigurationService.showCommissionBreakdownInCreditNote` (persistiert in `AppConfiguration`/UserDefaults). Admin kann in der Configuration-Ansicht die Anzeige der Commission-Breakdown-Tabelle in der Trader-Gutschrift ein- oder ausblenden; Update über `updateShowCommissionBreakdownInCreditNote(_:)`. Standard: anzeigen (true).
+- **Admin-Option: Commission-Breakdown ein-/ausblendbar**: `ConfigurationService.showCommissionBreakdownInCreditNote` (lokal gecacht aus `getConfig.display`). **Schreib-SSOT:** Admin Web Portal → Anzeige → „Trader: Commission Breakdown (Dev/QA)“ (`display.showCommissionBreakdownInCreditNote`, 4-Augen). Steuert Info-Icon in der Trade-Tabelle und Aufschlüsselung in der Gutschrift (CN-). **Standard in Production:** deaktiviert (`false`); Ops-SSOT ist Admin Summary Report. In Dev/QA nach Portal-Freigabe: App-Neustart oder erneutes `fetchRemoteDisplayConfig()`.
+
+### 6.5a Trader-Depot: Investment-Pool Status (Positions-Kachel)
+
+- **Admin-Option: Kachel-Zeile ein-/ausblendbar**: `ConfigurationService.showTraderDashboardInvestmentActiveStatus` (lokal gecacht aus `getConfig.display`). **Schreib-SSOT:** Admin Web Portal → Anzeige → „Trader-Depot: Investment-Pool Status anzeigen“ (`display.showTraderDashboardInvestmentActiveStatus`, 4-Augen). **Standard:** aktiv (`true`).
+- **UI:** Trader-Rolle → Depot → Positions-Kachel: Zeile **Investment-Pool** mit Wert **active** / **-** (`HoldingCard`, `HoldingCardTiles`, `DepotPositionPoolStatusResolver`). Nur nach abgeschlossener Kauforder (Position im Depot). Bei deaktiviertem Flag entfällt die Zeile (`poolStatusDisplay: nil`).
+- **Semantik:** `active` nur bei Mirror-Pool-Leg oder dokumentierter Pool-Teilnahme am Trade; reserviertes Kapital ohne Paired Buy erscheint als **-** (Investor-Schutz; siehe Guardrail §3.5 Pool-UX).
+- **Tests:** `DepotPositionPoolStatusResolverTests`, `HoldingCardTilesPoolStatusTests`.
 
 ### 6.6 GoB / Rückwärtskompatibilität
 

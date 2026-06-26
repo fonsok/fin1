@@ -183,10 +183,12 @@ Empfohlene Struktur:
 
 ### 4.1 Rollen als Attribute, keine eigenen IDs
 
-- Ein User kann mehrere Rollen haben:
-  - Investor → darf investieren.
-  - Trader → darf Strategien/Trades anbieten.
-  - Admin/CSR → darf im Admin-/CSR-Portal arbeiten.
+- Ein Retail-User hat **genau eine** Parse-Rolle in `_User.role`: `investor` **oder** `trader` (gesetzt bei Registrierung im Contact-Schritt). **Nach Kontoanlage ist diese Rolle unveränderlich** (UI, Onboarding-Blob und `_User.save` — siehe `02A_FEATURE_KATALOG_GUARDRAILS.md` §3.3).
+- Staff-Rollen (`admin`, `customer_service`, `compliance`, `system`) sind getrennt vom Retail-Signup; CSR nutzt zusätzlich `csrSubRole`.
+- Fachlich bedeutet die Rolle:
+  - **Investor** → darf investieren.
+  - **Trader** → darf Strategien/Trades anbieten.
+  - **Admin/CSR** → darf im Admin-/CSR-Portal arbeiten.
 
 - **Kein** eigenes `investorId`/`traderId` nötig, solange:
   - es dieselbe Person ist,
@@ -213,7 +215,8 @@ Für FIN1 (Stand heute) wirkt es so, als wären Trader **Rollen** normaler User 
    - Darf in Klassen als zusätzliches Feld liegen, aber nie Logik/Joins steuern.
 
 3. **Rollen sind Attribute des Users.**
-   - Zugriffslogik: `if user.roles.contains(.investor) { ... }`.
+   - Retail: eine Rolle (`investor` oder `trader`), ab Contact immutable.
+   - Zugriffslogik: `user.role` / `UserRole` (kein Wechsel Investor↔Trader nach Kontoanlage).
    - Keine eigenen `investorId`/`traderId` bauen.
 
 4. **DTO-Schicht sauber halten.**

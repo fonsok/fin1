@@ -52,10 +52,10 @@ final class SignUpData: ObservableObject {
     @Published var addressConfirmed: Bool = false
     @Published var addressVerificationDocument: UIImage?
 
-    // MARK: - Step 12: Financial Information
-    @Published var employmentStatus: EmploymentStatus = .employed
+    // MARK: - Step 15: Financial Information
+    @Published var employmentStatus: EmploymentStatus?
     @Published var income: String = ""
-    @Published var incomeRange: IncomeRange = .middle
+    @Published var incomeRange: IncomeRange?
 
     // Income Sources (multiple selection)
     @Published var incomeSources: [String: Bool] = [
@@ -71,21 +71,21 @@ final class SignUpData: ObservableObject {
     @Published var otherIncomeSource: String = ""
 
     // Cash and Liquid Assets
-    @Published var cashAndLiquidAssets: CashAndLiquidAssets = .lessThan10k
+    @Published var cashAndLiquidAssets: CashAndLiquidAssets?
 
-    // MARK: - Step 13: Investment Experience
+    // MARK: - Step 16: Investment Experience
     // Stocks
-    @Published var stocksTransactionsCount: StocksTransactionCount = .none
-    @Published var stocksInvestmentAmount: InvestmentAmount = .hundredToTenThousand
+    @Published var stocksTransactionsCount: StocksTransactionCount?
+    @Published var stocksInvestmentAmount: InvestmentAmount?
 
     // Investment funds, ETFs
-    @Published var etfsTransactionsCount: ETFsTransactionCount = .none
-    @Published var etfsInvestmentAmount: InvestmentAmount = .hundredToTenThousand
+    @Published var etfsTransactionsCount: ETFsTransactionCount?
+    @Published var etfsInvestmentAmount: InvestmentAmount?
 
     // Certificates and derivatives
-    @Published var derivativesTransactionsCount: DerivativesTransactionCount = .none
-    @Published var derivativesInvestmentAmount: DerivativesInvestmentAmount = .zeroToThousand
-    @Published var derivativesHoldingPeriod: HoldingPeriod = .monthsToYears
+    @Published var derivativesTransactionsCount: DerivativesTransactionCount?
+    @Published var derivativesInvestmentAmount: DerivativesInvestmentAmount?
+    @Published var derivativesHoldingPeriod: HoldingPeriod?
 
     // Other assets
     @Published var otherAssets: [String: Bool] = [
@@ -120,14 +120,50 @@ final class SignUpData: ObservableObject {
     @Published var acceptedPrivacyPolicy: Bool = false
     @Published var acceptedMarketingConsent: Bool = false
 
+    // MARK: - Role Agreement (Trader / Investor Gate 2)
+    @Published var acceptedTraderAgreement: Bool = false
+    @Published var acceptedTraderAgreementVersion: String?
+    @Published var acceptedInvestorAgreement: Bool = false
+    @Published var acceptedInvestorAgreementVersion: String?
+
+    /// Legal Gate 1 + 2: both AGB and DSE must be accepted (single client-side rule).
+    var hasRequiredLegalConsents: Bool {
+        self.acceptedTerms && self.acceptedPrivacyPolicy
+    }
+
+    /// Role-specific agreement must be accepted before registration completion.
+    var hasRequiredRoleAgreement: Bool {
+        switch self.userRole {
+        case .trader:
+            return self.acceptedTraderAgreement
+        case .investor:
+            return self.acceptedInvestorAgreement
+        default:
+            return true
+        }
+    }
+
+    func markRoleAgreementAccepted(for role: UserRole, version: String) {
+        switch role {
+        case .trader:
+            self.acceptedTraderAgreement = true
+            self.acceptedTraderAgreementVersion = version
+        case .investor:
+            self.acceptedInvestorAgreement = true
+            self.acceptedInvestorAgreementVersion = version
+        default:
+            break
+        }
+    }
+
     // MARK: - Risk Class Properties
     @Published var userSelectedRiskClass: RiskClass?
 
     // Kundennummer (automatically generated, business identifier)
     @Published var customerNumber: String = ""
 
-    // MARK: - Services (injected)
-    var riskClassCalculationService: (any RiskClassCalculationServiceProtocol)?
+    // MARK: - Services (injected; risk class service defaults for previews/tests)
+    private(set) var riskClassCalculationService: any RiskClassCalculationServiceProtocol
     var investmentExperienceCalculationService: (any InvestmentExperienceCalculationServiceProtocol)?
 
     // MARK: - Initialization
@@ -135,7 +171,7 @@ final class SignUpData: ObservableObject {
         riskClassCalculationService: (any RiskClassCalculationServiceProtocol)? = nil,
         investmentExperienceCalculationService: (any InvestmentExperienceCalculationServiceProtocol)? = nil
     ) {
-        self.riskClassCalculationService = riskClassCalculationService
+        self.riskClassCalculationService = riskClassCalculationService ?? RiskClassCalculationService()
         self.investmentExperienceCalculationService = investmentExperienceCalculationService
         self.generateCustomerNumber()
     }
@@ -161,23 +197,70 @@ final class SignUpData: ObservableObject {
 
     /// Hydrates form fields from data returned by `getOnboardingProgress`.
     /// Skips password / confirmPassword (never persisted) and UIImage fields.
-    func restoreFromSavedData(_ data: SavedOnboardingData) {
-        self.restoreAccountFromSavedData(data)
+    /// Step-15/16 pickers are only restored once the user has moved past that step,
+    /// so legacy default values from older app versions are not shown as selections.
+    func restoreFromSavedData(
+        _ data: SavedOnboardingData,
+        resumeStep: SignUpStep? = nil,
+        lockAccountRole: Bool = false
+    ) {
+        self.restoreAccountFromSavedData(data, lockRole: lockAccountRole)
         self.restoreContactFromSavedData(data)
         self.restorePersonalFromSavedData(data)
         self.restoreCitizenshipAndTaxFromSavedData(data)
         self.restoreIdentificationFromSavedData(data)
-        self.restoreFinancialFromSavedData(data)
-        self.restoreExperienceFromSavedData(data)
+
+        if SignUpLegacyPickerDefaults.shouldRestoreFinancialPickers(
+            resumeStep: resumeStep,
+            savedData: data
+        ) {
+            self.restoreFinancialFromSavedData(data)
+        } else {
+            self.clearStep15PickerSelections()
+        }
+
+        if SignUpLegacyPickerDefaults.shouldRestoreExperiencePickers(
+            resumeStep: resumeStep,
+            savedData: data
+        ) {
+            self.restoreExperienceFromSavedData(data)
+        } else {
+            self.clearStep16PickerSelections()
+        }
+
         self.restoreRiskAndReturnFromSavedData(data)
         self.restoreDeclarationsFromSavedData(data)
         self.restoreTermsFromSavedData(data)
         self.restoreMetaFromSavedData(data)
     }
 
-    private func restoreAccountFromSavedData(_ data: SavedOnboardingData) {
+    /// Resets all step-15 dropdowns to the unset state (`---`).
+    func clearStep15PickerSelections() {
+        self.employmentStatus = nil
+        self.incomeRange = nil
+        self.cashAndLiquidAssets = nil
+    }
+
+    /// Resets all step-16 dropdowns to the unset state (`---`).
+    func clearStep16PickerSelections() {
+        self.stocksTransactionsCount = nil
+        self.stocksInvestmentAmount = nil
+        self.etfsTransactionsCount = nil
+        self.etfsInvestmentAmount = nil
+        self.derivativesTransactionsCount = nil
+        self.derivativesInvestmentAmount = nil
+        self.derivativesHoldingPeriod = nil
+    }
+
+    /// Resets step-15 and step-16 dropdowns to the unset state (`---`).
+    func clearStep15And16PickerSelections() {
+        self.clearStep15PickerSelections()
+        self.clearStep16PickerSelections()
+    }
+
+    private func restoreAccountFromSavedData(_ data: SavedOnboardingData, lockRole: Bool = false) {
         if let v = data.accountType, let e = AccountType(rawValue: v) { self.accountType = e }
-        if let v = data.userRole, let e = UserRole(rawValue: v) { self.userRole = e }
+        if !lockRole, let v = data.userRole, let e = UserRole(rawValue: v) { self.userRole = e }
     }
 
     private func restoreContactFromSavedData(_ data: SavedOnboardingData) {
@@ -259,13 +342,35 @@ final class SignUpData: ObservableObject {
         if let v = data.leveragedProductsKnowledgeTestAnswers {
             self.leveragedProductsKnowledgeTestAnswers = v
         }
-        if let v = data.finalRiskClass, let e = RiskClass(rawValue: v) { self.userSelectedRiskClass = e }
+        self.restoreManualRiskClassOverride(from: data)
+        self.syncOnboardingRiskClassSelection()
+    }
+
+    /// Restores only explicit manual upgrades (RC7 or above calculated), not conservative-gate RC1 snapshots.
+    private func restoreManualRiskClassOverride(from data: SavedOnboardingData) {
+        guard let finalRaw = data.finalRiskClass,
+              let final = RiskClass(rawValue: finalRaw) else {
+            return
+        }
+
+        if final == .riskClass7 {
+            self.userSelectedRiskClass = .riskClass7
+            return
+        }
+
+        guard let calculatedRaw = data.calculatedRiskClass,
+              let calculated = RiskClass(rawValue: calculatedRaw),
+              final.rawValue > calculated.rawValue else {
+            return
+        }
+
+        self.userSelectedRiskClass = final
     }
 
     private func restoreDeclarationsFromSavedData(_ data: SavedOnboardingData) {
         if let v = data.insiderTradingOptions { self.insiderTradingOptions = v }
         if let v = data.moneyLaunderingDeclaration { self.moneyLaunderingDeclaration = v }
-        if let v = data.assetType, let e = AssetType(rawValue: v) { self.assetType = e }
+        if let v = data.assetType, let e = AssetType.fromOnboardingBackendKey(v) { self.assetType = e }
         if let v = data.leveragedProductsExperience { self.leveragedProductsExperience = v }
         if let v = data.financialProductsExperience { self.financialProductsExperience = v }
     }
@@ -284,8 +389,6 @@ final class SignUpData: ObservableObject {
     #if DEBUG
     /// Fills all text fields and toggles needed to click through the 22-step Get Started flow.
     func prefillTestData() {
-        let name = TestConstants.investorNames[0]
-
         self.accountType = .individual
         self.userRole = .investor
         self.email = TestConstants.signupTestEmail()
@@ -296,8 +399,8 @@ final class SignUpData: ObservableObject {
 
         self.salutation = .mr
         self.academicTitle = ""
-        self.firstName = name.first
-        self.lastName = name.last
+        self.firstName = TestConstants.signupTestFirstName
+        self.lastName = TestConstants.signupTestLastName
         self.streetAndNumber = TestConstants.signupTestStreet
         self.postalCode = TestConstants.signupTestPostalCode
         self.city = TestConstants.signupTestCity
@@ -321,9 +424,8 @@ final class SignUpData: ObservableObject {
 
         self.addressConfirmed = true
 
-        self.employmentStatus = .employed
+        // Keep checkbox sections prefilled for fast DEBUG click-through; pickers stay unset (`---`).
         self.income = "75000"
-        self.incomeRange = .middle
         self.incomeSources = [
             "Settlement": false,
             "Inheritance": false,
@@ -335,20 +437,12 @@ final class SignUpData: ObservableObject {
             "Other (please specify)": false
         ]
         self.otherIncomeSource = ""
-        self.cashAndLiquidAssets = .tenKToFiftyK
-
-        self.stocksTransactionsCount = .oneToTen
-        self.stocksInvestmentAmount = .tenThousandToHundredThousand
-        self.etfsTransactionsCount = .oneToTen
-        self.etfsInvestmentAmount = .tenThousandToHundredThousand
-        self.derivativesTransactionsCount = .none
-        self.derivativesInvestmentAmount = .zeroToThousand
-        self.derivativesHoldingPeriod = .monthsToYears
         self.otherAssets = [
             "Real estate": false,
             "Gold, silver": false,
             "No": true
         ]
+        self.clearStep15And16PickerSelections()
 
         self.desiredReturn = .atLeastTenPercent
 
@@ -363,6 +457,7 @@ final class SignUpData: ObservableObject {
         self.leveragedProductsExperience = false
         self.financialProductsExperience = true
 
+        // Legal Gate 1 (Contact): prefill both for fast DEBUG click-through.
         self.acceptedTerms = true
         self.acceptedPrivacyPolicy = true
         self.acceptedMarketingConsent = false

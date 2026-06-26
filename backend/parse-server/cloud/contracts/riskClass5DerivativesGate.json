@@ -1,0 +1,21 @@
+{
+  "version": "1.0.0",
+  "description": "Step 16c minimum derivatives profile for risk class 5. Mirrors iOS SignUpDataRiskCalculation.",
+  "trader": {
+    "derivativesTransactionsCount": ["50+"],
+    "derivativesInvestmentAmount": [
+      "ten_thousand_to_hundred_thousand",
+      "more_than_hundred_thousand"
+    ],
+    "derivativesHoldingPeriod": ["minutes_to_hours"]
+  },
+  "investor": {
+    "derivativesTransactionsCount": ["1-10", "10-50", "50+"],
+    "derivativesInvestmentAmount": [
+      "thousand_to_ten_thousand",
+      "ten_thousand_to_hundred_thousand",
+      "more_than_hundred_thousand"
+    ],
+    "derivativesHoldingPeriod": ["days_to_weeks", "minutes_to_hours"]
+  }
+}

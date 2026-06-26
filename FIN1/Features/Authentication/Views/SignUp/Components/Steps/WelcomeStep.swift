@@ -6,6 +6,7 @@ import SwiftUI
 struct WelcomeStep: View {
     @Binding var accountType: AccountType
     @Binding var userRole: UserRole
+    var isRoleSelectionLocked: Bool = false
 
     var body: some View {
         SignUpStepList {
@@ -74,7 +75,10 @@ struct WelcomeStep: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 VStack(spacing: ResponsiveDesign.spacing(12)) {
-                    Button(action: { self.userRole = .investor }, label: {
+                    Button(action: {
+                        guard !self.isRoleSelectionLocked else { return }
+                        self.userRole = .investor
+                    }, label: {
                         HStack {
                             InteractiveElement(
                                 isSelected: self.userRole == .investor,
@@ -90,8 +94,10 @@ struct WelcomeStep: View {
                         }
                     })
                     .buttonStyle(PlainButtonStyle())
+                    .disabled(self.isRoleSelectionLocked)
 
                     Button(action: {
+                        guard !self.isRoleSelectionLocked else { return }
                         guard self.accountType != .company else { return }
                         self.userRole = .trader
                     }, label: {
@@ -122,11 +128,19 @@ struct WelcomeStep: View {
                         }
                     })
                     .buttonStyle(PlainButtonStyle())
-                    .disabled(self.accountType == .company)
+                    .disabled(self.accountType == .company || self.isRoleSelectionLocked)
+                }
+
+                if self.isRoleSelectionLocked {
+                    Text("Die Rolle ist nach Kontoanlage festgelegt und kann nicht geändert werden.")
+                        .font(ResponsiveDesign.captionFont())
+                        .foregroundColor(AppTheme.tertiaryText)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
             .signUpListSection(stripeIndex: 2)
             .onChange(of: self.accountType) { _, newType in
+                guard !self.isRoleSelectionLocked else { return }
                 if newType == .company && self.userRole == .trader {
                     self.userRole = .investor
                 }

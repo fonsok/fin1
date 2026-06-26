@@ -167,7 +167,7 @@ describe('legalConsentRecording', () => {
     expect(user.get('acceptedMarketingConsent')).toBe(true);
   });
 
-  test('recordLegalConsentEntry is idempotent for same user/type/version', async () => {
+  test('recordLegalConsentEntry is idempotent for same user/type/version/device/source', async () => {
     consentRows.push({
       objectId: 'existing-1',
       userId: 'user-1',
@@ -175,6 +175,8 @@ describe('legalConsentRecording', () => {
       version: '1.0.2',
       accepted: true,
       acceptedAt: new Date('2026-05-01'),
+      source: 'app',
+      deviceInstallId: 'install-abc',
     });
 
     const user = new FakeParseObject('_User', { objectId: 'user-1' });
@@ -183,17 +185,46 @@ describe('legalConsentRecording', () => {
       consentType: 'terms_of_service',
       version: '1.0.2',
       deviceInstallId: 'install-abc',
+      source: 'app',
     });
     const second = await mod.recordLegalConsentEntry({
       user,
       consentType: 'terms_of_service',
       version: '1.0.2',
       deviceInstallId: 'install-abc',
+      source: 'app',
     });
 
     expect(first.skipped).toBe(true);
     expect(second.skipped).toBe(true);
     expect(savedConsents).toHaveLength(0);
+  });
+
+  test('recordLegalConsentEntry creates app row when onboarding row already exists', async () => {
+    consentRows.push({
+      objectId: 'onboarding-terms',
+      userId: 'user-1',
+      consentType: 'terms_of_service',
+      version: '1.0.2',
+      accepted: true,
+      acceptedAt: new Date('2026-05-01'),
+      source: 'onboarding',
+      deviceInstallId: 'install-abc',
+    });
+
+    const user = new FakeParseObject('_User', { objectId: 'user-1' });
+    const result = await mod.recordLegalConsentEntry({
+      user,
+      consentType: 'terms_of_service',
+      version: '1.0.2',
+      deviceInstallId: 'install-abc',
+      source: 'app',
+    });
+
+    expect(result.skipped).toBe(false);
+    expect(savedConsents).toHaveLength(1);
+    expect(savedConsents[0].data.source).toBe('app');
+    expect(savedConsents[0].data.deviceInstallId).toBe('install-abc');
   });
 
   test('findDeviceLegalConsentAcknowledgements returns unique consentType/version pairs', async () => {
@@ -205,6 +236,7 @@ describe('legalConsentRecording', () => {
         version: '1.0',
         accepted: true,
         deviceInstallId: 'install-abc',
+        source: 'app',
         acceptedAt: new Date('2026-06-01'),
       },
       {
@@ -214,6 +246,7 @@ describe('legalConsentRecording', () => {
         version: '1.0',
         accepted: true,
         deviceInstallId: 'install-abc',
+        source: 'app',
         acceptedAt: new Date('2026-06-02'),
       },
       {
@@ -223,6 +256,7 @@ describe('legalConsentRecording', () => {
         version: '1.0',
         accepted: true,
         deviceInstallId: 'install-abc',
+        source: 'app',
         acceptedAt: new Date('2026-06-03'),
       }
     );
@@ -232,5 +266,60 @@ describe('legalConsentRecording', () => {
       { consentType: 'terms_of_service', version: '1.0' },
       { consentType: 'privacy_policy', version: '1.0' },
     ]);
+  });
+
+  test('findDeviceLegalConsentAcknowledgements ignores onboarding batch rows', async () => {
+    consentRows.push(
+      {
+        objectId: 'c-onb-terms',
+        userId: 'user-1',
+        consentType: 'terms_of_service',
+        version: '1.0.2',
+        accepted: true,
+        deviceInstallId: 'install-abc',
+        source: 'onboarding',
+        acceptedAt: new Date('2026-06-01'),
+      },
+      {
+        objectId: 'c-app-privacy',
+        userId: 'user-1',
+        consentType: 'privacy_policy',
+        version: '1.0.2',
+        accepted: true,
+        deviceInstallId: 'install-abc',
+        source: 'app',
+        acceptedAt: new Date('2026-06-02'),
+      }
+    );
+
+    const rows = await mod.findDeviceLegalConsentAcknowledgements('user-1', 'install-abc');
+    expect(rows).toEqual([{ consentType: 'privacy_policy', version: '1.0.2' }]);
+  });
+
+  test('findDeviceLegalConsentAcknowledgements ignores legacy rows without source', async () => {
+    consentRows.push(
+      {
+        objectId: 'c-legacy-terms',
+        userId: 'user-1',
+        consentType: 'terms_of_service',
+        version: '1.0',
+        accepted: true,
+        deviceInstallId: 'install-abc',
+        acceptedAt: new Date('2026-06-01'),
+      },
+      {
+        objectId: 'c-app-privacy',
+        userId: 'user-1',
+        consentType: 'privacy_policy',
+        version: '1.0',
+        accepted: true,
+        deviceInstallId: 'install-abc',
+        source: 'app',
+        acceptedAt: new Date('2026-06-02'),
+      }
+    );
+
+    const rows = await mod.findDeviceLegalConsentAcknowledgements('user-1', 'install-abc');
+    expect(rows).toEqual([{ consentType: 'privacy_policy', version: '1.0' }]);
   });
 });

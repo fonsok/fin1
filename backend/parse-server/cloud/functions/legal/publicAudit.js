@@ -101,7 +101,13 @@ function registerLegalPublicAuditFunctions() {
       ?? 0.02;
     const traderCommissionRate = Number.isFinite(fin.traderCommissionRate)
       ? fin.traderCommissionRate
+      : 0.05;
+    const investorCommissionRateTotal = Number.isFinite(fin.investorCommissionRateTotal)
+      ? fin.investorCommissionRateTotal
       : 0.1;
+    const investorVolumeFeeRate = Number.isFinite(fin.appServiceChargeRate)
+      ? fin.appServiceChargeRate
+      : 0.01;
     const withholdingTaxRate = Number.isFinite(tax.withholdingTaxRate)
       ? tax.withholdingTaxRate
       : 0.25;
@@ -127,6 +133,9 @@ function registerLegalPublicAuditFunctions() {
       PLATFORM_SERVICE_CHARGE_RATE: formatPercentDE(serviceChargeRate),
       PLATFORM_FEE_RATE: formatPercentDE(serviceChargeRate),
       TRADER_COMMISSION_RATE: formatPercentDE(traderCommissionRate),
+      TRADER_PERFORMANCE_FEE_RATE: formatPercentDE(traderCommissionRate),
+      INVESTOR_PERFORMANCE_FEE_RATE: formatPercentDE(investorCommissionRateTotal),
+      INVESTOR_VOLUME_FEE_RATE: formatPercentDE(investorVolumeFeeRate),
       LEGAL_COMPANY_LEGAL_NAME: legal.companyLegalName || legal.platformName || 'App',
       LEGAL_COMPANY_ADDRESS_LINE: legal.companyAddressLine || '',
       LEGAL_COMPANY_VAT_ID: legal.companyVatId || '',
@@ -225,7 +234,13 @@ function registerLegalPublicAuditFunctions() {
 
   Parse.Cloud.define('recordLegalConsent', async (request) => {
     const consentType = normalizeString(request.params.consentType);
-    const allowedConsentTypes = ['terms_of_service', 'privacy_policy', 'imprint'];
+    const allowedConsentTypes = [
+      'terms_of_service',
+      'privacy_policy',
+      'imprint',
+      'trader_agreement',
+      'investor_agreement',
+    ];
     if (!allowedConsentTypes.includes(consentType)) {
       throw new Parse.Error(Parse.Error.INVALID_VALUE, `Invalid consentType: ${consentType}`);
     }

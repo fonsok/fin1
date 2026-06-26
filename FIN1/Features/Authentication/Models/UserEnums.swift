@@ -165,6 +165,25 @@ enum AssetType: String, CaseIterable, Codable, Sendable {
     case privateAssets = "private_assets"
     case businessAssets = "business_assets"
 
+    /// Onboarding API / Parse SSOT (`privateAssets`, not snake_case `rawValue`).
+    var onboardingBackendKey: String {
+        switch self {
+        case .privateAssets: return "privateAssets"
+        case .businessAssets: return "businessAssets"
+        }
+    }
+
+    static func fromOnboardingBackendKey(_ key: String) -> AssetType? {
+        switch key {
+        case "privateAssets", Self.privateAssets.rawValue:
+            return .privateAssets
+        case "businessAssets", Self.businessAssets.rawValue:
+            return .businessAssets
+        default:
+            return nil
+        }
+    }
+
     var displayName: String {
         switch self {
         case .privateAssets: return "Privatvermögen"
@@ -389,6 +408,11 @@ enum RiskClass: Int, CaseIterable, Codable, Sendable {
 
     var isHighRisk: Bool {
         return self.rawValue >= 5
+    }
+
+    /// RC 5–7 may invest/trade on the platform; RC 1–4 are excluded from primary dashboard actions.
+    var isEligibleForPlatformTrading: Bool {
+        self.rawValue >= RiskClass.riskClass5.rawValue
     }
 
     var requiresManualSelection: Bool {

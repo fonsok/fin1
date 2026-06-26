@@ -1,0 +1,14 @@
+stateDiagram-v2
+    direction LR
+    [*] --> idle
+    idle --> accountSetup: start from landing
+    accountSetup --> authenticated: signUp + session
+    authenticated --> inProgress: resume / getOnboardingProgress
+    inProgress --> inProgress: saveProgress
+    inProgress --> phaseComplete: completePhase
+    inProgress --> roleAgreement: RC7 + role gate
+    roleAgreement --> finalizing: recordRoleConsent
+    finalizing --> completed: verification + server confirms
+    completed --> [*]: MainTabView
+    inProgress --> abandoned: user cancels
+    abandoned --> [*]

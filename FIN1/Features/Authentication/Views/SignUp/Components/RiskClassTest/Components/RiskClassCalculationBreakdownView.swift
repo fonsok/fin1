@@ -10,28 +10,36 @@ struct RiskClassCalculationBreakdownView: View {
                 .foregroundColor(AppTheme.fontColor)
             
             VStack(alignment: .leading, spacing: 12) {
-                BreakdownRow(title: "Income Range", value: self.signUpData.incomeRange.displayName, points: self.getIncomePoints())
-                BreakdownRow(title: "Cash & Assets", value: self.signUpData.cashAndLiquidAssets.displayName, points: self.getAssetsPoints())
+                BreakdownRow(
+                    title: "Income Range",
+                    value: self.signUpData.incomeRange?.displayName ?? SignUpStepSelectionPrompt.pleaseSelect,
+                    points: self.getIncomePoints()
+                )
+                BreakdownRow(
+                    title: "Cash & Assets",
+                    value: self.signUpData.cashAndLiquidAssets?.displayName ?? SignUpStepSelectionPrompt.pleaseSelect,
+                    points: self.getAssetsPoints()
+                )
                 BreakdownRow(title: "Income Sources", value: self.getIncomeSourcesText(), points: self.getIncomeSourcesPoints())
                 BreakdownRow(
                     title: "Stocks Experience",
-                    value: self.signUpData.stocksTransactionsCount.displayName,
+                    value: self.signUpData.stocksTransactionsCount?.displayName ?? SignUpStepSelectionPrompt.pleaseSelect,
                     points: self.getStocksPoints()
                 )
                 BreakdownRow(
                     title: "ETFs Experience",
-                    value: self.signUpData.etfsTransactionsCount.displayName,
+                    value: self.signUpData.etfsTransactionsCount?.displayName ?? SignUpStepSelectionPrompt.pleaseSelect,
                     points: self.getETFsPoints()
                 )
                 BreakdownRow(
                     title: "Derivatives Experience",
-                    value: self.signUpData.derivativesTransactionsCount.displayName,
+                    value: self.signUpData.derivativesTransactionsCount?.displayName ?? SignUpStepSelectionPrompt.pleaseSelect,
                     points: self.getDerivativesPoints()
                 )
                 BreakdownRow(title: "Investment Amounts", value: self.getInvestmentAmountsText(), points: self.getInvestmentAmountsPoints())
                 BreakdownRow(
                     title: "Derivatives Holding",
-                    value: self.signUpData.derivativesHoldingPeriod.displayName,
+                    value: self.signUpData.derivativesHoldingPeriod?.displayName ?? SignUpStepSelectionPrompt.pleaseSelect,
                     points: self.getHoldingPeriodPoints()
                 )
                 BreakdownRow(title: "Desired Return", value: self.signUpData.desiredReturn.displayName, points: self.getReturnPoints())
@@ -58,7 +66,8 @@ struct RiskClassCalculationBreakdownView: View {
     }
     
     private func getIncomePoints() -> Int {
-        switch self.signUpData.incomeRange {
+        guard let incomeRange = self.signUpData.incomeRange else { return 0 }
+        switch incomeRange {
         case .low: return 0
         case .lowMiddle: return 1
         case .middle: return 2
@@ -69,7 +78,8 @@ struct RiskClassCalculationBreakdownView: View {
     }
     
     private func getAssetsPoints() -> Int {
-        switch self.signUpData.cashAndLiquidAssets {
+        guard let cashAndLiquidAssets = self.signUpData.cashAndLiquidAssets else { return 0 }
+        switch cashAndLiquidAssets {
         case .lessThan10k: return 0
         case .tenKToFiftyK: return 1
         case .fiftyKToTwoHundredK: return 2
@@ -96,7 +106,8 @@ struct RiskClassCalculationBreakdownView: View {
     }
     
     private func getStocksPoints() -> Int {
-        switch self.signUpData.stocksTransactionsCount {
+        guard let stocksTransactionsCount = self.signUpData.stocksTransactionsCount else { return 0 }
+        switch stocksTransactionsCount {
         case .none: return 0
         case .oneToTen: return 1
         case .tenToFifty: return 2
@@ -105,7 +116,8 @@ struct RiskClassCalculationBreakdownView: View {
     }
     
     private func getETFsPoints() -> Int {
-        switch self.signUpData.etfsTransactionsCount {
+        guard let etfsTransactionsCount = self.signUpData.etfsTransactionsCount else { return 0 }
+        switch etfsTransactionsCount {
         case .none: return 0
         case .oneToTen: return 1
         case .tenToTwenty: return 2
@@ -114,7 +126,8 @@ struct RiskClassCalculationBreakdownView: View {
     }
     
     private func getDerivativesPoints() -> Int {
-        switch self.signUpData.derivativesTransactionsCount {
+        guard let derivativesTransactionsCount = self.signUpData.derivativesTransactionsCount else { return 0 }
+        switch derivativesTransactionsCount {
         case .none: return 0
         case .oneToTen: return 3
         case .tenToFifty: return 6
@@ -123,42 +136,55 @@ struct RiskClassCalculationBreakdownView: View {
     }
     
     private func getInvestmentAmountsText() -> String {
-        let stocks = self.signUpData.stocksInvestmentAmount.displayName
-        let etfs = self.signUpData.etfsInvestmentAmount.displayName
-        let derivatives = self.signUpData.derivativesInvestmentAmount.displayName
+        let stocks = self.signUpData.stocksInvestmentAmount?.displayName ?? SignUpStepSelectionPrompt.pleaseSelect
+        let etfs = self.signUpData.etfsInvestmentAmount?.displayName ?? SignUpStepSelectionPrompt.pleaseSelect
+        let derivatives = self.signUpData.derivativesInvestmentAmount?.displayName ?? SignUpStepSelectionPrompt.pleaseSelect
         return "Stocks: \(stocks), ETFs: \(etfs), Derivatives: \(derivatives)"
     }
     
     private func getInvestmentAmountsPoints() -> Int {
         let stocksAmountScore: Int
-        switch self.signUpData.stocksInvestmentAmount {
-        case .hundredToTenThousand: stocksAmountScore = 0
-        case .tenThousandToHundredThousand: stocksAmountScore = 1
-        case .hundredThousandToMillion: stocksAmountScore = 2
-        case .moreThanMillion: stocksAmountScore = 4
+        if let stocksInvestmentAmount = self.signUpData.stocksInvestmentAmount {
+            switch stocksInvestmentAmount {
+            case .hundredToTenThousand: stocksAmountScore = 0
+            case .tenThousandToHundredThousand: stocksAmountScore = 1
+            case .hundredThousandToMillion: stocksAmountScore = 2
+            case .moreThanMillion: stocksAmountScore = 4
+            }
+        } else {
+            stocksAmountScore = 0
         }
         
         let etfsAmountScore: Int
-        switch self.signUpData.etfsInvestmentAmount {
-        case .hundredToTenThousand: etfsAmountScore = 0
-        case .tenThousandToHundredThousand: etfsAmountScore = 1
-        case .hundredThousandToMillion: etfsAmountScore = 2
-        case .moreThanMillion: etfsAmountScore = 4
+        if let etfsInvestmentAmount = self.signUpData.etfsInvestmentAmount {
+            switch etfsInvestmentAmount {
+            case .hundredToTenThousand: etfsAmountScore = 0
+            case .tenThousandToHundredThousand: etfsAmountScore = 1
+            case .hundredThousandToMillion: etfsAmountScore = 2
+            case .moreThanMillion: etfsAmountScore = 4
+            }
+        } else {
+            etfsAmountScore = 0
         }
         
         let derivativesAmountScore: Int
-        switch self.signUpData.derivativesInvestmentAmount {
-        case .zeroToThousand: derivativesAmountScore = 0
-        case .thousandToTenThousand: derivativesAmountScore = 2
-        case .tenThousandToHundredThousand: derivativesAmountScore = 4
-        case .moreThanHundredThousand: derivativesAmountScore = 6
+        if let derivativesInvestmentAmount = self.signUpData.derivativesInvestmentAmount {
+            switch derivativesInvestmentAmount {
+            case .zeroToThousand: derivativesAmountScore = 0
+            case .thousandToTenThousand: derivativesAmountScore = 2
+            case .tenThousandToHundredThousand: derivativesAmountScore = 4
+            case .moreThanHundredThousand: derivativesAmountScore = 6
+            }
+        } else {
+            derivativesAmountScore = 0
         }
         
         return max(stocksAmountScore, etfsAmountScore, derivativesAmountScore)
     }
     
     private func getHoldingPeriodPoints() -> Int {
-        switch self.signUpData.derivativesHoldingPeriod {
+        guard let derivativesHoldingPeriod = self.signUpData.derivativesHoldingPeriod else { return 0 }
+        switch derivativesHoldingPeriod {
         case .monthsToYears: return 1
         case .daysToWeeks: return 2
         case .minutesToHours: return 4

@@ -157,9 +157,36 @@ function validateProfileUpdate(params) {
     if (!isValidBirthDate(params.dateOfBirth)) errors.push('Invalid date of birth or age < 18');
   }
   if (params.salutation !== undefined) {
-    if (!isInEnum(params.salutation, ['Herr', 'Frau', 'Divers', 'mr', 'mrs', 'diverse'])) {
+    if (!isInEnum(params.salutation, ['Herr', 'Frau', 'Divers', 'mr', 'mrs', 'ms', 'dr', 'prof', 'diverse'])) {
       errors.push('Invalid salutation');
     }
+  }
+  if (params.username !== undefined && params.username !== '') {
+    if (!isStringInRange(params.username, 4, 10)) errors.push('username must be 4-10 characters');
+  }
+  if (params.email !== undefined && params.email !== '') {
+    if (!isValidEmail(params.email)) errors.push('Invalid email format');
+  }
+  if (params.streetAndNumber !== undefined && params.streetAndNumber !== '') {
+    if (!isStringInRange(params.streetAndNumber, 1, 200)) errors.push('streetAndNumber must be 1-200 characters');
+  }
+  if (params.postalCode !== undefined && params.postalCode !== '') {
+    const country = String(params.country || '').trim().toLowerCase();
+    const isGermany = country === 'de' || country === 'deutschland' || country === 'germany';
+    if (isGermany) {
+      if (!isValidGermanPostalCode(params.postalCode)) errors.push('Invalid postal code format');
+    } else if (!isStringInRange(params.postalCode, 2, 20)) {
+      errors.push('postalCode must be 2-20 characters');
+    }
+  }
+  if (params.city !== undefined && params.city !== '') {
+    if (!isStringInRange(params.city, 1, 100)) errors.push('city must be 1-100 characters');
+  }
+  if (params.country !== undefined && params.country !== '') {
+    if (!isStringInRange(params.country, 2, 100)) errors.push('country must be 2-100 characters');
+  }
+  if (params.state !== undefined && params.state !== '') {
+    if (!isStringInRange(params.state, 1, 100)) errors.push('state must be 1-100 characters');
   }
   return errors.length ? { valid: false, message: errors.join('; ') } : { valid: true };
 }

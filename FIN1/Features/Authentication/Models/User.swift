@@ -80,6 +80,14 @@ struct User: Identifiable, Codable, Sendable {
     var acceptedPrivacyPolicyVersion: String?
     var acceptedPrivacyPolicyDate: Date?
 
+    // Role agreement tracking (Trader / Investor)
+    var acceptedTraderAgreement: Bool = false
+    var acceptedTraderAgreementVersion: String?
+    var acceptedTraderAgreementDate: Date?
+    var acceptedInvestorAgreement: Bool = false
+    var acceptedInvestorAgreementVersion: String?
+    var acceptedInvestorAgreementDate: Date?
+
     // Onboarding State (synced with backend)
     var onboardingCompleted: Bool = false
     var onboardingStep: String?
@@ -177,6 +185,12 @@ extension User {
             acceptedTermsDate: self.acceptedTermsDate,
             acceptedPrivacyPolicyVersion: self.acceptedPrivacyPolicyVersion,
             acceptedPrivacyPolicyDate: self.acceptedPrivacyPolicyDate,
+            acceptedTraderAgreement: self.acceptedTraderAgreement,
+            acceptedTraderAgreementVersion: self.acceptedTraderAgreementVersion,
+            acceptedTraderAgreementDate: self.acceptedTraderAgreementDate,
+            acceptedInvestorAgreement: self.acceptedInvestorAgreement,
+            acceptedInvestorAgreementVersion: self.acceptedInvestorAgreementVersion,
+            acceptedInvestorAgreementDate: self.acceptedInvestorAgreementDate,
             onboardingCompleted: self.onboardingCompleted,
             onboardingStep: self.onboardingStep,
             kycStatus: self.kycStatus,

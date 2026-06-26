@@ -145,16 +145,50 @@ Architekturentscheid Teil-Sell-Kennzahlen, Finance-Smoke, System-Health: [`Docum
 - **Client**: `SavedOnboardingData` (Codable) in `OnboardingAPIService.swift`; nur im `OnboardingAPIService` encodieren, nicht in Views.
 - **Server**: Autoritative Prüfung in `backend/parse-server/cloud/functions/user/onboarding.js` nach `sanitizeObject`; **Joi-Schemas** in `backend/parse-server/cloud/utils/onboardingStepSchemas.js` (`validateStepData` = abgeschlossener Schritt, `validatePartialOnboardingData` = `saveOnboardingProgress`).
 - **Bei neuen Pflichtfeldern/Enums**: Swift-DTO + `onboardingStepSchemas.js` + ggf. `validation.js`-Hilfsfunktionen abstimmen; siehe [`Documentation/ENGINEERING_GUIDE.md`](../ENGINEERING_GUIDE.md) und [`Documentation/ADR-002-Onboarding-Codable-DTO.md`](../ADR-002-Onboarding-Codable-DTO.md).
+- **RC-5 / Step 16c:** Client-SSOT `SignUpDataRiskCalculation.swift`; Server-Spiegel `riskClass5DerivativesGate.js` bei `completeOnboardingStep` (`risk`/`verification`). Guardrails: [`02A_FEATURE_KATALOG_GUARDRAILS.md`](02A_FEATURE_KATALOG_GUARDRAILS.md).
+- **Retail-Rolle:** `_User.role` wird beim Contact (`POST /users`) gesetzt und ist danach immutable — kein Role-Sync aus dem Progress-Blob; Resume mit `lockAccountRole`. Siehe §3.3 in [`02A_FEATURE_KATALOG_GUARDRAILS.md`](02A_FEATURE_KATALOG_GUARDRAILS.md).
+- **Onboarding-Shell:** `MainTabView` erst nach `onboardingCompleted`; während Signup kein Retail-Background-Sync/SLA (§3.2). E2E Role-Lock: `./scripts/run-smoke-signup-role-immutability.sh`.
+
+### How-to: Signup-Last testen & Mongo-Indexes (Ops)
+
+**Nach Parse-Cloud-Deploy (Signup-Skalierung):**
+
+```bash
+./scripts/run-onboarding-signup-indexes-migration.sh
+```
+
+Prüft `onboarding_signup_indexes_v1` in `SchemaMigration` (Admin `updateInvestmentClassSchemaFields` + `listSchemaMigrations`). Details: [`Documentation/SCHEMA_MIGRATIONS.md`](../SCHEMA_MIGRATIONS.md).
+
+**Load-Test (parallele Sign-ups + `saveOnboardingProgress`):**
+
+```bash
+# Empfohlen: direkt gegen Parse auf dem Host (ohne nginx-Burst-503)
+LOAD_TEST_ON_SERVER=1 LOAD_TEST_USERS=25 LOAD_TEST_CONCURRENCY=8 \
+  ./scripts/run-signup-onboarding-load-test.sh
+```
+
+Skripte: `scripts/load-test-signup-onboarding.js`, Wrapper `scripts/run-signup-onboarding-load-test.sh`. Erzeugt Nutzer `signup+{runId}+{n}@test.com`. Variablen: `LOAD_TEST_USERS`, `LOAD_TEST_CONCURRENCY`, `LOAD_TEST_SAVE_DELAY_MS` (default 50), `LOAD_TEST_ROLE=trader|investor`.
+
+**Aufräumen nach Load-Test:**
+
+- Cloud Function **`cleanupSignupRunUsers`** (Admin; `dryRun: true|false`, `limit`) — nur Mailboxen `signup+.*@test.com`, **ohne** kanonische Seed-User (`investorN`/`traderN@test.com`).
+- Server-ENV: `ALLOW_DEV_SIGNUP_RUN_CLEANUP=true` (in Production zusätzlich `ALLOW_DEV_SIGNUP_RUN_CLEANUP_IN_PRODUCTION=true`).
+- Oder: `LOAD_TEST_CLEANUP=1 ./scripts/run-signup-onboarding-load-test.sh` (benötigt `BA_PASSWORD` in `scripts/.env.server`).
 
 ### How-to: Neues Feature Flag / Remote Config
 
-- Backend: `getConfig` liefert (environment-basiert) **finanzielle Parameter aus der Klasse `Configuration`** (via `cloud/utils/configHelper`) sowie Feature Flags/Limits/Display. Source of Truth für Finanz-Config ist das Admin-Portal (4-Augen).
-- iOS: `ConfigurationService` ist die zentrale Stelle für Konfiguration; er wird im `ServiceLifecycleCoordinator` mit Priorität „critical“ gestartet und ruft in `start()` `fetchRemoteDisplayConfig()` auf, um die Server-Werte (u.a. `initialAccountBalance`, `traderCommissionRate`, `appServiceChargeRate`) zu laden und lokal zu mergen. **`initialAccountBalance`**: Backend- und App-Default **0 €**; Nutzer erhalten kein automatisches Startguthaben außer was Admins in der `Configuration` hinterlegt haben (4-Augen).
+- **Schreib-SSOT:** Admin Web Portal → Parse-Klasse `Configuration` (`requestConfigurationChange`, ggf. 4-Augen). Legacy `updateConfig` ist **deprecated**.
+- **Lese-SSOT (Clients):** `getConfig` merged `Configuration` + optional legacy `Config` (environment); Display-Flags aus dem Portal kommen aus `loadConfig()` / `Configuration`.
+- **iOS:** `ConfigurationService` lädt in `start()` per `fetchRemoteDisplayConfig()` und cached in `AppConfiguration`/UserDefaults — **keine Remote-Writes** aus der App (Ausnahme: CSR-only `updateSLAMonitoringInterval`, lokal).
+- **`AdminDashboardView`:** Read-only Diagnose (Ledger, Beleg-Suche, Drift-Health); Role Testing nur **`#if DEBUG`**.
 
-**Konfigurierbare Finanzparameter:**
-- `appServiceChargeRate`: App Service Charge Rate (Default: 2%, konfigurierbar über `ConfigurationService.updateAppServiceChargeRate()`)
-- `traderCommissionRate`: Trader Commission Rate (Default: 10%, konfigurierbar über `ConfigurationService.updateTraderCommissionRate()`)
-- Beide Rates verwenden `effective*` Properties mit Fallback auf `CalculationConstants` Defaults
+**Konfigurierbare Finanzparameter (Portal, nicht iOS):**
+- `appServiceChargeRate`, `traderCommissionRate`, `investorCommissionRateTotal` — Admin-Portal Karte „Erfolgsprovision App + Trader“ / `requestCommissionRateBundleChange`
+- iOS nutzt `effective*` Properties mit Fallback auf `CalculationConstants` bis `getConfig` geladen ist
+
+**Display-Flags (Portal → iOS, Kategorie Anzeige):**
+- `showCommissionBreakdownInCreditNote` — Trader-Gutschrift Commission-Breakdown (Standard: aus)
+- `showTraderDashboardInvestmentActiveStatus` — Trader-Depot Kachel „Investment-Pool“ pro Position (Standard: an); iOS: `HoldingCard` + `DepotPositionPoolStatusResolver`
 
 ### How-to: Neues Compliance-Event / Audit Trail
 

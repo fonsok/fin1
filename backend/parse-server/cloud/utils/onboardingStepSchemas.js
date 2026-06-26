@@ -21,7 +21,7 @@ const EMPLOYMENT_STATUSES = [
   'unemployed',
   'other',
 ];
-const ASSET_TYPES = ['privateAssets', 'businessAssets'];
+const ASSET_TYPES = ['privateAssets', 'businessAssets', 'private_assets', 'business_assets'];
 
 function formatJoiError(error) {
   return error.details.map((d) => d.message.replace(/"/g, '')).join('; ');

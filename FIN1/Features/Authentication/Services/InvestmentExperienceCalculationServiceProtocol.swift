@@ -36,28 +36,31 @@ final class InvestmentExperienceCalculationService: InvestmentExperienceCalculat
     func calculateInvestmentExperienceLevel(for signUpData: SignUpData) -> Int {
         var experience = 0
 
-        // Stocks experience
-        switch signUpData.stocksTransactionsCount {
-        case .none: experience += 0
-        case .oneToTen: experience += 1
-        case .tenToFifty: experience += 2
-        case .fiftyPlus: experience += 3
+        if let stocksTransactionsCount = signUpData.stocksTransactionsCount {
+            switch stocksTransactionsCount {
+            case .none: experience += 0
+            case .oneToTen: experience += 1
+            case .tenToFifty: experience += 2
+            case .fiftyPlus: experience += 3
+            }
         }
 
-        // ETFs experience
-        switch signUpData.etfsTransactionsCount {
-        case .none: experience += 0
-        case .oneToTen: experience += 1
-        case .tenToTwenty: experience += 2
-        case .moreThanTwenty: experience += 3
+        if let etfsTransactionsCount = signUpData.etfsTransactionsCount {
+            switch etfsTransactionsCount {
+            case .none: experience += 0
+            case .oneToTen: experience += 1
+            case .tenToTwenty: experience += 2
+            case .moreThanTwenty: experience += 3
+            }
         }
 
-        // Derivatives experience
-        switch signUpData.derivativesTransactionsCount {
-        case .none: experience += 0
-        case .oneToTen: experience += 1
-        case .tenToFifty: experience += 2
-        case .fiftyPlus: experience += 3
+        if let derivativesTransactionsCount = signUpData.derivativesTransactionsCount {
+            switch derivativesTransactionsCount {
+            case .none: experience += 0
+            case .oneToTen: experience += 1
+            case .tenToFifty: experience += 2
+            case .fiftyPlus: experience += 3
+            }
         }
 
         // Cap at 10 for the scale
@@ -67,7 +70,8 @@ final class InvestmentExperienceCalculationService: InvestmentExperienceCalculat
     func calculateTradingFrequency(for signUpData: SignUpData) -> Int {
         // For traders, base on derivatives experience
         if signUpData.userRole == .trader {
-            switch signUpData.derivativesTransactionsCount {
+            guard let derivativesTransactionsCount = signUpData.derivativesTransactionsCount else { return 0 }
+            switch derivativesTransactionsCount {
             case .none: return 0
             case .oneToTen: return 2
             case .tenToFifty: return 5
@@ -87,9 +91,12 @@ final class InvestmentExperienceCalculationService: InvestmentExperienceCalculat
         knowledge += self.calculateInvestmentExperienceLevel(for: signUpData)
 
         // Additional knowledge from investment amounts
-        if signUpData.stocksInvestmentAmount != .hundredToTenThousand { knowledge += 1 }
-        if signUpData.etfsInvestmentAmount != .hundredToTenThousand { knowledge += 1 }
-        if signUpData.derivativesInvestmentAmount != .zeroToThousand { knowledge += 2 }
+        if signUpData.stocksInvestmentAmount != nil &&
+            signUpData.stocksInvestmentAmount != .hundredToTenThousand { knowledge += 1 }
+        if signUpData.etfsInvestmentAmount != nil &&
+            signUpData.etfsInvestmentAmount != .hundredToTenThousand { knowledge += 1 }
+        if signUpData.derivativesInvestmentAmount != nil &&
+            signUpData.derivativesInvestmentAmount != .zeroToThousand { knowledge += 2 }
 
         // Knowledge from other assets
         if signUpData.otherAssets["Real estate"] == true { knowledge += 1 }

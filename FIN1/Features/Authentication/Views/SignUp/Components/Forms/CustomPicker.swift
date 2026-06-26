@@ -1,5 +1,64 @@
 import SwiftUI
 
+struct OptionalCustomPicker<T: Hashable>: View {
+    let title: String
+    @Binding var selection: T?
+    let options: [T]
+    let displayText: (T) -> String
+    let placeholder: String
+    let labelColor: Color
+
+    init(
+        title: String,
+        selection: Binding<T?>,
+        options: [T],
+        displayText: @escaping (T) -> String,
+        placeholder: String = SignUpStepSelectionPrompt.unsetOption,
+        labelColor: Color = AppTheme.fontColor
+    ) {
+        self.title = title
+        self._selection = selection
+        self.options = options
+        self.displayText = displayText
+        self.placeholder = placeholder
+        self.labelColor = labelColor
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(self.title)
+                .font(ResponsiveDesign.bodyFont())
+                .fontWeight(.medium)
+                .foregroundColor(self.labelColor)
+
+            Menu {
+                Button(action: { self.selection = nil }, label: {
+                    Text(SignUpStepSelectionPrompt.unsetOption)
+                        .foregroundColor(AppTheme.inputFieldText)
+                })
+
+                ForEach(self.options, id: \.self) { option in
+                    Button(action: { self.selection = option }, label: {
+                        Text(self.displayText(option))
+                            .foregroundColor(AppTheme.inputFieldText)
+                    })
+                }
+            } label: {
+                HStack {
+                    Text(self.selection.map(self.displayText) ?? SignUpStepSelectionPrompt.unsetOption)
+                        .foregroundColor(AppTheme.inputFieldText)
+                    Spacer()
+                    Image(systemName: "chevron.up.chevron.down")
+                        .foregroundColor(AppTheme.inputFieldText)
+                }
+                .padding()
+                .background(AppTheme.inputFieldBackground)
+                .cornerRadius(ResponsiveDesign.spacing(12))
+            }
+        }
+    }
+}
+
 struct CustomPicker<T: Hashable>: View {
     let title: String
     @Binding var selection: T
@@ -42,6 +101,105 @@ struct CustomPicker<T: Hashable>: View {
                 .cornerRadius(ResponsiveDesign.spacing(12))
             }
         }
+    }
+}
+
+extension OptionalCustomPicker where T == EmploymentStatus {
+    init(title: String, selection: Binding<EmploymentStatus?>) {
+        self.init(
+            title: title,
+            selection: selection,
+            options: EmploymentStatus.allCases,
+            displayText: { $0.displayName }
+        )
+    }
+}
+
+extension OptionalCustomPicker where T == IncomeRange {
+    init(title: String, selection: Binding<IncomeRange?>) {
+        self.init(
+            title: title,
+            selection: selection,
+            options: IncomeRange.allCases,
+            displayText: { $0.displayName }
+        )
+    }
+}
+
+extension OptionalCustomPicker where T == CashAndLiquidAssets {
+    init(title: String, selection: Binding<CashAndLiquidAssets?>) {
+        self.init(
+            title: title,
+            selection: selection,
+            options: CashAndLiquidAssets.allCases,
+            displayText: { $0.displayName }
+        )
+    }
+}
+
+extension OptionalCustomPicker where T == StocksTransactionCount {
+    init(title: String, selection: Binding<StocksTransactionCount?>) {
+        self.init(
+            title: title,
+            selection: selection,
+            options: StocksTransactionCount.allCases,
+            displayText: { $0.displayName }
+        )
+    }
+}
+
+extension OptionalCustomPicker where T == ETFsTransactionCount {
+    init(title: String, selection: Binding<ETFsTransactionCount?>) {
+        self.init(
+            title: title,
+            selection: selection,
+            options: ETFsTransactionCount.allCases,
+            displayText: { $0.displayName }
+        )
+    }
+}
+
+extension OptionalCustomPicker where T == DerivativesTransactionCount {
+    init(title: String, selection: Binding<DerivativesTransactionCount?>) {
+        self.init(
+            title: title,
+            selection: selection,
+            options: DerivativesTransactionCount.allCases,
+            displayText: { $0.displayName }
+        )
+    }
+}
+
+extension OptionalCustomPicker where T == InvestmentAmount {
+    init(title: String, selection: Binding<InvestmentAmount?>) {
+        self.init(
+            title: title,
+            selection: selection,
+            options: InvestmentAmount.allCases,
+            displayText: { $0.displayName }
+        )
+    }
+}
+
+extension OptionalCustomPicker where T == DerivativesInvestmentAmount {
+    init(title: String, selection: Binding<DerivativesInvestmentAmount?>) {
+        self.init(
+            title: title,
+            selection: selection,
+            options: DerivativesInvestmentAmount.allCases,
+            displayText: { $0.displayName }
+        )
+    }
+}
+
+extension OptionalCustomPicker where T == HoldingPeriod {
+    init(title: String, selection: Binding<HoldingPeriod?>) {
+        self.init(
+            title: title,
+            selection: selection,
+            options: HoldingPeriod.allCases,
+            displayText: { $0.displayName }
+        )
     }
 }
 

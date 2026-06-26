@@ -1,0 +1,26 @@
+flowchart TB
+    subgraph client["iOS Client"]
+        SD["SignUpData"]
+        SC["SignUpCoordinator\n+ 11 Extensions"]
+        SFS["SignUpFlowSession\n(static)"]
+        US["UserService.currentUser"]
+        USO["UserSessionObserver"]
+        AV["AuthenticationView"]
+    end
+    subgraph server["Parse Cloud"]
+        OP["OnboardingProgress"]
+        OA["OnboardingAudit"]
+        UC["completeOnboardingStep"]
+        SP["saveOnboardingProgress"]
+        GP["getOnboardingProgress"]
+        U["_User fields"]
+    end
+    SD --> SC
+    SC --> SP
+    SC --> UC
+    SC --> US
+    US --> AV
+    USO --> AV
+    GP --> SC
+    UC --> U
+    AV -->|"Notifications"| USO

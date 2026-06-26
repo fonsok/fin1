@@ -1,15 +1,16 @@
 import SwiftUI
 
-// Import Forms components
-// Note: These components are now in the Forms subfolder
-
 struct FinancialStep: View {
-    @Binding var employmentStatus: EmploymentStatus
+    @Binding var employmentStatus: EmploymentStatus?
     @Binding var income: String
-    @Binding var incomeRange: IncomeRange
+    @Binding var incomeRange: IncomeRange?
     @Binding var incomeSources: [String: Bool]
     @Binding var otherIncomeSource: String
-    @Binding var cashAndLiquidAssets: CashAndLiquidAssets
+    @Binding var cashAndLiquidAssets: CashAndLiquidAssets?
+
+    private var hasSelectedIncomeSource: Bool {
+        self.incomeSources.values.contains(true)
+    }
 
     var body: some View {
         SignUpFormStepList {
@@ -38,50 +39,26 @@ struct FinancialStep: View {
                     .foregroundColor(AppTheme.fontColor.opacity(0.8))
             }
 
-            CustomPicker(
+            OptionalCustomPicker(
                 title: "Employment Status",
                 selection: self.$employmentStatus
             )
 
-            CustomPicker(
+            OptionalCustomPicker(
                 title: "Income Range (€)",
                 selection: self.$incomeRange
             )
 
-            VStack(alignment: .leading, spacing: 8) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Cash and liquid assets (€)")
-                        .font(ResponsiveDesign.bodyFont())
-                        .fontWeight(.medium)
-                        .foregroundColor(AppTheme.fontColor)
+            OptionalCustomPicker(
+                title: "Cash and liquid assets (€)",
+                selection: self.$cashAndLiquidAssets
+            )
 
-                    Text("(Securities accounts, savings accounts, etc.)")
-                        .font(ResponsiveDesign.captionFont())
-                        .foregroundColor(AppTheme.fontColor.opacity(0.7))
-                }
+            Text("(Securities accounts, savings accounts, etc.)")
+                .font(ResponsiveDesign.captionFont())
+                .foregroundColor(AppTheme.fontColor.opacity(0.7))
+                .frame(maxWidth: .infinity, alignment: .leading)
 
-                Menu {
-                    ForEach(CashAndLiquidAssets.allCases, id: \.self) { option in
-                        Button(action: { self.cashAndLiquidAssets = option }, label: {
-                            Text(option.displayName)
-                                .foregroundColor(AppTheme.inputFieldText)
-                        })
-                    }
-                } label: {
-                    HStack {
-                        Text(self.cashAndLiquidAssets.displayName)
-                            .foregroundColor(AppTheme.inputFieldText)
-                        Spacer()
-                        Image(systemName: "chevron.up.chevron.down")
-                            .foregroundColor(AppTheme.inputFieldText)
-                    }
-                    .padding()
-                    .background(AppTheme.inputFieldBackground)
-                    .cornerRadius(ResponsiveDesign.spacing(12))
-                }
-            }
-
-            // Income Sources Section
             VStack(alignment: .leading, spacing: 12) {
                 Text("Where do you get your income from?")
                     .font(ResponsiveDesign.bodyFont())
@@ -162,9 +139,14 @@ struct FinancialStep: View {
                         otherText: self.$otherIncomeSource
                     )
                 }
+
+                if !self.hasSelectedIncomeSource {
+                    Text(SignUpStepSelectionPrompt.incomeSources)
+                        .font(ResponsiveDesign.captionFont())
+                        .foregroundColor(AppTheme.fontColor.opacity(0.6))
+                }
             }
 
-            // Investment Recommendation
             Text("We recommend that you invest no more than 5% of your assets.")
                 .font(ResponsiveDesign.bodyFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.8))
@@ -176,9 +158,9 @@ struct FinancialStep: View {
 
 #Preview {
     FinancialStep(
-        employmentStatus: .constant(.employed),
+        employmentStatus: .constant(nil),
         income: .constant(""),
-        incomeRange: .constant(.middle),
+        incomeRange: .constant(nil),
         incomeSources: .constant([
             "Settlement": false,
             "Inheritance": false,
@@ -190,7 +172,7 @@ struct FinancialStep: View {
             "Other (please specify)": false
         ]),
         otherIncomeSource: .constant(""),
-        cashAndLiquidAssets: .constant(.lessThan10k)
+        cashAndLiquidAssets: .constant(nil)
     )
     .background(AppTheme.screenBackground)
 }

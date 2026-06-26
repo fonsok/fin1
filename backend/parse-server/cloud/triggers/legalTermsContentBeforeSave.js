@@ -33,7 +33,7 @@ Parse.Cloud.beforeSave('TermsContent', async (request) => {
   }
 
   const documentType = obj.get('documentType') || 'terms';
-  const allowedTypes = ['terms', 'privacy', 'imprint'];
+  const allowedTypes = ['terms', 'privacy', 'imprint', 'trader_agreement', 'investor_agreement'];
   if (!allowedTypes.includes(documentType)) {
     throw new Parse.Error(Parse.Error.INVALID_VALUE, `Invalid documentType: ${documentType}`);
   }

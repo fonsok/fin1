@@ -21,7 +21,7 @@ const CONSENT_SPECS = {
   },
 };
 
-async function findExistingLegalConsent({ userId, consentType, version }) {
+async function findExistingLegalConsent({ userId, consentType, version, source, deviceInstallId }) {
   const uid = normalizeString(userId);
   const type = normalizeString(consentType);
   const versionStr = normalizeString(version);
@@ -32,6 +32,10 @@ async function findExistingLegalConsent({ userId, consentType, version }) {
   q.equalTo('consentType', type);
   q.equalTo('version', versionStr);
   q.equalTo('accepted', true);
+  const sourceStr = normalizeString(source);
+  if (sourceStr) q.equalTo('source', sourceStr);
+  const installId = normalizeString(deviceInstallId);
+  if (installId) q.equalTo('deviceInstallId', installId);
   q.descending('acceptedAt');
   q.limit(1);
   return q.first({ useMasterKey: true });
@@ -79,8 +83,15 @@ async function recordLegalConsentEntry({
     : new Date();
 
   const userId = user?.id || null;
+  const sourceStr = normalizeString(source) || 'app';
   if (userId) {
-    const existing = await findExistingLegalConsent({ userId, consentType: type, version: versionStr });
+    const existing = await findExistingLegalConsent({
+      userId,
+      consentType: type,
+      version: versionStr,
+      source: sourceStr,
+      deviceInstallId: installId,
+    });
     if (existing) {
       if (syncUser && user) {
         await syncParseUserLegalAcceptance(user, { consentType: type, version: versionStr, acceptedAt: at });
@@ -103,7 +114,7 @@ async function recordLegalConsentEntry({
   entry.set('appVersion', normalizeString(appVersion));
   entry.set('buildNumber', normalizeString(buildNumber));
   entry.set('deviceInstallId', installId);
-  entry.set('source', normalizeString(source) || 'app');
+  entry.set('source', sourceStr);
 
   const hash = normalizeString(documentHash);
   if (hash) entry.set('documentHash', hash);
@@ -213,6 +224,10 @@ async function findDeviceLegalConsentAcknowledgements(userId, deviceInstallId) {
   const seen = new Set();
   const acknowledgements = [];
   for (const row of rows) {
+    const source = normalizeString(row.get('source'));
+    // Device gate requires explicit in-app Accept rows only (never onboarding / legacy rows without source).
+    if (source !== 'app') continue;
+
     const consentType = normalizeString(row.get('consentType'));
     const version = normalizeString(row.get('version'));
     if (!consentType || !version) continue;

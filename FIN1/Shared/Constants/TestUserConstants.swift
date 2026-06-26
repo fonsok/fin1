@@ -31,7 +31,44 @@ enum TestConstants {
     static let customerIdPrefixInvestor = "ANL"
     static let customerIdPrefixTrader = "TRD"
 
+    /// Landing debug users (investor/trader 1–5) must use RC ≥ 5 (`RiskClass.isEligibleForPlatformTrading`).
+    /// Keep in sync with `backend/parse-server/cloud/functions/seed/users.js`.
+    static let investorRiskClasses = [5, 7, 5, 6, 6]
+    static let traderRiskClasses = [7, 6, 6, 7, 6, 6, 6, 7, 6, 6]
+
+    static func investorRiskClass(for number: Int) -> Int {
+        let index = max(0, (number - 1) % self.investorRiskClasses.count)
+        return self.investorRiskClasses[index]
+    }
+
+    static func traderRiskClass(for number: Int) -> Int {
+        let index = max(0, (number - 1) % self.traderRiskClasses.count)
+        return self.traderRiskClasses[index]
+    }
+
+    // MARK: - Company investor (KYB QA)
+    enum CompanyInvestorTestAccount: String, CaseIterable {
+        case draft
+        case pending
+        case approved
+
+        var email: String {
+            "company1-\(self.rawValue)@test.com"
+        }
+
+        var displayLabel: String {
+            switch self {
+            case .draft: return "Company KYB Draft"
+            case .pending: return "Company KYB Pending"
+            case .approved: return "Company KYB Approved"
+            }
+        }
+    }
+
     // MARK: - Sign-Up Flow Prefill (DEBUG manual testing)
+    /// Distinct from seeded debug-list names (investorNames) so admin search stays unambiguous.
+    static let signupTestFirstName = "GetStarted"
+    static let signupTestLastName = "Tester"
     static let signupTestPhone = "+491771234567"
     static let signupTestStreet = "Musterstraße 123"
     static let signupTestPostalCode = "80331"

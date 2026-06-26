@@ -5,8 +5,13 @@ import SwiftUI
 extension SignUpCoordinator {
 
     /// Saves step position and marks phase complete when crossing a phase boundary.
+    /// Partial saves are debounced to reduce backend write volume under fast navigation.
     func persistStepTransition(from oldStep: SignUpStep, to newStep: SignUpStep) {
         resetInactivityTimer()
+
+        if oldStep == .welcome {
+            self.trackOnboardingStartedIfNeeded()
+        }
 
         let elapsed = sessionStartDate.map { Int(Date().timeIntervalSince($0)) }
         telemetryService?.trackEvent(name: "onboarding_step_completed", properties: [
@@ -30,7 +35,15 @@ extension SignUpCoordinator {
         let stepKey = newStep.backendKey
         let phaseStep = oldPhase.completionBackendStep
 
+        self.onboardingPersistDebounceGeneration &+= 1
+        let generation = self.onboardingPersistDebounceGeneration
+
         Task {
+            if Self.onboardingPersistDebounceNanoseconds > 0 {
+                try? await Task.sleep(nanoseconds: Self.onboardingPersistDebounceNanoseconds)
+            }
+            guard generation == self.onboardingPersistDebounceGeneration else { return }
+
             do {
                 try await onboardingAPI.savePartialProgress(
                     step: stepKey,
@@ -66,33 +79,53 @@ extension SignUpCoordinator {
     func resumeOnboarding() async {
         guard let onboardingAPI = onboardingAPIService else { return }
 
-        if let user = userService?.currentUser {
-            userRole = user.role
-        }
-
-        isResuming = true
-        defer { isResuming = false }
+        let stepAtResumeStart = self.currentStep
+        self.isResuming = true
+        defer { self.isResuming = false }
 
         do {
             let progress = try await onboardingAPI.getOnboardingProgress()
 
             if progress.onboardingCompleted {
-                requestDismissal()
+                self.requestDismissal()
                 return
             }
 
+            let targetStep = progress.currentStep.flatMap { SignUpStep.fromBackendKey($0) }
+
             if let saved = progress.savedData {
-                signUpData?.restoreFromSavedData(saved)
+                signUpData?.restoreFromSavedData(
+                    saved,
+                    resumeStep: targetStep,
+                    lockAccountRole: userService?.isAuthenticated == true
+                )
             }
 
-            if let stepKey = progress.currentStep,
-               let targetStep = SignUpStep.fromBackendKey(stepKey) {
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    currentStep = targetStep
+            self.applyServerRoleToSignUpData()
+
+            if let targetStep, self.currentStep == stepAtResumeStart {
+                let stepsForRole = SignUpStep.stepsForRole(self.userRole)
+                if let targetIndex = stepsForRole.firstIndex(of: targetStep),
+                   let currentIndex = stepsForRole.firstIndex(of: stepAtResumeStart),
+                   targetIndex > currentIndex {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        self.currentStep = targetStep
+                    }
                 }
+            }
+
+            if self.currentStep != .welcome {
+                self.trackOnboardingStartedIfNeeded()
             }
         } catch {
             print("⚠️ Failed to resume onboarding: \(error.localizedDescription)")
         }
+    }
+
+    /// After account creation, `_User.role` is immutable — align UI/coordinator with server.
+    func applyServerRoleToSignUpData() {
+        guard let user = userService?.currentUser else { return }
+        setUserRole(user.role)
+        signUpData?.userRole = user.role
     }
 }

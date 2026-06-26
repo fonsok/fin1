@@ -22,12 +22,15 @@
 
 **Beispiel:** `investment_trader_username_v1` ergänzt `Investment.traderUsername` (String) — Parse `_User.username` zum Zeitpunkt der Reservierung. **`investment_trader_username_backfill_v1`** setzt das Feld auf bestehenden Zeilen aus `traderId` → `_User.username` (idempotent, paginiert). **`gob_investment_pool_trading_amount_v1`** ergänzt `Investment.poolTradingAmount` (Number) — gebuchte Gesamtkaufkosten nach Aktivierung, abgestimmt mit Collection-Bill-`totalBuyCost`. **`gob_user_cash_balance_v1`:** Klasse `UserCashBalance` (`userId`, `currentBalance`) plus Mongo-Unique-Index auf `userId` — SSOT für atomare `$inc`-Buchungen (Phase 3b, `userCashBalanceAtomic.js`). **`investment_number_per_investor_compound_unique_v1`:** ersetzt globalen Unique auf `investmentNumber` durch **`(investorId, investmentNumber)`** `unique + sparse` — erforderlich für `generateInvestorInvestmentNumber` (siehe [`Documentation/ENGINEERING_GUIDE.md`](ENGINEERING_GUIDE.md), Abschnitt *Investment anlegen*).
 
-**Einmalig Ops (falls Migration noch nicht gelaufen):** Legacy-Index `investmentNumber_1` (nur `investmentNumber` unique) auf Produktion prüfen; Skript `backend/mongodb/scripts/fix_unique_number_indexes_sparse_fin1.js` bzw. Compound-Migration aus Registry.
+**Signup / Onboarding (Mongo-Indexes, seit 2026-06):** **`onboarding_signup_indexes_v1`** legt Compound-Indexes für den Signup-Hotpath an (`OnboardingProgress`: `userId` + `updatedAt`; `OnboardingAudit`, `VerificationCode`, `PhoneVerificationCode`; `_User.customerNumber` sparse). Implementierung: `cloud/utils/schemaMigration/createOnboardingIndexes.js`. Produktregeln zur Write-Reduktion: [`Documentation/FIN1_APP_DOCS/02A_FEATURE_KATALOG_GUARDRAILS.md`](FIN1_APP_DOCS/02A_FEATURE_KATALOG_GUARDRAILS.md) (Abschnitt *Signup-Last*).
+
+**Einmalig Ops (falls Migration noch nicht gelaufen):** Legacy-Index `investmentNumber_1` (nur `investmentNumber` unique) auf Produktion prüfen; Skript `backend/mongodb/scripts/fix_unique_number_indexes_sparse_fin1.js` bzw. Compound-Migration aus Registry. Für **`onboarding_signup_indexes_v1`:** nach Parse-Cloud-Deploy vom Repo-Root `./scripts/run-onboarding-signup-indexes-migration.sh` (Admin-Login + `updateInvestmentClassSchemaFields` + Audit-Check via `listSchemaMigrations`).
 
 ## Admin / Ops
 
 - **`updateInvestmentClassSchemaFields`**: führt `runPendingSchemaMigrations` aus (Admin-Rolle).
 - **`listSchemaMigrations`**: letzte Audit-Zeilen (Admin-Rolle, optional `params.limit`).
+- **Shell (iobox):** `./scripts/run-onboarding-signup-indexes-migration.sh` — triggert obige Admin-Functions und prüft `onboarding_signup_indexes_v1` (benötigt `BA_PASSWORD` in `scripts/.env.server`).
 
 ## Post-Deploy (Routine, ~2 Min.)
 

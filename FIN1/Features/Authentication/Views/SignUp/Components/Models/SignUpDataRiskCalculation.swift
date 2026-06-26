@@ -4,30 +4,44 @@ import Foundation
 
 extension SignUpData {
     // MARK: - Computed Properties for Risk Class
+
     var calculatedRiskClass: RiskClass {
-        if let service = riskClassCalculationService {
-            return service.calculateRiskClass(for: self)
-        }
-        // Fallback to old implementation for backward compatibility
-        return self.calculateRiskClassLegacy()
+        self.riskClassCalculationService.calculateRiskClass(for: self)
     }
 
     var finalRiskClass: RiskClass {
+        if userSelectedRiskClass == .riskClass7 {
+            return .riskClass7
+        }
         if self.requiresConservativeRiskClassFromOnboarding {
             return .riskClass1
         }
         return userSelectedRiskClass ?? self.calculatedRiskClass
     }
 
-    /// Persists conservative risk class when onboarding risk gates require it.
-    func applyConservativeRiskClassIfNeeded() {
-        guard self.requiresConservativeRiskClassFromOnboarding else { return }
-        self.userSelectedRiskClass = .riskClass1
+    /// Persists conservative risk class when onboarding risk gates require it;
+    /// clears a stale RC1 override when gates no longer apply so calculated RC 5/6 can surface.
+    func syncOnboardingRiskClassSelection() {
+        if self.requiresConservativeRiskClassFromOnboarding {
+            guard self.userSelectedRiskClass != .riskClass7 else { return }
+            self.userSelectedRiskClass = .riskClass1
+            return
+        }
+
+        if self.userSelectedRiskClass == .riskClass1,
+           self.calculatedRiskClass.rawValue > RiskClass.riskClass1.rawValue {
+            self.userSelectedRiskClass = nil
+        }
     }
 
-    /// Backward-compatible alias.
-    func applyFinalRiskClassFromTotalLossAcknowledgement() {
-        self.applyConservativeRiskClassIfNeeded()
+    func updateLeveragedProductsTotalLossRiskAcknowledged(_ value: Bool) {
+        self.leveragedProductsTotalLossRiskAcknowledged = value
+        self.syncOnboardingRiskClassSelection()
+    }
+
+    func updateLeveragedProductsKnowledgeTestAnswer(questionId: String, optionId: String) {
+        self.leveragedProductsKnowledgeTestAnswers[questionId] = optionId
+        self.syncOnboardingRiskClassSelection()
     }
 
     /// User chose a higher risk class than the questionnaire calculated.
@@ -38,6 +52,9 @@ extension SignUpData {
 
     /// Whether step 22 should send the user back to the landing page instead of continuing onboarding.
     var shouldReturnToLandingAtRiskNote: Bool {
+        if self.requiresConservativeRiskClassFromOnboarding {
+            return true
+        }
         switch self.finalRiskClass {
         case .riskClass1, .riskClass2, .riskClass3, .riskClass4:
             return true
@@ -48,243 +65,56 @@ extension SignUpData {
         }
     }
 
-    // MARK: - Risk Class Calculation (Legacy - kept for backward compatibility)
-    private func calculateRiskClassLegacy() -> RiskClass {
-        // Calculate based on ALL factors from steps 12, 13, 14
-        var riskScore = 0
+    /// Step 22 may offer manual upgrade to risk class 7 (questionnaire RC 4–6, no conservative gate).
+    /// Independent of `shouldReturnToLandingAtRiskNote`: RC 5/6 users still see the upgrade path before leaving.
+    var canOfferManualRiskClassUpgradeAtRiskNote: Bool {
+        guard !self.requiresConservativeRiskClassFromOnboarding else { return false }
+        guard self.finalRiskClass != .riskClass7 else { return false }
 
-        // Step 12: Financial Information (Income & Assets)
-        riskScore += self.calculateFinancialRiskScore()
-
-        // Step 13: Investment Experience
-        riskScore += self.calculateExperienceRiskScore()
-
-        // Step 14: Desired return and other factors
-        riskScore += self.calculateReturnAndAssetRiskScore()
-
-        // Map score to risk class
-        let calculatedRiskClass = self.mapScoreToRiskClass(riskScore)
-
-        // Apply special rules and safety mechanisms
-        return self.applyRiskClassRules(calculatedRiskClass)
+        let profileRiskClass = self.userSelectedRiskClass ?? self.calculatedRiskClass
+        return [.riskClass4, .riskClass5, .riskClass6].contains(profileRiskClass)
     }
 
-    // MARK: - Financial Risk Score Calculation
-    private func calculateFinancialRiskScore() -> Int {
-        var score = 0
-
-        // Income range (higher income = higher risk tolerance)
-        switch incomeRange {
-        case .low: score += 0
-        case .lowMiddle: score += 1
-        case .middle: score += 2
-        case .highMiddle: score += 3
-        case .high: score += 4
-        case .veryHigh: score += 5
-        }
-
-        // Cash and liquid assets (higher assets = higher risk tolerance)
-        switch cashAndLiquidAssets {
-        case .lessThan10k: score += 0
-        case .tenKToFiftyK: score += 1
-        case .fiftyKToTwoHundredK: score += 2
-        case .twoHundredKToFiveHundredK: score += 3
-        case .fiveHundredKToOneMillion: score += 4
-        case .oneMillionPlus: score += 5
-        }
-
-        // Income sources (some indicate higher risk tolerance)
-        if incomeSources["Assets"] == true { score += 2 }
-        if incomeSources["Inheritance"] == true { score += 1 }
-        if incomeSources["Settlement"] == true { score += 1 }
-
-        return score
-    }
-
-    // MARK: - Experience Risk Score Calculation
-    private func calculateExperienceRiskScore() -> Int {
-        var score = 0
-
-        // Stocks experience
-        switch stocksTransactionsCount {
-        case .none: score += 0
-        case .oneToTen: score += 1
-        case .tenToFifty: score += 2
-        case .fiftyPlus: score += 3
-        }
-
-        // ETFs experience
-        switch etfsTransactionsCount {
-        case .none: score += 0
-        case .oneToTen: score += 1
-        case .tenToTwenty: score += 2
-        case .moreThanTwenty: score += 3
-        }
-
-        // Derivatives experience (different weights for investors vs traders)
-        score += self.calculateDerivativesExperienceScore()
-
-        // Investment amounts (use maximum of all investment types)
-        score += self.calculateInvestmentAmountScore()
-
-        // Derivatives holding period
-        score += self.calculateHoldingPeriodScore()
-
-        return score
-    }
-
-    // MARK: - Derivatives Experience Score
-    private func calculateDerivativesExperienceScore() -> Int {
-        switch derivativesTransactionsCount {
-        case .none: return 0
-        case .oneToTen:
-            return userRole == .investor ? 1 : 3
-        case .tenToFifty:
-            return userRole == .investor ? 2 : 6
-        case .fiftyPlus:
-            return userRole == .investor ? 3 : 8
+    /// Step 16 c) — role-specific minimum derivatives profile for risk class 5.
+    var meetsRiskClass5DerivativesExperienceCriteria: Bool {
+        switch userRole {
+        case .trader:
+            return self.meetsTraderRiskClass5DerivativesExperienceCriteria
+        case .investor, .other, .admin, .customerService:
+            return self.meetsInvestorRiskClass5DerivativesExperienceCriteria
         }
     }
 
-    // MARK: - Investment Amount Score
-    private func calculateInvestmentAmountScore() -> Int {
-        let stocksAmountScore = self.getStocksAmountScore()
-        let etfsAmountScore = self.getETFsAmountScore()
-        let derivativesAmountScore = self.getDerivativesAmountScore()
-
-        // Use the maximum score since derivatives are riskier
-        return max(stocksAmountScore, etfsAmountScore, derivativesAmountScore)
+    /// Trader: 50+ transactions, ≥ €10,000 invested, minutes to hours.
+    var meetsTraderRiskClass5DerivativesExperienceCriteria: Bool {
+        self.derivativesTransactionsCount == .fiftyPlus &&
+            (self.derivativesInvestmentAmount == .tenThousandToHundredThousand ||
+                self.derivativesInvestmentAmount == .moreThanHundredThousand) &&
+            self.derivativesHoldingPeriod == .minutesToHours
     }
 
-    private func getStocksAmountScore() -> Int {
-        switch stocksInvestmentAmount {
-        case .hundredToTenThousand: return 0
-        case .tenThousandToHundredThousand: return 1
-        case .hundredThousandToMillion: return 2
-        case .moreThanMillion: return 4
+    /// Investor: at least 1–10 transactions, €1,000–€10,000 invested, days to weeks (or higher).
+    var meetsInvestorRiskClass5DerivativesExperienceCriteria: Bool {
+        guard let count = derivativesTransactionsCount,
+              let amount = derivativesInvestmentAmount,
+              let holding = derivativesHoldingPeriod else {
+            return false
         }
+
+        let meetsCount = count == .oneToTen || count == .tenToFifty || count == .fiftyPlus
+        let meetsAmount = amount == .thousandToTenThousand ||
+            amount == .tenThousandToHundredThousand ||
+            amount == .moreThanHundredThousand
+        let meetsHolding = holding == .daysToWeeks || holding == .minutesToHours
+
+        return meetsCount && meetsAmount && meetsHolding
     }
 
-    private func getETFsAmountScore() -> Int {
-        switch etfsInvestmentAmount {
-        case .hundredToTenThousand: return 0
-        case .tenThousandToHundredThousand: return 1
-        case .hundredThousandToMillion: return 2
-        case .moreThanMillion: return 4
+    /// Prevents assignment to RC 5 when step 16 c) derivatives profile is insufficient.
+    func cappedForRiskClass5DerivativesGate(_ riskClass: RiskClass) -> RiskClass {
+        if riskClass == .riskClass5, !self.meetsRiskClass5DerivativesExperienceCriteria {
+            return .riskClass4
         }
-    }
-
-    private func getDerivativesAmountScore() -> Int {
-        switch derivativesInvestmentAmount {
-        case .zeroToThousand: return 0
-        case .thousandToTenThousand:
-            return userRole == .investor ? 1 : 2
-        case .tenThousandToHundredThousand:
-            return userRole == .investor ? 2 : 4
-        case .moreThanHundredThousand:
-            return userRole == .investor ? 3 : 6
-        }
-    }
-
-    // MARK: - Holding Period Score
-    private func calculateHoldingPeriodScore() -> Int {
-        switch derivativesHoldingPeriod {
-        case .minutesToHours:
-            return userRole == .investor ? 2 : 4
-        case .daysToWeeks:
-            return userRole == .investor ? 1 : 2
-        case .monthsToYears:
-            return 1 // Same weight for both (conservative)
-        }
-    }
-
-    // MARK: - Return and Asset Risk Score
-    private func calculateReturnAndAssetRiskScore() -> Int {
-        var score = 0
-
-        // Desired return (higher expectations = higher risk tolerance)
-        switch desiredReturn {
-        case .atLeastTenPercent: score += 1
-        case .atLeastFiftyPercent: score += 3
-        case .atLeastHundredPercent: score += 5
-        }
-
-        // Other assets (real estate and precious metals indicate higher risk tolerance)
-        if otherAssets["Real estate"] == true { score += 2 }
-        if otherAssets["Gold, silver"] == true { score += 1 }
-
-        return score
-    }
-
-    // MARK: - Score to Risk Class Mapping
-    private func mapScoreToRiskClass(_ score: Int) -> RiskClass {
-        switch score {
-        case 0...3: return .riskClass1
-        case 4...7: return .riskClass2
-        case 8...12: return .riskClass3
-        case 13...18: return .riskClass4
-        case 19...25: return .riskClass5
-        case 26...35: return .riskClass6
-        default: return .riskClass6 // Cap at 6 unless user manually selects 7
-        }
-    }
-
-    // MARK: - Risk Class Rules Application
-    private func applyRiskClassRules(_ calculatedRiskClass: RiskClass) -> RiskClass {
-        // Special pathway for investors: Risk Class 5 if they meet specific criteria
-        if userRole == .investor && calculatedRiskClass.rawValue < 5 {
-            if self.canInvestorGetRiskClass5() {
-                return .riskClass5
-            }
-        }
-
-        // Apply safety mechanism: cap at Risk Class 2 if conservative patterns detected
-        if self.hasConservativeInvestmentPattern() && calculatedRiskClass.rawValue > 2 {
-            return .riskClass2
-        }
-
-        return calculatedRiskClass
-    }
-
-    // MARK: - Special Investor Risk Class 5 Check
-    private func canInvestorGetRiskClass5() -> Bool {
-        // 1. Not unemployed
-        let isEmployed = employmentStatus != .unemployed
-
-        // 2. Has investment experience in at least one area
-        let hasStockExperience = stocksTransactionsCount != .none
-        let hasETFExperience = etfsTransactionsCount != .none
-        let hasInvestmentAmount = stocksInvestmentAmount != .hundredToTenThousand ||
-            etfsInvestmentAmount != .hundredToTenThousand ||
-            derivativesInvestmentAmount != .zeroToThousand
-
-        let hasInvestmentExperience = hasStockExperience || hasETFExperience || hasInvestmentAmount
-
-        // 3. Higher desired return (at least 50% or 100%)
-        let hasHigherReturn = desiredReturn == .atLeastFiftyPercent || desiredReturn == .atLeastHundredPercent
-
-        return isEmployed && hasInvestmentExperience && hasHigherReturn
-    }
-
-    // MARK: - Conservative Investment Pattern Check
-    private func hasConservativeInvestmentPattern() -> Bool {
-        if userRole == .investor {
-            // For investors: Only check desired return (they don't actively trade)
-            return desiredReturn == .atLeastTenPercent
-        } else {
-            // For traders: Check all conservative patterns (they actively trade)
-            let hasConservativeDerivatives = derivativesTransactionsCount == .none ||
-                derivativesTransactionsCount == .oneToTen ||
-                derivativesTransactionsCount == .tenToFifty
-
-            let hasConservativeAmounts = derivativesInvestmentAmount == .zeroToThousand ||
-                derivativesInvestmentAmount == .thousandToTenThousand
-
-            let hasConservativeHolding = derivativesHoldingPeriod == .monthsToYears
-            let hasConservativeReturn = desiredReturn == .atLeastTenPercent
-
-            // If ANY of these conservative patterns are detected, cap at Risk Class 2
-            return hasConservativeDerivatives || hasConservativeAmounts || hasConservativeHolding || hasConservativeReturn
-        }
+        return riskClass
     }
 }

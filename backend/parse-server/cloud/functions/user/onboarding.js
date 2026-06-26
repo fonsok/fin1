@@ -5,6 +5,13 @@ const {
   validateStepData,
   validatePartialOnboardingData,
 } = require('../../utils/validation');
+const { sanitizeOnboardingSavedData } = require('../../utils/onboardingLegacyPickerDefaults');
+const {
+  enforceRiskClass5DerivativesGateOnOnboardingData,
+} = require('../../utils/riskClass5DerivativesGate');
+const { assertOnboardingProgressRateLimit } = require('../../utils/onboardingProgressRateLimit');
+
+const ONBOARDING_AUDIT_READ_LIMIT = 32;
 
 // Extracts the subset of answers relevant to a given audit step.
 // Stored as an immutable JSON snapshot so auditors can see exactly
@@ -93,16 +100,27 @@ function buildAuditAnswers(step, data) {
   }
 }
 
+function syncRiskToleranceFromOnboardingData(user, data) {
+  if (!data || data.finalRiskClass == null) return;
+  const value = Number(data.finalRiskClass);
+  if (!Number.isInteger(value) || value < 1 || value > 7) return;
+  user.set('riskTolerance', value);
+}
+
 Parse.Cloud.define('completeOnboardingStep', async (request) => {
   const user = request.user;
   if (!user) throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Login required');
 
   const { step } = request.params;
-  const data = request.params.data ? sanitizeObject(request.params.data) : null;
+  let data = request.params.data ? sanitizeObject(request.params.data) : null;
 
   const validSteps = ['personal', 'address', 'tax', 'experience', 'risk', 'consents', 'verification'];
   if (!validSteps.includes(step)) {
     throw new Parse.Error(Parse.Error.INVALID_VALUE, 'Invalid step');
+  }
+
+  if ((step === 'risk' || step === 'verification') && data) {
+    data = enforceRiskClass5DerivativesGateOnOnboardingData(data);
   }
 
   const validation = validateStepData(step, data);
@@ -124,9 +142,15 @@ Parse.Cloud.define('completeOnboardingStep', async (request) => {
     }
   }
 
+  if (step === 'risk' || step === 'verification') {
+    syncRiskToleranceFromOnboardingData(user, data);
+  }
+
   if (step === 'consents' && data) {
     const { persistOnboardingLegalConsents } = require('../legal/legalConsentRecording');
     await persistOnboardingLegalConsents(request, user, data);
+    const { persistOnboardingRoleAgreementConsent } = require('../legal/roleAgreementConsent');
+    await persistOnboardingRoleAgreementConsent(request, user, data);
   }
 
   await user.save(null, { useMasterKey: true });
@@ -159,26 +183,55 @@ Parse.Cloud.define('completeOnboardingStep', async (request) => {
   };
 });
 
+function assertImmutableOnboardingRole(user, data) {
+  if (!data || data.userRole == null) return;
+  const requested = String(data.userRole).trim().toLowerCase();
+  const current = String(user.get('role') || '').trim().toLowerCase();
+  if (!current || !requested || requested === current) return;
+  if (requested !== 'investor' && requested !== 'trader') return;
+  if (current !== 'investor' && current !== 'trader') return;
+  throw new Parse.Error(
+    Parse.Error.OPERATION_FORBIDDEN,
+    'User role cannot be changed after account creation',
+  );
+}
+
 Parse.Cloud.define('getOnboardingProgress', async (request) => {
   const user = request.user;
   if (!user) throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Login required');
 
   const auditQuery = new Parse.Query('OnboardingAudit');
   auditQuery.equalTo('userId', user.id);
-  auditQuery.ascending('completedAt');
+  auditQuery.descending('completedAt');
+  auditQuery.limit(ONBOARDING_AUDIT_READ_LIMIT);
   const auditEntries = await auditQuery.find({ useMasterKey: true });
 
-  const completedSteps = auditEntries.map(e => e.get('step'));
+  const completedSteps = [...auditEntries]
+    .reverse()
+    .map((entry) => entry.get('step'));
 
   const progressQuery = new Parse.Query('OnboardingProgress');
   progressQuery.equalTo('userId', user.id);
   progressQuery.descending('updatedAt');
   const latestProgress = await progressQuery.first({ useMasterKey: true });
 
-  const savedData = latestProgress ? latestProgress.get('data') : null;
+  const currentStep = user.get('onboardingStep') || null;
+  const progressStep = latestProgress ? latestProgress.get('step') : null;
+  let savedData = latestProgress ? latestProgress.get('data') : null;
+
+  if (savedData) {
+    const sanitized = sanitizeOnboardingSavedData(savedData, { currentStep, progressStep });
+    savedData = sanitized.data;
+    if (sanitized.changed && latestProgress) {
+      latestProgress.set('data', sanitized.data);
+      await latestProgress.save(null, { useMasterKey: true }).catch((err) => {
+        console.error(`[OnboardingProgress] legacy picker cleanup failed for ${user.id}:`, err.message);
+      });
+    }
+  }
 
   return {
-    currentStep: user.get('onboardingStep') || null,
+    currentStep,
     completedSteps: completedSteps,
     onboardingCompleted: user.get('onboardingCompleted') || false,
     kycStatus: user.get('kycStatus') || null,
@@ -190,41 +243,56 @@ Parse.Cloud.define('saveOnboardingProgress', async (request) => {
   const user = request.user;
   if (!user) throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Login required');
 
+  assertOnboardingProgressRateLimit(user.id);
+
   const { step, partial } = request.params;
-  const data = request.params.data ? sanitizeObject(request.params.data) : null;
+  let data = request.params.data ? sanitizeObject(request.params.data) : null;
+  const isPositionOnly = data?._positionOnly === true;
 
   if (!step || typeof step !== 'string' || step.length > 50) {
     throw new Parse.Error(Parse.Error.INVALID_VALUE, 'step is required and must be a short string');
   }
 
-  if (data) {
+  if (data && !isPositionOnly) {
+    const currentStep = user.get('onboardingStep') || step;
+    data = sanitizeOnboardingSavedData(data, {
+      currentStep,
+      progressStep: step,
+    }).data;
+
     const partialValidation = validatePartialOnboardingData(step, data);
     if (!partialValidation.valid) {
       throw new Parse.Error(Parse.Error.INVALID_VALUE, `Validation failed: ${partialValidation.message}`);
     }
   }
 
-  const json = data ? JSON.stringify(data) : '';
-  if (json.length > 50000) {
-    throw new Parse.Error(Parse.Error.INVALID_VALUE, 'Data payload too large');
+  if (data && !isPositionOnly) {
+    assertImmutableOnboardingRole(user, data);
+    const json = JSON.stringify(data);
+    if (json.length > 50000) {
+      throw new Parse.Error(Parse.Error.INVALID_VALUE, 'Data payload too large');
+    }
   }
 
-  user.set('onboardingStep', step);
-  await user.save(null, { useMasterKey: true });
+  const previousStep = user.get('onboardingStep');
+  if (previousStep !== step) {
+    user.set('onboardingStep', step);
+    await user.save(null, { useMasterKey: true });
+  }
 
   const OnboardingProgress = Parse.Object.extend('OnboardingProgress');
   const progressQuery = new Parse.Query(OnboardingProgress);
   progressQuery.equalTo('userId', user.id);
-  progressQuery.equalTo('step', step);
+  progressQuery.descending('updatedAt');
   let progress = await progressQuery.first({ useMasterKey: true });
 
   if (!progress) {
     progress = new OnboardingProgress();
     progress.set('userId', user.id);
-    progress.set('step', step);
   }
 
-  if (data) {
+  progress.set('step', step);
+  if (data && !isPositionOnly) {
     progress.set('data', data);
   }
   progress.set('isPartial', partial === true);

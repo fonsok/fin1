@@ -142,6 +142,16 @@ final class TermsAcceptanceServiceDeviceConsentTests: XCTestCase {
         XCTAssertEqual(privacyVersion, "1.0")
     }
 
+    func testAcceptingOnlyTermsStillRequiresPrivacyOnDevice() {
+        let service = TermsAcceptanceService()
+        let user = self.makeUser(id: "user-partial", email: "partial@test.com")
+
+        _ = service.recordTermsAcceptance(user: user, version: "1.0")
+
+        XCTAssertFalse(service.needsToAcceptTerms(user: user, currentServerVersion: "1.0"))
+        XCTAssertTrue(service.needsToAcceptPrivacyPolicy(user: user, currentServerVersion: "1.0"))
+    }
+
     private func makeUser(id: String, email: String) -> User {
         User(
             id: id,

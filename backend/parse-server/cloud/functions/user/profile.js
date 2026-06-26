@@ -4,8 +4,42 @@ const { sanitizeObject, validateProfileUpdate } = require('../../utils/validatio
 const { readCustomerNumber } = require('../../utils/userIdentity');
 const {
   resolveUserLegalAcceptanceState,
+  resolveUserRoleAgreementState,
   persistResolvedLegalAcceptanceIfNeeded,
+  persistResolvedRoleAgreementIfNeeded,
 } = require('../legal/legalConsentUserSync');
+
+async function resolveEffectiveRiskTolerance(user) {
+  const stored = user.get('riskTolerance');
+  if (Number.isInteger(stored) && stored >= 1 && stored <= 7) {
+    return stored;
+  }
+
+  const progressQuery = new Parse.Query('OnboardingProgress');
+  progressQuery.equalTo('userId', user.id);
+  progressQuery.descending('updatedAt');
+  const latestProgress = await progressQuery.first({ useMasterKey: true });
+  const finalRiskClass = latestProgress?.get('data')?.finalRiskClass;
+
+  if (Number.isInteger(finalRiskClass) && finalRiskClass >= 1 && finalRiskClass <= 7) {
+    if (stored !== finalRiskClass) {
+      user.set('riskTolerance', finalRiskClass);
+      await user.save(null, { useMasterKey: true });
+    }
+    return finalRiskClass;
+  }
+
+  // Legacy seed data stored pre-onboarding tolerance (8–10) in riskTolerance.
+  // iOS treats riskTolerance as RiskClass 1–7; map high legacy values to tradable classes.
+  if (Number.isInteger(stored) && stored > 7) {
+    const mapped = stored >= 9 ? 7 : 6;
+    user.set('riskTolerance', mapped);
+    await user.save(null, { useMasterKey: true });
+    return mapped;
+  }
+
+  return Number.isInteger(stored) ? stored : null;
+}
 
 // ============================================================================
 // USER PROFILE
@@ -51,6 +85,9 @@ Parse.Cloud.define('getUserMe', async (request) => {
 
   const legal = await resolveUserLegalAcceptanceState(user, { language: 'de' });
   await persistResolvedLegalAcceptanceIfNeeded(user, legal);
+  const roleAgreement = await resolveUserRoleAgreementState(user, { language: 'de' });
+  await persistResolvedRoleAgreementIfNeeded(user, roleAgreement);
+  const riskTolerance = await resolveEffectiveRiskTolerance(user);
 
   // Single round-trip for app refresh / post-login: KYB + identity + legal acceptance SSOT.
   return {
@@ -65,12 +102,28 @@ Parse.Cloud.define('getUserMe', async (request) => {
     companyKybStatus: user.get('companyKybStatus') || null,
     onboardingCompleted: user.get('onboardingCompleted') || false,
     onboardingStep: user.get('onboardingStep') || null,
+    riskTolerance,
     acceptedTerms: legal.acceptedTerms,
     acceptedPrivacyPolicy: legal.acceptedPrivacyPolicy,
     acceptedTermsVersion: legal.acceptedTermsVersion,
     acceptedPrivacyPolicyVersion: legal.acceptedPrivacyPolicyVersion,
     acceptedTermsDate: legal.acceptedTermsDate,
     acceptedPrivacyPolicyDate: legal.acceptedPrivacyPolicyDate,
+    acceptedTraderAgreement: roleAgreement.role === 'trader'
+      ? roleAgreement.accepted
+      : user.get('acceptedTraderAgreement') === true,
+    acceptedTraderAgreementVersion: user.get('acceptedTraderAgreementVersion')
+      || (roleAgreement.role === 'trader' ? roleAgreement.version : null),
+    acceptedTraderAgreementDate: user.get('acceptedTraderAgreementDate')?.toISOString?.() ?? null,
+    acceptedInvestorAgreement: roleAgreement.role === 'investor'
+      ? roleAgreement.accepted
+      : user.get('acceptedInvestorAgreement') === true,
+    acceptedInvestorAgreementVersion: user.get('acceptedInvestorAgreementVersion')
+      || (roleAgreement.role === 'investor' ? roleAgreement.version : null),
+    acceptedInvestorAgreementDate: user.get('acceptedInvestorAgreementDate')?.toISOString?.() ?? null,
+    roleAgreementRequired: roleAgreement.required,
+    roleAgreementAccepted: roleAgreement.accepted,
+    roleAgreementVersion: roleAgreement.version,
   };
 });
 
@@ -79,7 +132,20 @@ Parse.Cloud.define('updateProfile', async (request) => {
   if (!user) throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Login required');
 
   const params = sanitizeObject(request.params);
-  const { firstName, lastName, salutation, dateOfBirth, phoneNumber } = params;
+  const {
+    firstName,
+    lastName,
+    salutation,
+    dateOfBirth,
+    phoneNumber,
+    streetAndNumber,
+    postalCode,
+    city,
+    country,
+    state,
+    username,
+    email,
+  } = params;
 
   const check = validateProfileUpdate(params);
   if (!check.valid) {
@@ -103,10 +169,19 @@ Parse.Cloud.define('updateProfile', async (request) => {
   if (phoneNumber) {
     profile.set('mobilePhone', phoneNumber);
     user.set('phone_number', phoneNumber);
-    await user.save(null, { useMasterKey: true });
+    user.set('phoneNumber', phoneNumber);
   }
 
+  if (streetAndNumber) user.set('streetAndNumber', streetAndNumber);
+  if (postalCode) user.set('postalCode', postalCode);
+  if (city) user.set('city', city);
+  if (country) user.set('country', country);
+  if (state) user.set('state', state);
+  if (username) user.set('username', username);
+  if (email) user.set('email', String(email).toLowerCase().trim());
+
   await profile.save(null, { useMasterKey: true });
+  await user.save(null, { useMasterKey: true });
 
   return { success: true };
 });

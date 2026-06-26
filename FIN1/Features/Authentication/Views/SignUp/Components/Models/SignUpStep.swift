@@ -78,18 +78,61 @@ enum SignUpStep: Int, CaseIterable, Identifiable {
     case summary = 21
     case riskClassificationNote = 22
     case riskClass7Confirmation = 23
+    case roleAgreement = 24
 
     var id: Int { rawValue }
 
+    /// UI / navigation order. `rawValue` stays stable for backend resume keys and contracts.
+    static let signupFlowOrder: [SignUpStep] = [
+        .welcome,
+        .contact,
+        .accountCreated,
+        .emailVerification,
+        .phoneVerification,
+        .personalInfo,
+        .citizenshipTax,
+        .identificationType,
+        .identificationUploadFront,
+        .identificationUploadBack,
+        .postidentConfirmation,
+        .identificationConfirm,
+        .addressConfirm,
+        .addressConfirmSuccess,
+        .financial,
+        .experience,
+        .desiredReturn,
+        .nonInsiderDeclaration,
+        .moneyLaunderingDeclaration,
+        .summary,
+        .riskClassificationNote,
+        .riskClass7Confirmation,
+        .terms,
+    ]
+
+    /// Final step: role-specific agreement immediately before registration completion.
+    static func registrationCompletionStep(for role: UserRole) -> SignUpStep {
+        switch role {
+        case .trader, .investor:
+            return .roleAgreement
+        default:
+            return .terms
+        }
+    }
+
+    /// Legacy alias — prefer `registrationCompletionStep(for:)`.
+    static var registrationCompletionStep: SignUpStep { .roleAgreement }
+
     /// Get all steps for a specific user role
     static func stepsForRole(_ role: UserRole) -> [SignUpStep] {
+        var steps = self.signupFlowOrder
+        if role != .trader {
+            steps = steps.filter { $0 != .nonInsiderDeclaration }
+        }
         switch role {
-        case .trader:
-            // Traders see all steps including insider declaration
-            return SignUpStep.allCases
-        case .investor, .other, .admin, .customerService:
-            // Investors and staff roles skip the insider declaration step
-            return SignUpStep.allCases.filter { $0 != .nonInsiderDeclaration }
+        case .trader, .investor:
+            return steps + [.roleAgreement]
+        default:
+            return steps
         }
     }
 

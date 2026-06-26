@@ -15,6 +15,17 @@ extension UserFactory {
             return self.makeCSRTestUser(email: email, password: password, customerNumber: signUpData.customerNumber)
         }
 
+        if let companyAccount = TestConstants.CompanyInvestorTestAccount.allCases.first(where: {
+            $0.email.caseInsensitiveCompare(email) == .orderedSame
+        }) {
+            return self.makeCompanyInvestorTestUser(
+                email: email,
+                password: password,
+                account: companyAccount,
+                customerNumber: signUpData.customerNumber
+            )
+        }
+
         return self.makeInvestorOrTraderTestUser(email: email, password: password, signUpData: signUpData)
     }
 
@@ -77,6 +88,110 @@ extension UserFactory {
             acceptedTermsDate: nil,
             acceptedPrivacyPolicyVersion: nil,
             acceptedPrivacyPolicyDate: nil,
+            lastLoginDate: Date(),
+            createdAt: Date(),
+            updatedAt: Date()
+        )
+    }
+
+    private static func makeCompanyInvestorTestUser(
+        email: String,
+        password: String,
+        account: TestConstants.CompanyInvestorTestAccount,
+        customerNumber: String
+    ) -> User {
+        let parts = account.displayLabel.split(separator: " ")
+        let firstName = parts.dropLast().joined(separator: " ")
+        let lastName = parts.last.map(String.init) ?? "CompanyInvestor"
+
+        var kybCompleted = false
+        var kybStatus: String?
+        var kybStep: String?
+        switch account {
+        case .draft:
+            kybStatus = "draft"
+            kybStep = "legal_entity"
+        case .pending:
+            kybCompleted = true
+            kybStatus = "pending_review"
+            kybStep = "submission"
+        case .approved:
+            kybCompleted = true
+            kybStatus = "approved"
+            kybStep = "submission"
+        }
+
+        return User(
+            id: stableUserId(for: email),
+            customerNumber: customerNumber,
+            accountType: .company,
+            email: email,
+            username: email.components(separatedBy: "@").first ?? "company",
+            phoneNumber: TestConstants.signupTestPhone,
+            password: password,
+            salutation: .mr,
+            academicTitle: "",
+            firstName: firstName.isEmpty ? "Company" : firstName,
+            lastName: lastName,
+            streetAndNumber: TestConstants.signupTestStreet,
+            postalCode: TestConstants.signupTestPostalCode,
+            city: TestConstants.signupTestCity,
+            state: TestConstants.signupTestState,
+            country: TestConstants.signupTestCountry,
+            dateOfBirth: Calendar.current.date(byAdding: .year, value: -40, to: Date()) ?? Date(),
+            placeOfBirth: TestConstants.signupTestCity,
+            countryOfBirth: TestConstants.signupTestCountry,
+            role: .investor,
+            csrRole: nil,
+            employmentStatus: .selfEmployed,
+            income: 0,
+            incomeRange: .high,
+            riskTolerance: 5,
+            address: TestConstants.signupTestStreet,
+            nationality: "German",
+            additionalNationalities: "",
+            taxNumber: TestConstants.signupTestTaxNumber,
+            additionalTaxResidences: "",
+            isNotUSCitizen: true,
+            identificationType: .passport,
+            passportFrontImageURL: nil,
+            passportBackImageURL: nil,
+            idCardFrontImageURL: nil,
+            idCardBackImageURL: nil,
+            identificationConfirmed: true,
+            addressConfirmed: true,
+            addressVerificationDocumentURL: nil,
+            leveragedProductsExperience: false,
+            financialProductsExperience: true,
+            investmentExperience: 5,
+            tradingFrequency: 0,
+            investmentKnowledge: 0,
+            desiredReturn: .atLeastTenPercent,
+            insiderTradingOptions: ["None of the above": true],
+            moneyLaunderingDeclaration: true,
+            assetType: .privateAssets,
+            profileImageURL: nil,
+            isEmailVerified: true,
+            isKYCCompleted: true,
+            acceptedTerms: true,
+            acceptedPrivacyPolicy: true,
+            acceptedMarketingConsent: false,
+            acceptedTermsVersion: "1.0",
+            acceptedTermsDate: Date(),
+            acceptedPrivacyPolicyVersion: "1.0",
+            acceptedPrivacyPolicyDate: Date(),
+            acceptedTraderAgreement: false,
+            acceptedTraderAgreementVersion: nil,
+            acceptedTraderAgreementDate: nil,
+            acceptedInvestorAgreement: true,
+            acceptedInvestorAgreementVersion: "1.0",
+            acceptedInvestorAgreementDate: Date(),
+            onboardingCompleted: true,
+            onboardingStep: "verification",
+            kycStatus: "verified",
+            companyKybCompleted: kybCompleted,
+            companyKybStep: kybStep,
+            companyKybStatus: kybStatus,
             lastLoginDate: Date(),
             createdAt: Date(),
             updatedAt: Date()
@@ -153,6 +268,9 @@ extension UserFactory {
     private static func makeInvestorOrTraderTestUser(email: String, password: String, signUpData: SignUpData) -> User {
         let isTrader = email.contains("trader")
         let userNumber = extractUserNumber(from: email)
+        let riskClass = isTrader
+            ? TestConstants.traderRiskClass(for: userNumber)
+            : TestConstants.investorRiskClass(for: userNumber)
 
         if isTrader {
             signUpData.userRole = .trader
@@ -172,9 +290,14 @@ extension UserFactory {
         signUpData.lastName = lastName
         signUpData.username = "\(firstName.lowercased().prefix(1))\(lastName.lowercased())"
         signUpData.moneyLaunderingDeclaration = true
-        signUpData.acceptedTerms = false
-        signUpData.acceptedPrivacyPolicy = false
+        signUpData.acceptedTerms = true
+        signUpData.acceptedPrivacyPolicy = true
         signUpData.acceptedMarketingConsent = false
+        signUpData.employmentStatus = .employed
+        signUpData.incomeRange = .middle
+        signUpData.cashAndLiquidAssets = .tenKToFiftyK
+
+        let now = Date()
 
         return User(
             id: stableUserId(for: email),
@@ -197,10 +320,10 @@ extension UserFactory {
             placeOfBirth: signUpData.placeOfBirth,
             countryOfBirth: signUpData.countryOfBirth,
             role: signUpData.userRole,
-            employmentStatus: signUpData.employmentStatus,
+            employmentStatus: signUpData.employmentStatus ?? .employed,
             income: Double(signUpData.income) ?? 0,
-            incomeRange: signUpData.incomeRange,
-            riskTolerance: signUpData.finalRiskClass.rawValue,
+            incomeRange: signUpData.incomeRange ?? .middle,
+            riskTolerance: riskClass,
             address: signUpData.address,
             nationality: signUpData.nationality,
             additionalNationalities: signUpData.additionalNationalities,
@@ -227,16 +350,25 @@ extension UserFactory {
             profileImageURL: nil,
             isEmailVerified: true,
             isKYCCompleted: true,
-            acceptedTerms: false,
-            acceptedPrivacyPolicy: false,
+            acceptedTerms: true,
+            acceptedPrivacyPolicy: true,
             acceptedMarketingConsent: false,
-            acceptedTermsVersion: nil,
-            acceptedTermsDate: nil,
-            acceptedPrivacyPolicyVersion: nil,
-            acceptedPrivacyPolicyDate: nil,
-            lastLoginDate: Date(),
-            createdAt: Date(),
-            updatedAt: Date()
+            acceptedTermsVersion: "1.0",
+            acceptedTermsDate: now,
+            acceptedPrivacyPolicyVersion: "1.0",
+            acceptedPrivacyPolicyDate: now,
+            acceptedTraderAgreement: isTrader,
+            acceptedTraderAgreementVersion: isTrader ? "1.0" : nil,
+            acceptedTraderAgreementDate: isTrader ? now : nil,
+            acceptedInvestorAgreement: !isTrader,
+            acceptedInvestorAgreementVersion: isTrader ? nil : "1.0",
+            acceptedInvestorAgreementDate: isTrader ? nil : now,
+            onboardingCompleted: true,
+            onboardingStep: "verification",
+            kycStatus: "verified",
+            lastLoginDate: now,
+            createdAt: now,
+            updatedAt: now
         )
     }
 }

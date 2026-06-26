@@ -28,6 +28,7 @@ struct LandingTypewriterStyleBody: View {
                                     .frame(maxWidth: .infinity)
                             })
                             .buttonStyle(PlainButtonStyle())
+                            .accessibilityIdentifier("SignUpGetStartedButton")
 
                             Button(action: { self.showLogin = true }, label: {
                                 Text(LandingConstants.signInButtonText)

@@ -112,12 +112,20 @@ struct ParseUserMeResponse: Decodable {
     let companyKybStatus: String?
     let onboardingCompleted: Bool?
     let onboardingStep: String?
+    let riskTolerance: Int?
     let acceptedTerms: Bool?
     let acceptedPrivacyPolicy: Bool?
     let acceptedTermsVersion: String?
     let acceptedPrivacyPolicyVersion: String?
     let acceptedTermsDate: String?
     let acceptedPrivacyPolicyDate: String?
+    let acceptedTraderAgreement: Bool?
+    let acceptedTraderAgreementVersion: String?
+    let acceptedTraderAgreementDate: String?
+    let acceptedInvestorAgreement: Bool?
+    let acceptedInvestorAgreementVersion: String?
+    let acceptedInvestorAgreementDate: String?
+    let roleAgreementAccepted: Bool?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -132,12 +140,20 @@ struct ParseUserMeResponse: Decodable {
         case companyKybStatus
         case onboardingCompleted
         case onboardingStep
+        case riskTolerance
         case acceptedTerms
         case acceptedPrivacyPolicy
         case acceptedTermsVersion
         case acceptedPrivacyPolicyVersion
         case acceptedTermsDate
         case acceptedPrivacyPolicyDate
+        case acceptedTraderAgreement
+        case acceptedTraderAgreementVersion
+        case acceptedTraderAgreementDate
+        case acceptedInvestorAgreement
+        case acceptedInvestorAgreementVersion
+        case acceptedInvestorAgreementDate
+        case roleAgreementAccepted
     }
 
     init(from decoder: Decoder) throws {
@@ -152,12 +168,20 @@ struct ParseUserMeResponse: Decodable {
         self.companyKybStatus = try c.decodeIfPresent(String.self, forKey: .companyKybStatus)
         self.onboardingCompleted = try c.decodeIfPresent(Bool.self, forKey: .onboardingCompleted)
         self.onboardingStep = try c.decodeIfPresent(String.self, forKey: .onboardingStep)
+        self.riskTolerance = try c.decodeIfPresent(Int.self, forKey: .riskTolerance)
         self.acceptedTerms = try c.decodeIfPresent(Bool.self, forKey: .acceptedTerms)
         self.acceptedPrivacyPolicy = try c.decodeIfPresent(Bool.self, forKey: .acceptedPrivacyPolicy)
         self.acceptedTermsVersion = try c.decodeIfPresent(String.self, forKey: .acceptedTermsVersion)
         self.acceptedPrivacyPolicyVersion = try c.decodeIfPresent(String.self, forKey: .acceptedPrivacyPolicyVersion)
         self.acceptedTermsDate = try c.decodeIfPresent(String.self, forKey: .acceptedTermsDate)
         self.acceptedPrivacyPolicyDate = try c.decodeIfPresent(String.self, forKey: .acceptedPrivacyPolicyDate)
+        self.acceptedTraderAgreement = try c.decodeIfPresent(Bool.self, forKey: .acceptedTraderAgreement)
+        self.acceptedTraderAgreementVersion = try c.decodeIfPresent(String.self, forKey: .acceptedTraderAgreementVersion)
+        self.acceptedTraderAgreementDate = try c.decodeIfPresent(String.self, forKey: .acceptedTraderAgreementDate)
+        self.acceptedInvestorAgreement = try c.decodeIfPresent(Bool.self, forKey: .acceptedInvestorAgreement)
+        self.acceptedInvestorAgreementVersion = try c.decodeIfPresent(String.self, forKey: .acceptedInvestorAgreementVersion)
+        self.acceptedInvestorAgreementDate = try c.decodeIfPresent(String.self, forKey: .acceptedInvestorAgreementDate)
+        self.roleAgreementAccepted = try c.decodeIfPresent(Bool.self, forKey: .roleAgreementAccepted)
         if let n = try c.decodeIfPresent(String.self, forKey: .customerNumber), !n.isEmpty {
             self.customerNumber = n
         } else if let legacy = try c.decodeIfPresent(String.self, forKey: .legacyCustomerNumber), !legacy.isEmpty {

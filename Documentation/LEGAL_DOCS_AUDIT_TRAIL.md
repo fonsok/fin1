@@ -21,10 +21,27 @@
   - dedupliziert serverseitig (gleiches Gerät/App/Dokument/Version innerhalb 24h)
 
 - `recordLegalConsent(...)`
-  - schreibt **Consent Audit** in `LegalConsent`
+  - schreibt **Consent Audit** in `LegalConsent` mit `source: app` (expliziter In-App-Accept)
+  - idempotent pro `(userId, consentType, version, source, deviceInstallId)` — eine bestehende Onboarding-Zeile (`source: onboarding`) blockiert **keinen** separaten App-Accept
+
+- `getDeviceLegalConsentAcknowledgements(deviceInstallId)`
+  - Login required; liefert `{ acknowledgements: [{ consentType, version }, ...] }`
+  - nur Zeilen mit **`source: app`** für dieses `deviceInstallId` (Onboarding-Batch und Legacy-Zeilen ohne `source` werden ignoriert)
+  - iOS nutzt das zum Wiederherstellen des lokalen Device-Stores nach Re-Login (`DeviceLegalConsentStore.syncAcknowledgementsFromServer`)
+
+- `getCurrentTerms` / `getCurrentLegalDocument(language, documentType)`
+  - `documentType`: `terms` | `privacy` | `imprint` | **`trader_agreement`** | **`investor_agreement`**
+  - liefert aktive `TermsContent`-Version inkl. aufgelöster Platzhalter (Gebührensätze aus `Configuration`)
+
+- `recordRoleAgreementConsent(role?, version, deviceInstallId, …)`
+  - Login required; `role` optional (Default: `_User.role`); rollenspezifische Vereinbarung (Trader Signalgeber / Investor)
+  - schreibt `LegalConsent` mit `consentType: trader_agreement|investor_agreement`, Default-`source: onboarding`
+  - synchronisiert `_User.acceptedTraderAgreement*` / `acceptedInvestorAgreement*` (`legalConsentUserSync.js`)
+  - optional Bestätigungs-E-Mail mit PDF-Anhang (`roleAgreementEmail.js`)
+  - idempotent pro `(userId, consentType, version, source, deviceInstallId)`
 
 **Admin (nur mit Berechtigung `manageTemplates`):**
-- `listTermsContent(documentType?, language?)` – listet TermsContent-Versionen, optional gefiltert nach `documentType` (`terms`|`privacy`|`imprint`) und/oder Sprache
+- `listTermsContent(documentType?, language?)` – listet TermsContent-Versionen, optional gefiltert nach `documentType` (`terms`|`privacy`|`imprint`|`trader_agreement`|`investor_agreement`) und/oder Sprache
 - `getTermsContent(objectId)` – liefert eine Version inkl. `sections` zum Klonen/Bearbeiten
 - `createTermsContent({ version, language, documentType, effectiveDate, isActive, sections })` – legt eine neue Version an (append-only)
 - `setActiveTermsContent(objectId)` – setzt die angegebene Version für ihren `documentType`+`language` als aktiv, deaktiviert die bisher aktive
@@ -44,6 +61,8 @@ Im Admin- bzw. CSR-Web-Portal ist unter der Navigation **„AGB & Rechtstexte“
 Die gleichen Cloud Functions (`listTermsContent`, `getTermsContent`, `createTermsContent`, `setActiveTermsContent`) und Trigger (Audit, Immutability) gelten unabhängig davon, ob eine Version über das Panel oder per Script angelegt wird. Im Panel stehen pro Version u. a. Anzeige von „Gültig ab“ und „Aktualisiert“ (mit Datum und Uhrzeit), pro Abschnitt ein **„Bearbeiten“‑Button** (öffnet Editor mit Fokus auf diesen Abschnitt), eine **Suchfunktion** in der Abschnittsliste und im Editor sowie **„Änderungen zur Vorgängerversion“** (Vergleich mit der vorherigen Version: hinzugefügt/entfernt/geändert).
 
 **Seed-Skript für Legal Snippets:** Im Backend liegt `scripts/seed-legal-snippets.js`. Es holt die aktive AGB-Version (terms/de), mergt die Standard-Snippet-Abschnitte (ohne bestehende Abschnitte zu überschreiben) und legt eine neue TermsContent-Version an (zunächst inaktiv). Nach dem Lauf im Admin unter „AGB & Rechtstexte“ die neue Version öffnen und „Als aktiv setzen“ wählen. Aufruf (aus `backend/scripts`): `PARSE_SERVER_URL=… PARSE_APP_ID=… PARSE_MASTER_KEY=… node seed-legal-snippets.js` (Master Key ggf. aus `parse-server/.env`).
+
+**Seed-Skript für Rollenvereinbarungen:** `backend/scripts/seed-role-agreements.js` legt initiale aktive `TermsContent`-Versionen für `trader_agreement` und `investor_agreement` (DE) an, inkl. Gebühren-Platzhalter. Aufruf analog zu oben; danach im Admin prüfen/aktivieren falls nötig.
 
 ### Legal Snippets (Kurz-Hinweise in der App)
 
@@ -75,7 +94,7 @@ Implementierung: `FIN1/Shared/Services/LegalSnippetProvider.swift`. Platzhalter 
 Pflichtfelder:
 - `version` (String)
 - `language` (String: `en|de`)
-- `documentType` (String: `terms|privacy|imprint`)
+- `documentType` (String: `terms|privacy|imprint|trader_agreement|investor_agreement`)
 - `effectiveDate` (Date)
 - `isActive` (Boolean)
 - `sections` (Array von `{ id, title, content, icon }`)
@@ -181,12 +200,41 @@ Empfohlene Felder (werden aus Cloud Function gesetzt):
 #### 3) `LegalConsent` (append‑only)
 
 Felder:
-- `consentType` (`terms_of_service|privacy_policy|imprint`)
+- `consentType` (`terms_of_service|privacy_policy|imprint|trader_agreement|investor_agreement`)
 - `version`, optional `documentHash`, optional `documentUrl`
 - `accepted` (Boolean), `acceptedAt` (Date)
+- `source` (String): **`onboarding`** (Konto-Einwilligung beim Abschluss von `completeOnboardingStep(consents)`) oder **`app`** (expliziter Accept im `TermsAcceptanceModalView` / `recordLegalConsent`)
 - `platform`, `appVersion`, `buildNumber`, `deviceInstallId`
 - optional `userId` (String)
 - Kontext: `ipAddress`, `userAgent`
+
+**Zwei Ebenen (SSOT-Verhalten):**
+
+| Ebene | Zweck | Wo gesetzt | Device-Gate |
+|-------|--------|------------|-------------|
+| **Konto** | AGB/DSE am Nutzerprofil (`acceptedTerms`, `acceptedPrivacyPolicy`, Versionen) | Sign-up Contact (Gate 1), `persistOnboardingLegalConsents`, `recordLegalConsent` | allein **nicht** ausreichend für In-App-Nutzung auf neuem Install |
+| **Gerät/Install** | Explizite Bestätigung auf dieser App-Installation | `DeviceLegalConsentStore` (UserDefaults), gespiegelt via `recordLegalConsent` (`source: app`) | `TermsAcceptanceService.needsToAccept*` prüft lokales Ack für **aktive Dokumentversion** |
+
+Onboarding legt beim Schritt `consents` zwei `LegalConsent`-Zeilen mit `source: onboarding` an (`legalConsentRecording.persistOnboardingLegalConsents`). Diese zählen für Audit und Profil-Sync, werden aber **nicht** als Device-Ack für `getDeviceLegalConsentAcknowledgements` exportiert.
+
+### Legal Gate 1 vs. Legal Gate 2 (Onboarding)
+
+| Gate | Zeitpunkt (iOS) | Dokumente | Consent-Typen | Pflicht vor |
+|------|-----------------|-----------|---------------|-------------|
+| **Gate 1** | Contact (Step 2) | AGB + Datenschutz | `terms_of_service`, `privacy_policy` | `POST /users` / Kontoanlage |
+| **Gate 2** | Role Agreement (Step 24, RK7-Pfad) | Trader Signalgeber- oder Investor-Vereinbarung | `trader_agreement` / `investor_agreement` | `finalizeRegistration` / Produktnutzung (Trading/Investing) |
+
+**Gate 2 — Rollenvereinbarung (seit 2026-06):**
+
+- **Inhalt:** server-driven via `TermsContent` (`documentType: trader_agreement|investor_agreement`); Fallback `RoleAgreementBundledContent` (iOS).
+- **UI:** `RoleAgreementStep` (Step 24) — Volltext in `ScrollToAcceptReader` (Scroll-to-end via `onScrollGeometryChange`); Checkbox + Button **„Zustimmen und Registrierung abschließen“** erst nach Scroll-Gate (`hasReachedBottom`).
+- **Consent:** `RoleAgreementConsentService` → `recordRoleAgreementConsent` mit `role`, `deviceInstallId`, `version`, `documentHash`, `source: onboarding`.
+- **Profil:** `_User.acceptedTraderAgreement*` / `acceptedInvestorAgreement*` werden serverseitig gesetzt; `getUserMe` liefert `roleAgreementRequired`, `roleAgreementAccepted`, `roleAgreementVersion`. **`resolveUserRoleAgreementState`** leitet Zustimmung aus vorhandenen `LegalConsent`-Zeilen ab, wenn das `_User`-Flag fehlt; **`persistResolvedRoleAgreementIfNeeded`** schreibt fehlende Flags nach (analog zu Gate-1-Legal).
+- **Finalize (iOS):** `completeOnboardingStep(consents)` ruft zusätzlich `persistOnboardingRoleAgreementConsent` auf (Blob: `acceptedTraderAgreement` / `acceptedInvestorAgreement` + Versionen). Nach `refreshUserData` setzt `applyRoleAgreementAcceptanceIfNeeded` die lokalen Flags; `UserFactory.applyUserMeResponse` downgradet Role-Agreement-Flags **nicht** (monotonic `||`-Merge + `roleAgreementAccepted`).
+- **Audit:** append-only `LegalConsent`; optional PDF-Bestätigungsmail an Nutzer-E-Mail.
+- **Produkt-Guard:** `productAccessGate.assertProductAccessEligible` blockiert Trading/Investing ohne abgeschlossenes Onboarding, Gate-1-Consents **und** passende Rollenvereinbarung.
+
+**Gate 1 vs. Device-Gate:** Gate 1 (Konto) und Gate 2 (Rolle) sind **unabhängig** vom post-Login Device-Gate (TOS/Privacy pro Install via `TermsAcceptanceModalView`). Nach Sign-up spiegelt `mirrorSignupLegalGateToDeviceStore` Gate-1-Acks lokal, damit kein redundantes Modal auf demselben Install erscheint.
 
 ## App (Swift) – Hybrid Client
 
@@ -213,7 +261,31 @@ Felder:
   - eigener Impressum‑Screen (Profil + Landing verlinkt)
 
 - `FIN1/Shared/ViewModels/TermsAcceptanceViewModel.swift`
-  - recordet Consent in `LegalConsent` (best effort)
+  - recordet Consent in `LegalConsent` via `recordLegalConsent` (`source: app`)
+  - Modal schließt erst, wenn **beide** Dokumente (TOS + Privacy) für die aufgelöste aktive Version bestätigt sind
+
+- `FIN1/Shared/Services/DeviceLegalConsentStore.swift`
+  - SSOT für Device-Acks pro `deviceInstallId` + Nutzer-Identität (E-Mail-Alias, Parse-`objectId`)
+  - `syncAcknowledgementsFromServer` nur bei vollem Gate-Check (Login), **nicht** nach jedem Teil-Accept
+
+- `FIN1/Shared/Services/TermsAcceptanceService.swift`
+  - Install-Gate: `needsToAcceptTerms` / `needsToAcceptPrivacyPolicy` prüfen lokales Device-Ack für die aktive Version
+
+- **Sign-up (Legal Gate 1):**
+  - `SignUpLegalConsentSection` auf **Contact** (Step 2): beide Toggles Pflicht vor `POST /users`; Button **„Konto anlegen“**; Step 3 **„Konto angelegt“** (nicht „Konto eröffnet“, solange Onboarding läuft)
+  - `SignUpCoordinator.mirrorSignupLegalGateToDeviceStore` nach Contact-Account-Erstellung und nach `finalizeRegistration` — verhindert redundantes Modal nach frischer Registrierung auf demselben Gerät
+  - RC7 (`RiskClass7ConfirmationStep`): nur **read-only** Consent-Status, keine Duplikat-Toggles
+
+- **Sign-up (Legal Gate 2 — Role Agreement):**
+  - `RoleAgreementStep` / `RoleAgreementStepViewModel` (Step 24): lädt Vereinbarung via `getCurrentLegalDocument` (`trader_agreement`/`investor_agreement`)
+  - `ScrollToAcceptReader`: Scroll-to-end-Binding; Parent-Scroll auf Step 24 deaktiviert (`SignUpView.scrollDisabled`)
+  - `RoleAgreementConsentService` → `recordRoleAgreementConsent` (mit `role`); danach `SignUpCoordinator.finalizeRegistration`:
+    - `updateProfile` → `completeOnboardingStep(consents)` inkl. `persistOnboardingRoleAgreementConsent` → `completeOnboardingStep(verification)`
+    - `applyRoleAgreementAcceptanceIfNeeded` → `refreshUserData` → erneut `applyRoleAgreementAcceptanceIfNeeded`
+    - `applyOnboardingCompletion` + `mirrorSignupLegalGateToDeviceStore`
+  - `UserSessionObserver` + `AuthenticationView`: UI-Gate auf `onboardingCompleted`; kein fälschlicher Role-Agreement-Blocker auf dem Dashboard nach frischem Sign-up
+
+- **Backend Produkt-Guard:** `utils/productAccessGate.js` (`assertProductAccessEligible`) auf kritischen Trading/Investment-Functions — erfordert `onboardingCompleted`, Gate-1-Consents **und** rollenspezifische Vereinbarung
 
 ## Ops / Rollout (kurz)
 

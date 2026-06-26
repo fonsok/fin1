@@ -98,6 +98,7 @@ final class TermsAcceptanceViewModel: ObservableObject {
             try await self.userService.updateProfile(updatedUser)
             try? await self.userService.refreshUserData()
             self.checkAcceptanceStatus()
+            self.notifyIfAllRequiredConsentsAccepted()
             self.isLoading = false
         } catch {
             self.errorMessage = error.localizedDescription
@@ -128,6 +129,7 @@ final class TermsAcceptanceViewModel: ObservableObject {
             try await self.userService.updateProfile(updatedUser)
             try? await self.userService.refreshUserData()
             self.checkAcceptanceStatus()
+            self.notifyIfAllRequiredConsentsAccepted()
             self.isLoading = false
         } catch {
             self.errorMessage = error.localizedDescription
@@ -141,6 +143,18 @@ final class TermsAcceptanceViewModel: ObservableObject {
         self.hasLoadedAcceptanceStatus
             && !self.needsTermsAcceptance
             && !self.needsPrivacyPolicyAcceptance
+    }
+
+    private func notifyIfAllRequiredConsentsAccepted() {
+        guard self.canProceed, let user = userService.currentUser else { return }
+        guard DeviceLegalConsentStore.hasAcknowledgedBoth(
+            user: user,
+            termsVersion: self.currentTermsVersionForDisplay,
+            privacyVersion: self.currentPrivacyVersionForDisplay
+        ) else {
+            return
+        }
+        NotificationCenter.default.post(name: .legalConsentAcceptanceCompleted, object: nil)
     }
 
     // MARK: - Backend Consent Recording (Audit)

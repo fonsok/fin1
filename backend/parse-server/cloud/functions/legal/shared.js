@@ -30,7 +30,7 @@ function validateLanguage(language) {
 
 function validateDocumentType(documentType) {
   const normalized = normalizeString(documentType || 'terms');
-  const allowed = ['terms', 'privacy', 'imprint'];
+  const allowed = ['terms', 'privacy', 'imprint', 'trader_agreement', 'investor_agreement'];
   if (!allowed.includes(normalized)) {
     throw new Parse.Error(Parse.Error.INVALID_VALUE, `Invalid documentType: ${normalized}`);
   }

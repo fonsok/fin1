@@ -18,7 +18,7 @@ extension SignUpCoordinator {
         switch currentStep {
         case .welcome: return "Welcome"
         case .contact: return "Contact Information"
-        case .accountCreated: return "Account Created"
+        case .accountCreated: return "Konto angelegt"
         case .emailVerification: return "Email Verification"
         case .phoneVerification: return "Phone Verification"
         case .personalInfo: return "Personal Information"
@@ -39,6 +39,10 @@ extension SignUpCoordinator {
         case .summary: return "Summary"
         case .riskClassificationNote: return "Note on risk classification"
         case .riskClass7Confirmation: return "Risk Class 7 Confirmation"
+        case .roleAgreement:
+            return self.userRole == .trader
+                ? "Signalgeber-Vereinbarung"
+                : "Investor-Vereinbarung"
         }
     }
 
@@ -46,7 +50,7 @@ extension SignUpCoordinator {
         switch currentStep {
         case .welcome: return "Choose your account type"
         case .contact: return "Enter your contact details"
-        case .accountCreated: return "Account successfully created"
+        case .accountCreated: return "Registrierung gestartet"
         case .emailVerification: return "Verify your email address"
         case .phoneVerification: return "Verify your phone number"
         case .personalInfo: return "Provide personal information"
@@ -67,6 +71,7 @@ extension SignUpCoordinator {
         case .summary: return "Review all information"
         case .riskClassificationNote: return "Risk classification information"
         case .riskClass7Confirmation: return "Confirm high-risk selection"
+        case .roleAgreement: return "Accept role-specific agreement"
         }
     }
 
@@ -95,6 +100,7 @@ extension SignUpCoordinator {
         case .summary: return "list.bullet"
         case .riskClassificationNote: return "exclamationmark.triangle"
         case .riskClass7Confirmation: return "exclamationmark.triangle.fill"
+        case .roleAgreement: return "doc.text.fill"
         }
     }
 }

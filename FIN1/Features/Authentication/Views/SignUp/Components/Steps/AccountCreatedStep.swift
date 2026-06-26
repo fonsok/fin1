@@ -3,23 +3,25 @@ import SwiftUI
 struct AccountCreatedStep: View {
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(32)) {
-            // Success Icon
             Image(systemName: "checkmark.circle.fill")
                 .font(ResponsiveDesign.scaledSystemFont(size: 80))
                 .foregroundColor(AppTheme.accentGreen)
-            
-            // Success Message
+
             VStack(spacing: ResponsiveDesign.spacing(16)) {
-                Text("Sie haben erfolgreich ein Konto eröffnet.")
+                Text("Ihr Konto wurde angelegt.")
                     .font(ResponsiveDesign.titleFont())
                     .fontWeight(.bold)
                     .foregroundColor(AppTheme.fontColor)
                     .multilineTextAlignment(.center)
-                
-                Text("Ihr Konto wurde erfolgreich erstellt. Sie können jetzt mit der Registrierung fortfahren.")
-                    .font(ResponsiveDesign.bodyFont())
-                    .foregroundColor(AppTheme.fontColor.opacity(0.8))
-                    .multilineTextAlignment(.center)
+                    .accessibilityIdentifier("SignUpAccountCreatedTitle")
+
+                Text(
+                    "Die Registrierung wurde gestartet. Bitte schließen Sie die weiteren Schritte ab, "
+                        + "bevor Sie die App vollständig nutzen können."
+                )
+                .font(ResponsiveDesign.bodyFont())
+                .foregroundColor(AppTheme.fontColor.opacity(0.8))
+                .multilineTextAlignment(.center)
             }
         }
     }

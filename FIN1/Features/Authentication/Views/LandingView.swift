@@ -2,7 +2,7 @@ import SwiftUI
 
 struct LandingView: View {
     @State private var showLogin = false
-    @State private var showSignUp = false
+    @Binding var isSignUpPresented: Bool
     @State private var showLegalTerms = false
     @State private var showLegalPrivacy = false
     @State private var showLegalImprint = false
@@ -10,8 +10,23 @@ struct LandingView: View {
     @Environment(\.appServices) private var appServices
     @Environment(\.themeManager) private var themeManager
 
-    init(userService: any UserServiceProtocol) {
+    init(userService: any UserServiceProtocol, isSignUpPresented: Binding<Bool>) {
+        self._isSignUpPresented = isSignUpPresented
         self._viewModel = StateObject(wrappedValue: LandingViewModel(userService: userService))
+    }
+
+    private var presentSignUpBinding: Binding<Bool> {
+        Binding(
+            get: { self.isSignUpPresented },
+            set: { newValue in
+                if newValue {
+                    SignUpFlowSession.beginFromLanding()
+                } else {
+                    SignUpFlowSession.end()
+                }
+                self.isSignUpPresented = newValue
+            }
+        )
     }
 
     var body: some View {
@@ -20,7 +35,7 @@ struct LandingView: View {
                 LandingTypewriterStyleBody(
                     viewModel: self.viewModel,
                     showLogin: self.$showLogin,
-                    showSignUp: self.$showSignUp,
+                    showSignUp: self.presentSignUpBinding,
                     showLegalTerms: self.$showLegalTerms,
                     showLegalPrivacy: self.$showLegalPrivacy,
                     showLegalImprint: self.$showLegalImprint
@@ -29,7 +44,7 @@ struct LandingView: View {
                 LandingOriginalStyleBody(
                     viewModel: self.viewModel,
                     showLogin: self.$showLogin,
-                    showSignUp: self.$showSignUp,
+                    showSignUp: self.presentSignUpBinding,
                     showLegalTerms: self.$showLegalTerms,
                     showLegalPrivacy: self.$showLegalPrivacy,
                     showLegalImprint: self.$showLegalImprint
@@ -55,9 +70,6 @@ struct LandingView: View {
         .sheet(isPresented: self.$showLegalImprint) {
             ImprintView(termsContentService: self.appServices.termsContentService)
         }
-        .fullScreenCover(isPresented: self.$showSignUp) {
-            SignUpView()
-        }
         .alert("Login Error", isPresented: self.$viewModel.showError) {
             Button("OK", role: .cancel) { }
         } message: {
@@ -67,6 +79,6 @@ struct LandingView: View {
 }
 
 #Preview {
-    LandingView(userService: UserService.shared)
+    LandingView(userService: UserService.shared, isSignUpPresented: .constant(false))
         .environment(\.appServices, AppServices.live)
 }

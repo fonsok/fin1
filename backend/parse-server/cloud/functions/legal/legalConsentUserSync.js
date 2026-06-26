@@ -13,6 +13,21 @@ const CONSENT_TYPE_TO_USER_FIELDS = {
     versionField: 'acceptedPrivacyPolicyVersion',
     dateField: 'acceptedPrivacyPolicyDate',
   },
+  trader_agreement: {
+    acceptedFlag: 'acceptedTraderAgreement',
+    versionField: 'acceptedTraderAgreementVersion',
+    dateField: 'acceptedTraderAgreementDate',
+  },
+  investor_agreement: {
+    acceptedFlag: 'acceptedInvestorAgreement',
+    versionField: 'acceptedInvestorAgreementVersion',
+    dateField: 'acceptedInvestorAgreementDate',
+  },
+};
+
+const ROLE_TO_CONSENT_TYPE = {
+  trader: 'trader_agreement',
+  investor: 'investor_agreement',
 };
 
 async function getCurrentActiveLegalVersion(documentType, language = 'de') {
@@ -156,10 +171,83 @@ async function syncParseUserLegalAcceptance(user, { consentType, version, accept
   };
 }
 
+async function syncParseUserRoleAgreementAcceptance(user, { role, version, acceptedAt }) {
+  const roleKey = normalizeString(role)?.toLowerCase();
+  const consentType = ROLE_TO_CONSENT_TYPE[roleKey];
+  if (!consentType) return null;
+  return syncParseUserLegalAcceptance(user, { consentType, version, acceptedAt });
+}
+
+async function resolveUserRoleAgreementState(user, options = {}) {
+  const language = normalizeString(options.language || 'de') || 'de';
+  const role = normalizeString(user?.get?.('role') || user?.role)?.toLowerCase();
+  if (role !== 'trader' && role !== 'investor') {
+    return { required: false, accepted: true, version: null, acceptedAt: null };
+  }
+
+  const consentType = ROLE_TO_CONSENT_TYPE[role];
+  const mapping = CONSENT_TYPE_TO_USER_FIELDS[consentType];
+  let accepted = user.get(mapping.acceptedFlag) === true;
+  let version = normalizeString(user.get(mapping.versionField));
+
+  if (!accepted) {
+    const consentVersion = await findLatestLegalConsentVersion(user.id, consentType);
+    if (consentVersion) {
+      accepted = true;
+      version = consentVersion;
+    }
+  }
+
+  if (!version && accepted) {
+    version = await findLatestLegalConsentVersion(user.id, consentType)
+      || await getCurrentActiveLegalVersion(
+        role === 'trader' ? 'trader_agreement' : 'investor_agreement',
+        language,
+      );
+  }
+
+  return {
+    required: true,
+    role,
+    consentType,
+    accepted,
+    version: version || null,
+    acceptedAt: readUserLegalField(user, mapping.dateField),
+  };
+}
+
+async function persistResolvedRoleAgreementIfNeeded(user, resolved) {
+  if (!user?.id || !resolved?.required || !resolved.accepted) return false;
+
+  const mapping = CONSENT_TYPE_TO_USER_FIELDS[resolved.consentType];
+  if (!mapping) return false;
+
+  const storedVersion = normalizeString(user.get(mapping.versionField));
+  const resolvedVersion = normalizeString(resolved.version);
+  const flagAlreadySet = user.get(mapping.acceptedFlag) === true;
+
+  if (flagAlreadySet && storedVersion === resolvedVersion) {
+    return false;
+  }
+
+  user.set(mapping.acceptedFlag, true);
+  if (resolvedVersion) {
+    user.set(mapping.versionField, resolvedVersion);
+  }
+  if (!user.get(mapping.dateField)) {
+    user.set(mapping.dateField, new Date());
+  }
+  await user.save(null, { useMasterKey: true });
+  return true;
+}
+
 module.exports = {
   getCurrentActiveLegalVersion,
   findLatestLegalConsentVersion,
   resolveUserLegalAcceptanceState,
+  resolveUserRoleAgreementState,
   persistResolvedLegalAcceptanceIfNeeded,
+  persistResolvedRoleAgreementIfNeeded,
   syncParseUserLegalAcceptance,
+  syncParseUserRoleAgreementAcceptance,
 };

@@ -12,15 +12,11 @@ struct SignUpNavigationButtons: View {
             self.coordinator.currentStep == .phoneVerification ||
             self.coordinator.currentStep == .riskClassificationNote ||
             self.coordinator.currentStep == .riskClass7Confirmation ||
+            self.coordinator.currentStep == .roleAgreement ||
             (self.coordinator.currentStep == .summary && self.signUpData.finalRiskClass == .riskClass7) {
             EmptyView()
         } else {
             VStack(spacing: ResponsiveDesign.spacing(12)) {
-                // Privacy statement for step 2 (contact step)
-                if self.coordinator.currentStep == .contact {
-                    self.privacyStatementView
-                }
-
                 // Button container
                 if self.coordinator.isFirstStep {
                     // Step 1: single centered button with vertical space above
@@ -71,30 +67,6 @@ struct SignUpNavigationButtons: View {
         }
     }
 
-    // MARK: - Privacy Statement View
-    private var privacyStatementView: some View {
-        (Text("By opening an account, you agree with FIN!'s ")
-            .font(ResponsiveDesign.bodyFont())
-            .foregroundColor(AppTheme.fontColor)
-            + Text("Terms of Service")
-            .font(ResponsiveDesign.bodyFont())
-            .foregroundColor(AppTheme.accentLightBlue)
-            .underline()
-            + Text(".")
-            .font(ResponsiveDesign.bodyFont())
-            .foregroundColor(AppTheme.fontColor))
-            .multilineTextAlignment(.center)
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, ResponsiveDesign.spacing(8))
-            .padding(.vertical, ResponsiveDesign.spacing(8))
-            .lineLimit(nil)
-            .fixedSize(horizontal: false, vertical: true)
-            .contentShape(Rectangle())
-            .onTapGesture {
-                self.onShowTermsOfService?()
-            }
-    }
-
     // MARK: - Continue Button
     @ViewBuilder
     private var continueButton: some View {
@@ -118,7 +90,7 @@ struct SignUpNavigationButtons: View {
                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
                             .scaleEffect(0.8)
                     } else {
-                        Text(self.coordinator.currentStep == .contact ? "Open your account" : "Continue")
+                        Text(self.coordinator.currentStep == .contact ? "Konto anlegen" : "Continue")
                             .font(ResponsiveDesign.headlineFont())
                     }
                 }
@@ -131,6 +103,9 @@ struct SignUpNavigationButtons: View {
                 .cornerRadius(ResponsiveDesign.spacing(12))
             }
             .disabled(!self.coordinator.canProceedToNextStep(with: self.signUpData) || self.coordinator.isLoading)
+            .accessibilityIdentifier(
+                self.coordinator.currentStep == .contact ? "SignUpOpenAccountButton" : "SignUpContinueButton"
+            )
         } else {
             Button(action: {
                 // Complete registration (Risk Class 7 users will have already gone through confirmation)

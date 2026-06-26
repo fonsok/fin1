@@ -117,9 +117,12 @@ Parse.Cloud.define('getConfig', async (request) => {
   }
 
   const display = configData.display || {};
-  if (typeof display.showCommissionBreakdownInCreditNote !== 'boolean') {
-    display.showCommissionBreakdownInCreditNote = false;
-  }
+  // Display flags from Configuration class (admin portal / 4-eyes) take precedence
+  const { mergeShowCommissionBreakdownInCreditNote } = require('./functions/configuration/getConfigDisplayFlags.js');
+  display.showCommissionBreakdownInCreditNote = mergeShowCommissionBreakdownInCreditNote(
+    display,
+    liveConfig.display,
+  );
   if (liveConfig.display && typeof liveConfig.display.showDocumentReferenceLinksInAccountStatement === 'boolean') {
     display.showDocumentReferenceLinksInAccountStatement = liveConfig.display.showDocumentReferenceLinksInAccountStatement;
   } else if (typeof display.showDocumentReferenceLinksInAccountStatement !== 'boolean') {
@@ -198,6 +201,15 @@ Parse.Cloud.define('getConfig', async (request) => {
   } else if (typeof display.showInvestorPartialSellRealizations !== 'boolean') {
     display.showInvestorPartialSellRealizations = false;
   }
+  if (
+    liveConfig.display
+    && typeof liveConfig.display.showTraderDashboardInvestmentActiveStatus === 'boolean'
+  ) {
+    display.showTraderDashboardInvestmentActiveStatus =
+      liveConfig.display.showTraderDashboardInvestmentActiveStatus;
+  } else if (typeof display.showTraderDashboardInvestmentActiveStatus !== 'boolean') {
+    display.showTraderDashboardInvestmentActiveStatus = true;
+  }
   if (liveConfig.display && typeof liveConfig.display.collectionBillServerLegs === 'boolean') {
     display.collectionBillServerLegs = liveConfig.display.collectionBillServerLegs;
   } else if (typeof display.collectionBillServerLegs !== 'boolean') {
@@ -236,67 +248,10 @@ Parse.Cloud.define('getConfig', async (request) => {
   };
 });
 
-// Update app configuration (admin only). Persists display and other config in Parse.
+// Update app configuration (admin only). Legacy iOS path — deprecated (Admin Web Portal SSOT).
 Parse.Cloud.define('updateConfig', async (request) => {
-  if (!request.user) {
-    throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Login required');
-  }
-  const role = request.user.get('role');
-  if (role !== 'admin') {
-    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Admin access required');
-  }
-
-  const { display } = request.params || {};
-  if (
-    !display ||
-    (
-      typeof display.showCommissionBreakdownInCreditNote !== 'boolean' &&
-      typeof display.showDocumentReferenceLinksInAccountStatement !== 'boolean' &&
-      typeof display.maximumRiskExposurePercent !== 'number'
-    )
-  ) {
-    throw new Parse.Error(
-      Parse.Error.INVALID_VALUE,
-      'Params must include display.showCommissionBreakdownInCreditNote (boolean) and/or display.showDocumentReferenceLinksInAccountStatement (boolean) and/or display.maximumRiskExposurePercent (number 0–100)'
-    );
-  }
-  if (typeof display.maximumRiskExposurePercent === 'number' && (display.maximumRiskExposurePercent < 0 || display.maximumRiskExposurePercent > 100)) {
-    throw new Parse.Error(Parse.Error.INVALID_VALUE, 'display.maximumRiskExposurePercent must be between 0 and 100');
-  }
-
-  const environment = request.params.environment || 'production';
-  const Config = Parse.Object.extend('Config');
-  let query = new Parse.Query(Config);
-  query.equalTo('environment', environment);
-  let config = await query.first({ useMasterKey: true });
-
-  if (!config) {
-    config = new Config();
-    config.set('environment', environment);
-  }
-
-  const existingDisplay = config.get('display') || {};
-  const mergedDisplay = { ...existingDisplay };
-  if (typeof display.showCommissionBreakdownInCreditNote === 'boolean') {
-    mergedDisplay.showCommissionBreakdownInCreditNote = display.showCommissionBreakdownInCreditNote;
-  }
-  if (typeof display.showDocumentReferenceLinksInAccountStatement === 'boolean') {
-    mergedDisplay.showDocumentReferenceLinksInAccountStatement = display.showDocumentReferenceLinksInAccountStatement;
-  }
-  if (typeof display.maximumRiskExposurePercent === 'number') {
-    mergedDisplay.maximumRiskExposurePercent = display.maximumRiskExposurePercent;
-  }
-  config.set('display', mergedDisplay);
-  await config.save(null, { useMasterKey: true });
-
-  const configData = config.toJSON();
-  return {
-    display: configData.display || {
-      showCommissionBreakdownInCreditNote: false,
-      showDocumentReferenceLinksInAccountStatement: true,
-      maximumRiskExposurePercent: 2.0
-    }
-  };
+  const { rejectDeprecatedUpdateConfig } = require('./functions/configuration/rejectDeprecatedUpdateConfig.js');
+  rejectDeprecatedUpdateConfig(request);
 });
 
 // ============================================================================

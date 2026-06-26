@@ -129,4 +129,73 @@ extension User {
         // riskTolerance contains the RiskClass (1-7) from signup, not the original tolerance (1-10)
         return RiskClass(rawValue: riskTolerance) ?? .riskClass3 // Default to 3 if invalid
     }
+
+    /// Users with RC 1–4 cannot use dashboard investment/trading entry points.
+    var isExcludedFromPlatformTradingDueToRiskClass: Bool {
+        !self.riskClass.isEligibleForPlatformTrading
+    }
+
+    /// Inverse of `isExcludedFromPlatformTradingDueToRiskClass` for investment gates.
+    var canCreatePlatformInvestments: Bool {
+        !self.isExcludedFromPlatformTradingDueToRiskClass
+    }
+
+    /// Company accounts need KYB approval before regulated product use (mirrors `productAccessGate.js`).
+    var isCompanyKybApproved: Bool {
+        self.accountType != .company || self.companyKybStatus == "approved"
+    }
+
+    /// Server-aligned gate for investing/trading entry points (UI hint; server enforces via Cloud Functions).
+    var isEligibleForRegulatedProductAccess: Bool {
+        self.onboardingCompleted
+            && self.hasAcceptedAllLegalDocuments
+            && self.hasAcceptedRoleAgreementForCurrentRole
+            && self.isCompanyKybApproved
+            && !self.isExcludedFromPlatformTradingDueToRiskClass
+    }
+
+    /// Role agreement required for retail investor/trader (Gate 2).
+    var hasAcceptedRoleAgreementForCurrentRole: Bool {
+        switch self.role {
+        case .trader:
+            return self.acceptedTraderAgreement
+        case .investor:
+            return self.acceptedInvestorAgreement
+        default:
+            return true
+        }
+    }
+
+    /// User-facing reason when `isEligibleForRegulatedProductAccess` is false (first matching rule).
+    var regulatedProductAccessBlockReason: String? {
+        if !self.onboardingCompleted {
+            return "Bitte schließen Sie die Registrierung ab."
+        }
+        if !self.hasAcceptedAllLegalDocuments {
+            return "Bitte akzeptieren Sie AGB und Datenschutz."
+        }
+        if !self.hasAcceptedRoleAgreementForCurrentRole {
+            return self.role == .trader
+                ? "Bitte akzeptieren Sie die Signalgeber-Vereinbarung."
+                : "Bitte akzeptieren Sie die Investor-Vereinbarung."
+        }
+        if self.accountType == .company {
+            switch self.companyKybStatus {
+            case "pending_review":
+                return "Ihre Firmenunterlagen werden geprüft. Investieren ist nach Freigabe möglich."
+            case "more_info_requested":
+                return "Bitte ergänzen Sie Ihre KYB-Angaben in der App."
+            case "rejected":
+                return "KYB abgelehnt — bitte kontaktieren Sie den Support."
+            default:
+                if !self.isCompanyKybApproved {
+                    return "Bitte schließen Sie das Firmen-Onboarding (KYB) ab."
+                }
+            }
+        }
+        if self.isExcludedFromPlatformTradingDueToRiskClass {
+            return nil
+        }
+        return nil
+    }
 }

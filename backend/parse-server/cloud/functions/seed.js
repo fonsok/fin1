@@ -5,6 +5,7 @@
 'use strict';
 
 require('./seed/users');
+require('./seed/companyUsers');
 require('./seed/tickets');
 require('./seed/compliance');
 require('./seed/csrTemplates');

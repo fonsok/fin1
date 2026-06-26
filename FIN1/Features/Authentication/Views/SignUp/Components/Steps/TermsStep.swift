@@ -17,15 +17,13 @@ struct TermsStep: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .signUpListSection(stripeIndex: 0)
 
+            SignUpLegalConsentSection(
+                acceptedTerms: self.$acceptedTerms,
+                acceptedPrivacyPolicy: self.$acceptedPrivacyPolicy
+            )
+            .signUpListSection(stripeIndex: 1)
+
             VStack(spacing: ResponsiveDesign.spacing(16)) {
-                Toggle("I accept the Terms of Service", isOn: self.$acceptedTerms)
-                    .foregroundColor(AppTheme.fontColor)
-                    .toggleStyle(SwitchToggleStyle(tint: AppTheme.accentLightBlue))
-
-                Toggle("I accept the Privacy Policy", isOn: self.$acceptedPrivacyPolicy)
-                    .foregroundColor(AppTheme.fontColor)
-                    .toggleStyle(SwitchToggleStyle(tint: AppTheme.accentLightBlue))
-
                 Toggle(
                     "I agree that information about products and promotional offers may be sent to me.",
                     isOn: self.$acceptedMarketingConsent
@@ -33,7 +31,7 @@ struct TermsStep: View {
                 .foregroundColor(AppTheme.fontColor)
                 .toggleStyle(SwitchToggleStyle(tint: AppTheme.accentLightBlue))
             }
-            .signUpListSection(stripeIndex: 1)
+            .signUpListSection(stripeIndex: 2)
 
             VStack(spacing: ResponsiveDesign.spacing(16)) {
                 Text("Was Sie akzeptieren:")
@@ -48,7 +46,7 @@ struct TermsStep: View {
                     InfoBullet(text: "Risikohinweise für Finanzprodukte")
                 }
             }
-            .signUpListSection(stripeIndex: 2)
+            .signUpListSection(stripeIndex: 3)
 
             VStack(spacing: ResponsiveDesign.spacing(12)) {
                 HStack {
@@ -70,7 +68,7 @@ struct TermsStep: View {
                 .foregroundColor(AppTheme.fontColor.opacity(0.8))
                 .multilineTextAlignment(.leading)
             }
-            .signUpListSection(stripeIndex: 3, bandTint: AppTheme.accentOrange)
+            .signUpListSection(stripeIndex: 4, bandTint: AppTheme.accentOrange)
         }
     }
 }

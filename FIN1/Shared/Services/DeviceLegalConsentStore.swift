@@ -12,6 +12,11 @@ enum DeviceLegalConsentStore {
         }
     }
 
+    static func hasAcknowledgedBoth(user: User, termsVersion: String, privacyVersion: String) -> Bool {
+        self.hasAcknowledged(user: user, consentType: "terms_of_service", version: termsVersion)
+            && self.hasAcknowledged(user: user, consentType: "privacy_policy", version: privacyVersion)
+    }
+
     static func markAcknowledged(user: User, consentType: String, version: String) {
         for userKey in self.candidateUserKeys(for: user) {
             self.markAcknowledged(userKey: userKey, consentType: consentType, version: version)
@@ -59,6 +64,20 @@ enum DeviceLegalConsentStore {
            !version.isEmpty,
            user.acceptedPrivacyPolicy {
             self.markAcknowledged(user: user, consentType: "privacy_policy", version: version)
+        }
+    }
+
+    /// Marks device acknowledgement for the active document versions shown in the legal gate.
+    static func markAcknowledgedForActiveDocuments(
+        user: User,
+        termsVersion: String,
+        privacyVersion: String
+    ) {
+        if user.acceptedTerms {
+            self.markAcknowledged(user: user, consentType: "terms_of_service", version: termsVersion)
+        }
+        if user.acceptedPrivacyPolicy {
+            self.markAcknowledged(user: user, consentType: "privacy_policy", version: privacyVersion)
         }
     }
 
