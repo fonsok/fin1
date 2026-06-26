@@ -25,9 +25,9 @@ final class NewBuyOrderViewModel: ObservableObject {
     @Published var showMaxValueWarning: Bool = false
     @Published var shouldShowDepotView: Bool = false
 
-    private let orderService: any NewOrderServiceProtocol
+    private let orderService: any UnifiedOrderServiceProtocol
 
-    init(searchResult: SearchResult, orderService: any NewOrderServiceProtocol) {
+    init(searchResult: SearchResult, orderService: any UnifiedOrderServiceProtocol) {
         self.searchResult = searchResult
         self.orderService = orderService
         self.updateEstimatedCost()
@@ -58,7 +58,7 @@ final class NewBuyOrderViewModel: ObservableObject {
         self.orderStatus = .transmitting
 
         do {
-            let orderRequest = NewBuyOrderRequest(
+            let orderRequest = BuyOrderRequest(
                 symbol: searchResult.wkn,
                 quantity: Int(self.quantity),
                 price: self.executedPrice,
@@ -66,7 +66,9 @@ final class NewBuyOrderViewModel: ObservableObject {
                 description: self.searchResult.underlyingAsset,
                 orderInstruction: self.orderMode.rawValue,
                 limitPrice: self.orderMode == .limit ? Double(self.limit.replacingOccurrences(of: ",", with: ".")) : nil,
-                strike: Double(self.searchResult.strike.replacingOccurrences(of: ",", with: "."))
+                strike: Double(self.searchResult.strike.replacingOccurrences(of: ",", with: ".")),
+                subscriptionRatio: self.searchResult.subscriptionRatio,
+                denomination: self.searchResult.denomination
             )
 
             _ = try await self.orderService.placeBuyOrder(orderRequest)
