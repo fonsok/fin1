@@ -4,41 +4,51 @@ extension AccountStatementEntry {
     /// Resolves the `Document` row for a statement line that carries a Beleg reference.
     /// 1. Direct id (`referenceDocumentId`) – matches Document.objectId.
     /// 2. Direct accounting number (`referenceDocumentNumber`).
-    /// 3. Fallback for trade settlement rows: match by `tradeId` + transaction direction
-    ///    (Kauf-/Verkaufabrechnung) so the link works even when older backend snapshots
-    ///    didn't yet store the canonical Document refs on the AccountStatement entry.
+    /// 3. Investor settlement: `investorCollectionBill` by `investmentId` + `tradeId`.
+    /// 4. Trader trade settlement: `traderCollectionBill` by `tradeId` + buy/sell direction.
     func referencedDocument(documentService: any DocumentServiceProtocol) -> Document? {
+        if self.prefersInvestorCollectionBill,
+           let investorBill = investorCollectionBillFallback(documentService: documentService) {
+            return investorBill
+        }
+
         let docId = referenceDocumentId ?? metadata["referenceDocumentId"]
         if let docId, !docId.isEmpty,
            let byId = documentService.getDocument(by: docId) {
-            return byId
+            if byId.type == .investorCollectionBill || !self.prefersInvestorCollectionBill {
+                return byId
+            }
         }
 
         let docNumber = referenceDocumentNumber ?? metadata["referenceDocumentNumber"]
-        if let docNumber, !docNumber.isEmpty,
-           let byNumber = documentService.documents.first(where: { $0.accountingDocumentNumber == docNumber }) {
-            return byNumber
+        if let docNumber, !docNumber.isEmpty {
+            let matches = documentService.documents.filter { $0.accountingDocumentNumber == docNumber }
+            if let investorMatch = matches.first(where: { $0.type == .investorCollectionBill }) {
+                return investorMatch
+            }
+            if let any = matches.first {
+                return any
+            }
         }
 
-        guard category == .tradeSettlement,
-              let tradeId = metadata["tradeId"], !tradeId.isEmpty,
-              let txType = metadata["transactionType"], !txType.isEmpty else {
-            return nil
+        if category == .tradeSettlement,
+           let tradeId = metadata["tradeId"], !tradeId.isEmpty,
+           let txType = metadata["transactionType"], !txType.isEmpty {
+            let candidates = documentService.documents
+                .filter { $0.tradeId == tradeId && $0.type == .traderCollectionBill }
+            let prefix = txType == "buy" ? "Kauf" : "Verkauf"
+            return candidates.first(where: { $0.name.lowercased().hasPrefix(prefix.lowercased()) })
+                ?? candidates.first
         }
 
-        let candidates = documentService.documents
-            .filter { $0.tradeId == tradeId && $0.type == .traderCollectionBill }
-        let prefix = txType == "buy" ? "Kauf" : "Verkauf"
-        return candidates.first(where: { $0.name.lowercased().hasPrefix(prefix.lowercased()) })
-            ?? candidates.first
+        return nil
     }
 
     /// Robust resolver: same fallback chain as `referencedDocument`, but if the local
     /// `documentService.documents` cache misses (race / partial fetch / role-specific
     /// `Document` types not yet pulled into the trader DocumentService), fall back to a
     /// direct Parse fetch by `referenceDocumentId`. Used by the AccountStatement tap
-    /// handler so trader Belegnr.-Links don't silently fail with a missing-document alert
-    /// when the data clearly exists server-side.
+    /// handler so Belegnr.-Links don't silently fail when the data exists server-side.
     @MainActor
     func resolveReferencedDocument(documentService: any DocumentServiceProtocol) async -> Document? {
         if let cached = referencedDocument(documentService: documentService) {
@@ -48,12 +58,39 @@ extension AccountStatementEntry {
         let docId = referenceDocumentId ?? metadata["referenceDocumentId"]
         if let docId, !docId.isEmpty {
             do {
-                return try await documentService.resolveDocumentForDeepLink(objectId: docId)
+                let fetched = try await documentService.resolveDocumentForDeepLink(objectId: docId)
+                if fetched.type == .investorCollectionBill || !self.prefersInvestorCollectionBill {
+                    return fetched
+                }
             } catch {
                 print("⚠️ AccountStatementEntry: resolveDocumentForDeepLink failed for \(docId): \(error.localizedDescription)")
             }
         }
 
-        return nil
+        return self.investorCollectionBillFallback(documentService: documentService)
+    }
+
+    private var prefersInvestorCollectionBill: Bool {
+        let backendType = metadata["backendEntryType"] ?? ""
+        if backendType == "residual_return" { return false }
+        if backendType == "investment_return" { return true }
+        if category == .commission { return true }
+        if category == .investment && direction == .credit && backendType.isEmpty {
+            return true
+        }
+        return false
+    }
+
+    private func investorCollectionBillFallback(documentService: any DocumentServiceProtocol) -> Document? {
+        guard self.prefersInvestorCollectionBill else { return nil }
+        guard let investmentId = metadata["investmentId"], !investmentId.isEmpty,
+              let tradeId = metadata["tradeId"], !tradeId.isEmpty else {
+            return nil
+        }
+        return documentService.documents.first {
+            $0.type == .investorCollectionBill
+                && $0.investmentId == investmentId
+                && $0.tradeId == tradeId
+        }
     }
 }

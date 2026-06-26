@@ -30,24 +30,24 @@ fi
 
 # Run Swift checks only when Swift files are staged
 STAGED_FILES=$(git diff --cached --name-only)
-if echo "$STAGED_FILES" | grep -qE '\.swift$'; then
-    # SwiftFormat first so cheap style fixes apply before SwiftLint
+STAGED_SWIFT_FILES=$(echo "$STAGED_FILES" | grep -E '\.swift$' || true)
+if [ -n "$STAGED_SWIFT_FILES" ]; then
+    # SwiftFormat / SwiftLint on staged Swift files only — parallel epics in the worktree must not block unrelated commits.
     if command -v swiftformat &> /dev/null; then
-        echo "🔍 Running SwiftFormat check..."
-        if ! swiftformat FIN1 FIN1Tests FIN1UITests FIN1InvestorTests FIN1CoreRegressionTests --lint; then
+        echo "🔍 Running SwiftFormat check (staged Swift files)..."
+        if ! swiftformat $STAGED_SWIFT_FILES --lint; then
             echo "❌ SwiftFormat check failed!"
-            echo "Please run: swiftformat FIN1 FIN1Tests FIN1UITests FIN1InvestorTests FIN1CoreRegressionTests"
+            echo "Please run: swiftformat <staged-files>"
             exit 1
         fi
     else
         echo "ℹ️ SwiftFormat not installed, skipping format check"
     fi
 
-    # Run SwiftLint (without --strict to allow warnings)
-    echo "🔍 Running SwiftLint..."
-    if ! swiftlint; then
+    echo "🔍 Running SwiftLint (staged Swift files)..."
+    if ! swiftlint lint --quiet -- $STAGED_SWIFT_FILES; then
         echo "❌ SwiftLint check failed!"
-        echo "Please fix the linting issues before committing."
+        echo "Please fix the linting issues in staged files before committing."
         exit 1
     fi
 

@@ -177,7 +177,12 @@ async function handleExecutePairedBuy(request) {
 
   let savedLegs;
   try {
-    savedLegs = await Parse.Object.saveAll(legsToSave, { useMasterKey: true });
+    // Save legs sequentially so beforeSave orderNumber generation cannot race (saveAll runs hooks in parallel).
+    savedLegs = [];
+    for (const leg of legsToSave) {
+      await leg.save(null, { useMasterKey: true });
+      savedLegs.push(leg);
+    }
     execution.set('status', 'COMMITTED');
     execution.set('committedAt', new Date().toISOString());
     execution.set('orderIds', savedLegs.map((o) => o.id));

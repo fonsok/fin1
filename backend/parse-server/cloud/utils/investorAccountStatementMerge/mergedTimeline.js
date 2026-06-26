@@ -5,6 +5,8 @@ const {
   signedAmountFromAvaLedgerRow,
   buildResidualReturnDedupKeys,
   isDuplicateAvaResidualLedgerRow,
+  buildSettlementTransferDedupKeys,
+  isDuplicateSettlementCommissionDebit,
 } = require('./avaLedger');
 
 /**
@@ -30,10 +32,14 @@ function buildInvestorMergedTimeline({
   includeInternalTradeSettlementLegs = false,
 }) {
   const residualDedupKeys = buildResidualReturnDedupKeys(stmtEntries);
+  const settlementTransferKeys = buildSettlementTransferDedupKeys(stmtEntries);
   const combined = [];
   for (const e of stmtEntries) {
     // Internal RSV→TRD move; visible on AVA sub-ledger as investment_escrow_deploy.
     if (String(e.get('entryType') || '') === 'investment_activate') {
+      continue;
+    }
+    if (isDuplicateSettlementCommissionDebit(e, settlementTransferKeys)) {
       continue;
     }
     combined.push({

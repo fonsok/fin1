@@ -6,7 +6,7 @@ extension BuyOrderViewModel {
     @MainActor
     func calculateInvestmentOrder() async {
         let price = Double(searchResult.askPrice.replacingOccurrences(of: ",", with: ".")) ?? 0.0
-        let desiredQuantity = Int(quantity)
+        let desiredQuantity = Int(self.effectiveQuantityForCalculation)
 
         guard let currentUser = userService.currentUser,
               currentUser.role == .trader else {
@@ -89,15 +89,16 @@ extension BuyOrderViewModel {
         investmentService.investmentsPublisher
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                self?.updateReservedInvestments()
+                guard let self else { return }
+                self.updateReservedInvestments()
+                guard !self.isPlacementLocked else { return }
+                self.investmentCalculationTask?.cancel()
+                self.investmentCalculationTask = Task { @MainActor [weak self] in
+                    await self?.calculateInvestmentOrder()
+                }
             }
             .store(in: &cancellables)
 
         self.updateReservedInvestments()
-        [0.1, 0.5, 1.0].forEach { delay in
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
-                self?.updateReservedInvestments()
-            }
-        }
     }
 }

@@ -231,7 +231,6 @@ describe('getTradeSettlementConsistencyStatus (admin observability)', () => {
     ];
     db.accountStatements = [
       { id: 's1', userId: 'investor-1', tradeId: 'trade-1', investmentId: 'inv-1', entryType: 'investment_return', amount: 1120, source: 'backend' },
-      { id: 's2', userId: 'investor-1', tradeId: 'trade-1', investmentId: 'inv-1', entryType: 'commission_debit', amount: -12, source: 'backend' },
       { id: 's3', userId: 'investor-1', tradeId: 'trade-1', investmentId: 'inv-1', entryType: 'withholding_tax_debit', amount: -3, source: 'backend' },
       { id: 's4', userId: 'investor-1', tradeId: 'trade-1', investmentId: 'inv-1', entryType: 'solidarity_surcharge_debit', amount: -0.2, source: 'backend' },
     ];
@@ -271,12 +270,14 @@ describe('getTradeSettlementConsistencyStatus (admin observability)', () => {
   });
 
   test('returns degraded when settlement sums drift', async () => {
-    db.accountStatements = db.accountStatements.filter((r) => r.entryType !== 'commission_debit');
+    db.accountStatements = db.accountStatements.map((row) => (
+      row.entryType === 'investment_return' ? { ...row, amount: 1000 } : row
+    ));
     const handler = cloudFunctions.getTradeSettlementConsistencyStatus;
     const result = await handler({ user: adminUser, params: { limit: 10 } });
     expect(result.overall).toBe('degraded');
     expect(result.mismatchCount).toBe(1);
-    expect(result.mismatchSamples[0].diff.commission).not.toBe(0);
+    expect(result.mismatchSamples[0].diff.grossReturn).not.toBe(0);
   });
 
   test('stays healthy when investment has profit+commission but return matches transferAmount', async () => {
@@ -285,7 +286,6 @@ describe('getTradeSettlementConsistencyStatus (admin observability)', () => {
     ];
     db.accountStatements = [
       { id: 's1', userId: 'investor-1', tradeId: 'trade-1', investmentId: 'inv-1', entryType: 'investment_return', amount: 1455.82, source: 'backend' },
-      { id: 's2', userId: 'investor-1', tradeId: 'trade-1', investmentId: 'inv-1', entryType: 'commission_debit', amount: -114.27, source: 'backend' },
     ];
     db.documents = [
       {

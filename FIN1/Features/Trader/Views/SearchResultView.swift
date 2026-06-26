@@ -6,6 +6,7 @@ struct SearchResultView: View {
     let filterType: String
     let filterDescription: String
     let warrantDetailsViewModel: WarrantDetailsViewModel
+    var onOrderPlaced: (() -> Void)?
     @State private var selectedResultForOrder: SearchResult?
     @Environment(\.appServices) private var appServices
     @State private var showWarrantDetails = false
@@ -77,15 +78,11 @@ struct SearchResultView: View {
         .sheet(item: self.$selectedResultForOrder) { result in
             BuyOrderViewWrapper(
                 searchResult: result,
-                traderService: self.appServices.traderService,
-                cashBalanceService: self.appServices.cashBalanceService,
-                configurationService: self.appServices.configurationService,
-                investmentQuantityCalculationService: self.appServices.investmentQuantityCalculationService,
-                investmentService: self.appServices.investmentService,
-                userService: self.appServices.userService,
-                traderDataService: self.appServices.traderDataService,
-                auditLoggingService: self.appServices.auditLoggingService,
-                transactionLimitService: self.appServices.transactionLimitService
+                services: self.appServices,
+                onOrderPlaced: {
+                    self.selectedResultForOrder = nil
+                    self.onOrderPlaced?()
+                }
             )
         }
         .sheet(isPresented: self.$showWarrantDetails) {

@@ -64,7 +64,8 @@ async function handleGetTradeSettlementConsistencyStatus(request) {
       const investmentProfit = Number(rawInvestmentProfit || 0);
       const expectedGrossReturnByInvestment = round2(investmentAmount + investmentProfit);
       const hasInvestmentGrossReturnSignal = rawInvestmentAmount !== undefined || rawInvestmentProfit !== undefined;
-      // investment_return books transferAmount (capital + net profit), not commission (separate commission_debit).
+      // investment_return books transferAmount (net of commission). No separate commission_debit
+      // on the customer statement — commission clears via GL (P/L → PLT-LIAB-COM) only.
       const expectedGrossReturn = expectedByDoc
         ? expectedGrossReturnByDocOrParticipation
         : (hasInvestmentGrossReturnSignal && expectedGrossReturnByInvestment > 0
@@ -81,6 +82,7 @@ async function handleGetTradeSettlementConsistencyStatus(request) {
         investmentId,
         entryType: 'commission_debit',
       })) || 0;
+      const expectedCommissionOnStatement = 0;
       const actualWithholding = statementSumsByType.get(statementSumKey({
         userId: investorId,
         investmentId,
@@ -102,7 +104,7 @@ async function handleGetTradeSettlementConsistencyStatus(request) {
 
       checkedInvestments += 1;
       const returnDiff = round2(actualGrossReturn - expectedGrossReturn);
-      const commissionDiff = round2(actualCommission - expectedCommission);
+      const commissionDiff = round2(actualCommission - expectedCommissionOnStatement);
       const taxDiff = round2(actualTaxTotal - expectedTaxTotal);
       const hasMismatch =
         Math.abs(returnDiff) > SETTLEMENT_EPSILON ||
@@ -117,7 +119,8 @@ async function handleGetTradeSettlementConsistencyStatus(request) {
           investorId,
           expected: {
             grossReturn: expectedGrossReturn,
-            commission: expectedCommission,
+            commissionOnStatement: expectedCommissionOnStatement,
+            billCommission: expectedCommission,
             taxTotal: expectedTaxTotal,
           },
           actual: {

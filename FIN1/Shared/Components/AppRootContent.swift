@@ -52,7 +52,10 @@ struct AppRootContent: View {
     @ViewBuilder
     private var rootView: some View {
         #if DEBUG
-        if ProcessInfo.processInfo.arguments.contains("--ui-test-entry-limit-buy-order") {
+        if ProcessInfo.processInfo.arguments.contains("--ui-test-entry-buy-order-sheet") {
+            UITestBuyOrderSheetEntryView(services: self.services)
+                .environmentObject(TabRouter())
+        } else if ProcessInfo.processInfo.arguments.contains("--ui-test-entry-limit-buy-order") {
             UITestLimitButtonsEntryView(services: self.services, mode: .buy)
                 .environmentObject(TabRouter())
         } else if ProcessInfo.processInfo.arguments.contains("--ui-test-entry-limit-sell-order") {
@@ -120,6 +123,10 @@ struct AppRootContent: View {
 
         Task(priority: .utility) {
             try? await Task.sleep(nanoseconds: 500_000_000)
+            guard let user = self.services.userService.currentUser,
+                  user.role == .admin || user.role == .customerService else {
+                return
+            }
             await self.services.slaMonitoringService.startMonitoring(interval: nil)
         }
     }
@@ -131,9 +138,15 @@ struct AppRootContent: View {
         await self.services.documentService.refreshUserDocumentInbox(for: currentUser, force: force)
     }
 
+    /// Retail users: defer background fetches until onboarding is complete (avoids dashboard noise under SignUp cover).
+    private func shouldDeferRetailBackgroundWork(for user: User) -> Bool {
+        !user.onboardingCompleted && (user.role == .investor || user.role == .trader)
+    }
+
     private func refreshUserScopedData() async {
         guard self.lifecycleCoordinator.criticalServicesReady else { return }
         guard let currentUser = services.userService.currentUser else { return }
+        guard !self.shouldDeferRetailBackgroundWork(for: currentUser) else { return }
 
         async let loadNotifications: Void = self.services.notificationService.loadNotifications(for: currentUser)
         async let loadDocuments: Void = await self.services.documentService.loadDocuments(for: currentUser)
@@ -204,6 +217,7 @@ private enum MonthlyStatementPrefetch {
 
     static func schedule(services: AppServices) {
         guard self.inFlight == nil else { return }
+        guard let user = services.userService.currentUser, user.onboardingCompleted else { return }
         self.inFlight = Task { @MainActor in
             defer { MonthlyStatementPrefetch.inFlight = nil }
             guard let user = services.userService.currentUser else { return }

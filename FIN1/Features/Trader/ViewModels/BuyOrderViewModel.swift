@@ -10,7 +10,7 @@ final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
     @Published var orderMode: OrderMode = .market
     @Published var limit: String = ""
     @Published var estimatedCost: Double = 0.0
-    @Published var orderStatus: BuyOrderStatus = .idle
+    @Published var placementSession = BuyOrderPlacementSession()
     @Published var showMaxValueWarning: Bool = false
     @Published var shouldShowDepotView: Bool = false
     @Published var showInsufficientFundsWarning: Bool = false
@@ -26,7 +26,7 @@ final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
         get { self.priceValidityTimerManager.priceValidityProgress }
         set { self.priceValidityTimerManager.priceValidityProgress = newValue }
     }
-    private let priceValidityTimerManager: PriceValidityTimerManager
+    let priceValidityTimerManager: PriceValidityTimerManager
     let quantityInputManager: QuantityInputManager
     private var limitOrderMonitor: BuyOrderMonitorImpl?
     private let limitOrderMonitoringService: any LimitOrderMonitoringServiceProtocol
@@ -69,6 +69,12 @@ final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
     var poolInvestmentsRefreshTask: Task<Void, Never>?
     var transactionLimitCheckTask: Task<Void, Never>?
     var investmentCalculationTask: Task<Void, Never>?
+    /// Guards `.task` pool reload when SwiftUI re-enters the buy sheet.
+    var didLoadPoolInvestments = false
+
+    var orderStatus: BuyOrderStatus {
+        self.placementSession.buyOrderStatus
+    }
 
     // Helpers (extracted for file size reduction; internal for extensions)
     var quantityConstraintHelper: BuyOrderQuantityConstraintHelper {
@@ -101,8 +107,13 @@ final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
     }
 
     var isPlacingOrder: Bool {
-        if case .transmitting = self.orderStatus { return true }
-        return false
+        self.placementSession.phase.isPlacing
+    }
+
+    func mutatePlacementSession(_ body: (inout BuyOrderPlacementSession) -> Void) {
+        var session = self.placementSession
+        body(&session)
+        self.placementSession = session
     }
 
     init(
@@ -182,7 +193,8 @@ final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
         self.limitOrderMonitor = limitOrderMonitoringService.createBuyOrderMonitor(for: self)
 
         setupBindings()
-        self.reloadPrice()
+        // Brief-Kurs timer starts after pool investments load (see `loadPoolInvestmentsIfNeeded`).
+        self.priceValidityProgress = 1.0
 
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("--ui-test-prefill-limit-order") {
@@ -220,53 +232,91 @@ final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
     }
 
     func placeOrder() async {
-        if case .transmitting = self.orderStatus {
-            print("🔍 DEBUG: placeOrder ignored - already transmitting")
+        guard self.placementSession.phase.isEditing else {
+            print("🔍 DEBUG: placeOrder ignored - already placing")
             return
         }
-        self.orderStatus = .transmitting
 
         self.normalizeQuantityTextAfterEditing()
+        let orderQuantity = Int(self.quantity)
+        guard orderQuantity > 0 else {
+            self.mutatePlacementSession { $0.completeFailure(.validationError("Ungültige Stückzahl.")) }
+            return
+        }
 
-        await self.refreshInvestmentsFromBackend()
+        self.pausePriceValidityTimer()
 
-        await self.calculateInvestmentOrder()
+        let clientOrderIntentId = self.mutatePlacementSessionReturning {
+            $0.ensureClientOrderIntentId()
+        }
+        let snapshot = BuyOrderPlacementSnapshot(
+            quantity: orderQuantity,
+            searchResult: self.searchResult,
+            orderMode: self.orderMode,
+            limit: self.limit,
+            priceValidityProgress: self.priceValidityProgress,
+            investmentOrderCalculation: self.investmentOrderCalculation,
+            clientOrderIntentId: clientOrderIntentId
+        )
+        self.mutatePlacementSession { $0.beginPlacing(snapshot) }
+
+        await self.refreshPlacementPoolContext()
+
+        let placementCalculation = self.investmentOrderCalculation ?? snapshot.investmentOrderCalculation
 
         do {
             let result = try await placementService.placeOrder(
-                searchResult: self.searchResult,
-                quantity: Int(self.quantity),
-                orderMode: self.orderMode,
-                limit: self.limit,
-                priceValidityProgress: self.priceValidityProgress,
-                investmentOrderCalculation: self.investmentOrderCalculation,
+                searchResult: snapshot.searchResult,
+                quantity: snapshot.quantity,
+                orderMode: snapshot.orderMode,
+                limit: snapshot.limit,
+                priceValidityProgress: snapshot.priceValidityProgress,
+                investmentOrderCalculation: placementCalculation,
+                clientOrderIntentId: snapshot.clientOrderIntentId,
                 traderService: self.traderService
             )
 
             if result.success {
-                // Order was successfully created and will appear in ongoing transactions
-                // The status progression will happen automatically via the timer
-                // Set status to idle to dismiss the view immediately
-                self.orderStatus = .idle
-                // Trigger navigation to depot view for successful order placement
+                self.mutatePlacementSession { $0.completeSuccess() }
                 self.shouldShowDepotView = true
             } else if let error = result.error {
-                self.orderStatus = .failed(error)
+                self.mutatePlacementSession { $0.completeFailure(error) }
+                self.resumePriceValidityAfterFailure()
             } else {
-                self.orderStatus = .failed(.unknown("Unbekannter Fehler bei der Orderplatzierung."))
+                self.mutatePlacementSession {
+                    $0.completeFailure(.unknown("Unbekannter Fehler bei der Orderplatzierung."))
+                }
+                self.resumePriceValidityAfterFailure()
             }
         } catch is CancellationError {
-            // If task gets cancelled (e.g. view lifecycle), avoid leaving UI in transmitting state.
-            self.orderStatus = .idle
+            print("⚠️ BuyOrderViewModel: placeOrder cancelled — snapshot quantity \(snapshot.quantity)")
+            self.mutatePlacementSession {
+                $0.completeFailure(
+                    .validationError(
+                        "Die Übermittlung wurde unterbrochen. Bitte prüfen Sie das Depot und versuchen Sie es ggf. erneut."
+                    )
+                )
+            }
+            self.resumePriceValidityAfterFailure()
         } catch let appError as AppError {
-            orderStatus = .failed(appError)
+            self.mutatePlacementSession { $0.completeFailure(appError) }
+            self.resumePriceValidityAfterFailure()
         } catch {
-            self.orderStatus = .failed(error.toAppError())
+            self.mutatePlacementSession { $0.completeFailure(error.toAppError()) }
+            self.resumePriceValidityAfterFailure()
         }
     }
 
     func resetOrderStatus() {
-        self.orderStatus = .idle
+        self.mutatePlacementSession { $0.resetToEditing() }
+    }
+
+    @discardableResult
+    private func mutatePlacementSessionReturning<T>(_ body: (inout BuyOrderPlacementSession) -> T) -> T {
+        var session = self.placementSession
+        let value = body(&session)
+        self.placementSession = session
+        return value
     }
 
     // MARK: - Automatic Limit Order Monitoring

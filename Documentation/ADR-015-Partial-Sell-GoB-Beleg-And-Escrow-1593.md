@@ -9,7 +9,7 @@
 Bei **Teilverkäufen** (Partial Sells) im Pool-Mirror-Trade wurde bisher:
 
 1. pro Partial Sell eine **Investor Collection Bill** erzeugt,
-2. sofort `investment_return`, `commission_debit` und Steuerbuchungen auf dem **Kunden-Kontoauszug** gebucht,
+2. sofort `investment_return` (Überweisungsbetrag) und Steuerbuchungen auf dem **Kunden-Kontoauszug** gebucht; Provision nur **GL-intern** (kein saldenwirksames `commission_debit` mehr),
 3. der **Trader-Verkaufsbeleg** nur **einmal pro Trade** (nicht pro `sellOrderId`) idempotent gehalten.
 
 Das verletzt GoB und Produktlogik:
@@ -47,7 +47,7 @@ Einstand = proportionaler **Einstand** der verkauften Pool-Stück (`buyLeg.amoun
 | Ereignis | Beleg | App-Ledger | Kontoauszug |
 |----------|-------|------------|-------------|
 | Completion-Save (letzter Sell) | Letzter **interner** EBP + **PMSC** pro `sellOrderId` (falls noch fehlend) | Letzter Partial-Delta **PTR/PPS** wie bei offenem Trade | **keine** Kundenauszahlung |
-| `settleAndDistribute` | Offizielle **Collection Bill** (extern) | Rest **PTR → AVA**; kumuliertes **PPS → AVA**; **P/L → AVA** (Gewinn) | `investment_return`, `commission_debit`, Steuern (wie bisher, mit `remainingTransfer`-Idempotenz) |
+| `settleAndDistribute` | Offizielle **Collection Bill** (extern) | Rest **PTR → AVA**; kumuliertes **PPS → AVA**; **P/L → AVA** (Gewinn); Provision **GL-only** (P/L → `PLT-LIAB-COM`) | `investment_return` (Überweisungsbetrag), Steuern; **kein** Kunden-`commission_debit` |
 
 Der Completion-Save darf den internen Partial-Delta-Pfad **nicht** überspringen — nur externe Collection Bills bleiben Settlement-exklusiv.
 

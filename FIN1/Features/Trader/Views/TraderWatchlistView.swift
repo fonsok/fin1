@@ -92,13 +92,8 @@ struct TraderWatchlistView: View {
         .sheet(item: self.$selectedSecurityForOrder) { security in
             BuyOrderViewWrapper(
                 searchResult: security,
-                traderService: self.services.traderService,
-                cashBalanceService: self.services.cashBalanceService,
-                configurationService: self.services.configurationService,
-                investmentQuantityCalculationService: self.services.investmentQuantityCalculationService,
-                investmentService: self.services.investmentService,
-                userService: self.services.userService,
-                traderDataService: self.services.traderDataService
+                services: self.services,
+                onOrderPlaced: { self.selectedSecurityForOrder = nil }
             )
         }
         .sheet(isPresented: self.$showSecuritiesSearch) {

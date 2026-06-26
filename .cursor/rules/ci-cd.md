@@ -67,6 +67,33 @@ Before committing, ensure:
 3. ✅ Build succeeds - must see "BUILD SUCCEEDED" (retry until all errors fixed)
 4. ✅ Tests pass locally
 
+### Commit & PR boundaries (review points)
+
+**One commit / one PR = one reviewable outcome**, not one coding session.
+
+| Slice when | Examples |
+|------------|----------|
+| **Bug fix + regression test** | Empty buy sheet + UITest; duplicate `orderNumber` + backend sequential save |
+| **Vertical feature epic** | Onboarding state machine v2; KYB product gate — iOS + backend + docs together only if they deploy together |
+| **Infra / rules only** | Architecture rule for sheet ownership; CI workflow change |
+| **Backend-only** | Parse Cloud paired-buy fix — separate PR from iOS if iOS does not depend on it (or combined if contract changes) |
+
+**Do commit when:**
+- Acceptance criteria for the slice are met **and** build + relevant tests pass
+- The diff is **cohesive** (~15–40 files max for trader flows; split larger epics)
+- A reviewer could understand *why* without reading the whole 200-file worktree
+
+**Do not commit when:**
+- Unrelated epics are mixed (e.g. SignUp + BuyOrder in one PR)
+- Only WIP / exploratory — use local commits or stash, not `main`
+- Backend deploy is required but not yet smoke-tested (Parse Cloud: deploy script + post-deploy check first)
+
+**Worktree with parallel epics (current pattern):** stage **by path**, not `git add -A`. Remaining changes stay unstaged for the next review point.
+
+Pre-commit runs SwiftFormat/SwiftLint on **staged `.swift` files only** (not the whole worktree), so one epic’s lint debt does not block another epic’s commit.
+
+**Deploy vs commit:** Backend fixes can be committed before deploy; deploy is a separate step after commit (see Parse Cloud rules above). iOS-only slices do not block on server deploy unless the app calls a new Cloud contract.
+
 ### Responsive Design Compliance
 
 Local validation (see also `responsive-design.md` rule file):

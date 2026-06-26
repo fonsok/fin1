@@ -60,7 +60,13 @@ enum InvestmentCashDistributor {
             return
         }
 
-        if amounts.netSellAmount > 0 {
+        if amounts.transferAmount > 0 {
+            await investorCashBalanceService.processProfitDistribution(
+                investorId: investment.investorId,
+                profitAmount: amounts.transferAmount,
+                investmentId: investment.id
+            )
+        } else if amounts.netSellAmount > 0 {
             await investorCashBalanceService.processProfitDistribution(
                 investorId: investment.investorId,
                 profitAmount: amounts.netSellAmount,
@@ -68,7 +74,7 @@ enum InvestmentCashDistributor {
             )
         }
 
-        if amounts.commissionAmount > 0 {
+        if amounts.commissionAmount > 0, amounts.transferAmount <= 0 {
             let commissionDetails = CommissionDeductionDetails(
                 investmentSequenceNumber: investment.sequenceNumber,
                 traderName: investment.traderName,
@@ -98,6 +104,8 @@ enum InvestmentCashDistributor {
     // MARK: - Private Types
 
     private struct DistributionAmounts {
+        /// Überweisungsbetrag from `investment_return` (net of commission); 0 when absent.
+        let transferAmount: Double
         let netSellAmount: Double
         let commissionAmount: Double
         let grossProfit: Double
@@ -121,6 +129,7 @@ enum InvestmentCashDistributor {
             guard !investmentEntries.isEmpty else { return nil }
 
             var netSell: Double = 0
+            var transfer: Double = 0
             var commission: Double = 0
             var grossProfit: Double = 0
             var residual: Double = 0
@@ -128,7 +137,9 @@ enum InvestmentCashDistributor {
 
             for entry in investmentEntries {
                 switch entry.entryType {
-                case "investment_return", "investment_profit", "sell_proceeds", "profit_distribution":
+                case "investment_return":
+                    transfer += max(0, entry.amount)
+                case "investment_profit", "sell_proceeds", "profit_distribution":
                     netSell += max(0, entry.amount)
                 case "commission_debit":
                     commission += abs(entry.amount)
@@ -142,10 +153,16 @@ enum InvestmentCashDistributor {
                 }
             }
 
-            // Gross profit = net sell + commission (commission was deducted from gross)
+            // SSOT: `investment_return` = transferAmount (netSell − commission). Legacy rows may
+            // still list commission_debit — ignore for cash distribution when transfer is present.
+            if transfer > 0 {
+                netSell = transfer
+                commission = 0
+            }
+
             grossProfit = netSell + commission
 
-            if commission <= 0 || netSell <= 0 {
+            if transfer <= 0 && (commission <= 0 || netSell <= 0) {
                 if let fromBills = await Self.fetchAmountsFromCollectionBills(
                     investmentId: investment.id,
                     settlementAPIService: api
@@ -156,11 +173,17 @@ enum InvestmentCashDistributor {
                     if netSell <= 0, fromBills.netSell > 0 {
                         netSell = fromBills.netSell
                     }
+                    if transfer <= 0, fromBills.transfer > 0 {
+                        transfer = fromBills.transfer
+                        netSell = transfer
+                        commission = 0
+                    }
                     grossProfit = netSell + commission
                 }
             }
 
             return DistributionAmounts(
+                transferAmount: transfer,
                 netSellAmount: netSell,
                 commissionAmount: commission,
                 grossProfit: grossProfit,
@@ -176,7 +199,7 @@ enum InvestmentCashDistributor {
     private static func fetchAmountsFromCollectionBills(
         investmentId: String,
         settlementAPIService: any SettlementAPIServiceProtocol
-    ) async -> (commission: Double, netSell: Double)? {
+    ) async -> (commission: Double, netSell: Double, transfer: Double)? {
         do {
             let response = try await settlementAPIService.fetchInvestorCollectionBills(
                 limit: 100,
@@ -189,7 +212,8 @@ enum InvestmentCashDistributor {
             ) else {
                 return nil
             }
-            return (commission: summary.commission, netSell: summary.netSellAmount)
+            let transfer = max(0, summary.netSellAmount - summary.commission)
+            return (commission: summary.commission, netSell: summary.netSellAmount, transfer: transfer)
         } catch {
             return nil
         }
@@ -201,6 +225,7 @@ enum InvestmentCashDistributor {
         amounts: DistributionAmounts
     ) {
         print("💰 InvestmentCashDistributor: Distributing cash for investment \(investment.id)")
+        print("   📊 Transfer Amount (Überweisungsbetrag): €\(String(format: "%.2f", amounts.transferAmount))")
         print("   📊 Net Sell Amount: €\(String(format: "%.2f", amounts.netSellAmount))")
         print("   📊 Gross Profit: €\(String(format: "%.2f", amounts.grossProfit))")
         print("   📊 Commission: €\(String(format: "%.2f", amounts.commissionAmount))")

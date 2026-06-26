@@ -64,9 +64,37 @@ function isDuplicateAvaResidualLedgerRow(row, residualKeys) {
   return residualKeys.has(`${invId}|${tradeId}|${amt}`) || residualKeys.has(`${invId}|${amt}`);
 }
 
+/**
+ * `investment_return` bucht den Überweisungsbetrag (netto inkl. Provision). Legacy
+ * `commission_debit`-Zeilen auf dem Personenkonto wären eine Doppelbelastung.
+ */
+function buildSettlementTransferDedupKeys(stmtEntries) {
+  const keys = new Set();
+  for (const e of stmtEntries) {
+    if (String(e.get('entryType') || '') !== 'investment_return') continue;
+    const tradeId = String(e.get('tradeId') || '').trim();
+    const investmentId = String(e.get('investmentId') || '').trim();
+    if (tradeId && investmentId) {
+      keys.add(`${tradeId}::${investmentId}`);
+    }
+  }
+  return keys;
+}
+
+function isDuplicateSettlementCommissionDebit(stmt, transferKeys) {
+  if (!transferKeys || transferKeys.size === 0) return false;
+  if (String(stmt.get('entryType') || '') !== 'commission_debit') return false;
+  const tradeId = String(stmt.get('tradeId') || '').trim();
+  const investmentId = String(stmt.get('investmentId') || '').trim();
+  if (!tradeId || !investmentId) return false;
+  return transferKeys.has(`${tradeId}::${investmentId}`);
+}
+
 module.exports = {
   signedAmountFromAvaLedgerRow,
   syntheticEntryTypeFromLedgerRow,
   buildResidualReturnDedupKeys,
   isDuplicateAvaResidualLedgerRow,
+  buildSettlementTransferDedupKeys,
+  isDuplicateSettlementCommissionDebit,
 };
