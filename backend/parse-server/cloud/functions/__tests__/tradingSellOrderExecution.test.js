@@ -26,6 +26,7 @@ jest.mock('../../functions/legal/legalConsentUserSync', () => ({
     accepted: true,
     role: 'trader',
   })),
+  resolveRequiredReConsents: jest.fn(async () => ({ required: [] })),
 }));
 
 jest.mock('../../utils/helpers', () => ({

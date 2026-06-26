@@ -40,6 +40,7 @@ jest.mock('../../functions/legal/legalConsentUserSync', () => ({
     accepted: true,
     role: 'investor',
   })),
+  resolveRequiredReConsents: jest.fn(async () => ({ required: [] })),
 }));
 
 const { resolveCanonicalUserId } = require('../../utils/canonicalUserId');
