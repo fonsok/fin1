@@ -2,9 +2,10 @@ import Combine
 import Foundation
 
 // MARK: - Simplified Order Service (demo / prototype only)
-/// Local in-memory order flow for `NewBuyOrderViewModel` prototypes.
+/// Local in-memory order flow (deprecated prototype — no production callers).
 ///
-/// **Production path:** `UnifiedOrderService` + `OrderLifecycleCoordinator` + `OrderStatusSimulationService`.
+/// **Production path:** `BuyOrderViewModel` + `BuyOrderPlacementService` / `executePairedBuy`,
+/// or `SellOrderViewModel` + `OrderAPIService`.
 @available(*, deprecated, message: "Use UnifiedOrderService / OrderLifecycleCoordinator for production trading.")
 @MainActor
 protocol NewOrderServiceProtocol: ObservableObject {

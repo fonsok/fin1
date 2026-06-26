@@ -140,7 +140,7 @@ struct OrderCalculationUtility {
 }
 
 // MARK: - Order Mode Enum
-// Note: OrderMode enum is defined in NewBuyOrderViewModel.swift to avoid duplication
+// OrderMode: `FIN1/Shared/Models/OrderModels.swift`
 
 // MARK: - Combine Publishers Extension
 /// Extension to provide consistent Combine publisher setup for order calculations

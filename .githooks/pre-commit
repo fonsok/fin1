@@ -32,23 +32,31 @@ fi
 STAGED_FILES=$(git diff --cached --name-only)
 STAGED_SWIFT_FILES=$(echo "$STAGED_FILES" | grep -E '\.swift$' || true)
 if [ -n "$STAGED_SWIFT_FILES" ]; then
+    EXISTING_STAGED_SWIFT_FILES=""
+    while IFS= read -r file; do
+        [ -n "$file" ] && [ -f "$file" ] && EXISTING_STAGED_SWIFT_FILES="$EXISTING_STAGED_SWIFT_FILES $file"
+    done <<< "$STAGED_SWIFT_FILES"
+    EXISTING_STAGED_SWIFT_FILES="${EXISTING_STAGED_SWIFT_FILES# }"
+
     # SwiftFormat / SwiftLint on staged Swift files only — parallel epics in the worktree must not block unrelated commits.
-    if command -v swiftformat &> /dev/null; then
+    if [ -n "$EXISTING_STAGED_SWIFT_FILES" ] && command -v swiftformat &> /dev/null; then
         echo "🔍 Running SwiftFormat check (staged Swift files)..."
-        if ! swiftformat $STAGED_SWIFT_FILES --lint; then
+        if ! swiftformat $EXISTING_STAGED_SWIFT_FILES --lint; then
             echo "❌ SwiftFormat check failed!"
             echo "Please run: swiftformat <staged-files>"
             exit 1
         fi
-    else
+    elif [ -n "$EXISTING_STAGED_SWIFT_FILES" ]; then
         echo "ℹ️ SwiftFormat not installed, skipping format check"
     fi
 
-    echo "🔍 Running SwiftLint (staged Swift files)..."
-    if ! swiftlint lint --quiet -- $STAGED_SWIFT_FILES; then
-        echo "❌ SwiftLint check failed!"
-        echo "Please fix the linting issues in staged files before committing."
-        exit 1
+    if [ -n "$EXISTING_STAGED_SWIFT_FILES" ]; then
+        echo "🔍 Running SwiftLint (staged Swift files)..."
+        if ! swiftlint lint --quiet -- $EXISTING_STAGED_SWIFT_FILES; then
+            echo "❌ SwiftLint check failed!"
+            echo "Please fix the linting issues in staged files before committing."
+            exit 1
+        fi
     fi
 
     # Run MVVM Architecture validation (informational only)
