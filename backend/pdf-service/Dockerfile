@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     libpango-1.0-0 \
     libpangocairo-1.0-0 \
-    libgdk-pixbuf2.0-0 \
+    libgdk-pixbuf-2.0-0 \
     libffi-dev \
     shared-mime-info \
     libcairo2 \
@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y \
     libgirepository1.0-dev \
     fonts-dejavu \
     fonts-liberation \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
