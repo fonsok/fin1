@@ -1,7 +1,7 @@
 ---
 title: "FIN1 App-Dokumentation – Index"
 audience: ["Stakeholder", "Produkt", "Entwicklung", "QA", "Betrieb", "Support", "Compliance"]
-lastUpdated: "2026-06-25"
+lastUpdated: "2026-06-26"
 ---
 
 ## Zweck
@@ -38,7 +38,7 @@ Wenn Dokumente und Code/Configs widersprechen, gilt:
    - Onboarding (Cloud Functions + Joi-Validierung): Abschnitt 3.2 „User/FAQ“ und 3.3 in 03; ADR: [`../ADR-002-Onboarding-Codable-DTO.md`](../ADR-002-Onboarding-Codable-DTO.md)
    - **Epic (Backlog): Onboarding State Machine v2:** [`EPIC_ONBOARDING_STATE_MACHINE_V2.md`](EPIC_ONBOARDING_STATE_MACHINE_V2.md) · PDF: [`EPIC_ONBOARDING_STATE_MACHINE_V2.pdf`](EPIC_ONBOARDING_STATE_MACHINE_V2.pdf)
    - **Epic: Company KYB Product Gate:** [`EPIC_KYB_REGULATED_PRODUCT_GATE.md`](EPIC_KYB_REGULATED_PRODUCT_GATE.md) · Abnahme: [`../RELEASE_ABNAHME_KYB_PRODUCT_GATE.md`](../RELEASE_ABNAHME_KYB_PRODUCT_GATE.md)
-   - **Epic: Post-Onboarding Re-Consent:** [`EPIC_POST_ONBOARDING_RE_CONSENT.md`](EPIC_POST_ONBOARDING_RE_CONSENT.md)
+   - **Epic: Post-Onboarding Re-Consent** ✅ (2026-06): [`EPIC_POST_ONBOARDING_RE_CONSENT.md`](EPIC_POST_ONBOARDING_RE_CONSENT.md) · Abnahme: [`../RELEASE_ABNAHME_RE_CONSENT.md`](../RELEASE_ABNAHME_RE_CONSENT.md)
    - **Company / KYB (Firmen-Onboarding, implementiert):** [`../COMPANY_KYB_ONBOARDING.md`](../COMPANY_KYB_ONBOARDING.md), ADR: [`../ADR-003-Company-KYB-Onboarding.md`](../ADR-003-Company-KYB-Onboarding.md)
 4. **Entwicklernähere Dokumentation (Setup/Guides/Build & Deployment)**
    Siehe [`04_DEVELOPER_GUIDE.md`](04_DEVELOPER_GUIDE.md)

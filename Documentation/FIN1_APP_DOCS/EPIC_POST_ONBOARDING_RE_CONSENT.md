@@ -1,11 +1,13 @@
 ---
 title: "Epic — Post-Onboarding Re-Consent (Legal Updates)"
 audience: ["Produkt", "Entwicklung", "QA", "Compliance", "Legal"]
-lastUpdated: "2026-06-23"
+lastUpdated: "2026-06-26"
 epicId: "FIN1-LEGAL-RECONSENT"
 ---
 
 # Epic: Post-Onboarding Re-Consent bei kritischen Vertragsupdates
+
+**Status (2026-06):** ✅ **Done** — Backend PR #11, iOS PR #12, Abnahme-Runbook PR #13; Staging-Abnahme **Go** ([`RELEASE_ABNAHME_RE_CONSENT.md`](../RELEASE_ABNAHME_RE_CONSENT.md)).
 
 ## Ziel
 
@@ -232,10 +234,11 @@ Als Compliance möchte ich pro Re-Consent nachvollziehen: wer, wann, welche Vers
 
 ## 8. Dokumentations-Updates (bei Umsetzung)
 
-- `LEGAL_DOCS_AUDIT_TRAIL.md` — Abschnitt „Re-Consent (Post-Onboarding)“
-- `03_TECHNISCHE_SPEZIFIKATION.md` — `getRequiredReConsents`, erweitertes `productAccessGate`
-- `02_REQUIREMENTS.md` — US-RC1–RC4
-- `.cursor/rules/compliance.md` — Re-Consent Pflicht
+- `LEGAL_DOCS_AUDIT_TRAIL.md` — Abschnitt „Re-Consent (Post-Onboarding)“ ✅
+- `03_TECHNISCHE_SPEZIFIKATION.md` — `getRequiredReConsents`, erweitertes `productAccessGate` ✅
+- `02_REQUIREMENTS.md` — US-RC1–RC4 ✅
+- `02A_FEATURE_KATALOG_GUARDRAILS.md` — Post-Login Re-Consent-Gate ✅
+- `.cursor/rules/compliance.md` — Re-Consent Pflicht ✅
 
 ---
 
@@ -243,7 +246,7 @@ Als Compliance möchte ich pro Re-Consent nachvollziehen: wer, wann, welche Vers
 
 Epic **done**, wenn:
 
-- [ ] Admin kann neue TOS-Version aktivieren und Staging-User wird blockiert bis Accept
-- [ ] Role-Agreement-Re-Consent mit Scroll + Audit
-- [ ] `productAccessGate` + iOS-Gate aligned
-- [ ] Abnahmeprotokoll `RELEASE_ABNAHME_RE_CONSENT.md` ausgefüllt
+- [x] Admin kann neue TOS-Version aktivieren und Staging-User wird blockiert bis Accept
+- [x] Role-Agreement-Re-Consent mit Scroll + Audit
+- [x] `productAccessGate` + iOS-Gate aligned
+- [x] Abnahmeprotokoll `RELEASE_ABNAHME_RE_CONSENT.md` ausgefüllt (Staging Go, 2026-06)

@@ -131,6 +131,11 @@ Diese Regeln schützen **bereits korrekte Finanzwerte** vor “Formel-Drift” (
     - `getDeviceLegalConsentAcknowledgements` liefert nur `source: app`; Onboarding-`LegalConsent` (`source: onboarding`) darf nicht in den Device-Store importiert werden.
     - Server-Sync (`syncAcknowledgementsFromServer`) nur beim vollen Gate-Check (Login), nicht bei jedem `userDataDidUpdate` nach Teil-Accept.
     - Version-Auflösung: Cache → Server → Profil-Version → Bundled Fallback (`LegalConsentVersionResolver`).
+  - **Post-Onboarding Re-Consent (Konto-Version-Drift, seit 2026-06):**
+    - Nach Device-Gate (oder wenn Device-Gate nicht nötig): `AuthenticationView.evaluateReConsentRequirement` refresht `getUserMe` und zeigt `ReConsentModalView`, solange `requiredReConsents` blocking Einträge enthält.
+    - TOS/Privacy: `recordLegalConsent` + lokales User-Update + Device-Store via `TermsAcceptanceService`; Role Agreement: `RoleAgreementReConsentView` (Scroll + Checkbox) → `recordRoleAgreementConsent` mit `source: app`.
+    - **Grandfather:** Nutzer ohne `accepted*Version` auf `_User` werden nicht erzwungen (Server-SSOT `resolveRequiredReConsents`).
+    - Bei AGB-only-Bump kann zuerst das Device-Gate erscheinen (erwartet); Role-Agreement-Bump testet gezielt die neue Modal-UI.
   - NotificationCenter Contracts:
     - `.userDidSignIn` schaltet UI auf “authenticated”
     - `.userDidSignOut` schaltet UI zurück auf Landing und entfernt Terms Overlay
@@ -328,16 +333,19 @@ Diese Regeln schützen **bereits korrekte Finanzwerte** vor “Formel-Drift” (
 
 - **Entry Points**
   - Post-Login Device-Gate: `AuthenticationView` + `TermsAcceptanceModalView`
+  - Post-Login Re-Consent (Version-Drift): `AuthenticationView` + `ReConsentModalView` + `ReConsentViewModel`
   - Sign-up Gate 1: `SignUpLegalConsentSection` (Contact)
-  - Services: `TermsContentService`, `TermsAcceptanceService`, `DeviceLegalConsentStore`
-  - Backend: `recordLegalConsent`, `getDeviceLegalConsentAcknowledgements`, `persistOnboardingLegalConsents`, `productAccessGate`
+  - Sign-up Gate 2: `RoleAgreementStep` (Step 24)
+  - Services: `TermsContentService`, `TermsAcceptanceService`, `DeviceLegalConsentStore`, `RoleAgreementConsentService`
+  - Backend: `recordLegalConsent`, `getRequiredReConsents`, `getDeviceLegalConsentAcknowledgements`, `persistOnboardingLegalConsents`, `recordRoleAgreementConsent`, `productAccessGate`
 - **Protected Behaviors**
   - **Konto vs. Install:** Profil-Flags (`acceptedTerms`, `acceptedPrivacyPolicy`) und `LegalConsent` mit `source: onboarding` allein reichen nicht — Device-Gate verlangt lokales Ack oder `recordLegalConsent` mit `source: app` pro aktiver Version.
+  - **Konto vs. aktive Server-Version:** Nach Onboarding kann `requiredReConsents` (von `getUserMe`) zusätzlich blockieren, bis `recordLegalConsent` / `recordRoleAgreementConsent` mit `source: app` die neue Version bestätigt — auch wenn Device-Gate bereits passiert ist (typisch bei Role-Agreement-Bump).
   - Version-Auflösung: Cache → Server → Profil → Bundled Fallback (`LegalConsentVersionResolver`).
   - Logging (Delivery/Consent) darf nicht entfernt werden, wenn Parse aktiv ist.
   - Kein „silent accept“: Modal erfordert explizite Accept-Buttons; kein Auto-Dismiss bei nur einem Dokument.
-  - Server: `assertProductAccessEligible` blockiert Trading/Investment ohne abgeschlossenes Onboarding und beide Konto-Consents.
-  - Kanonische Detail-Doku: `Documentation/LEGAL_DOCS_AUDIT_TRAIL.md`.
+  - Server: `assertProductAccessEligible` blockiert Trading/Investment ohne abgeschlossenes Onboarding, beide Konto-Consents, passende Role Agreement, **und** ohne blockierendes Re-Consent.
+  - Kanonische Detail-Doku: `Documentation/LEGAL_DOCS_AUDIT_TRAIL.md`, Abnahme: `Documentation/RELEASE_ABNAHME_RE_CONSENT.md`.
 
 ### 3.11 Accounting Documents: Invoices, Collection Bills, Account Statements (Monthly)
 

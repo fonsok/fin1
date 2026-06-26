@@ -161,7 +161,7 @@ FIN1/Features/Authentication/Onboarding/
 
 ### Go (mind. 2 erfüllt)
 
-- [ ] Re-Consent nach Vertragsupdate geplant (< 6 Monate)
+- [x] Re-Consent nach Vertragsupdate geplant (< 6 Monate) — **umgesetzt** ([`EPIC_POST_ONBOARDING_RE_CONSENT.md`](EPIC_POST_ONBOARDING_RE_CONSENT.md), Staging Go 2026-06)
 - [ ] Multi-Device Resume ist Product-Anforderung
 - [ ] Zweiter schwerer Onboarding-Bug nach aktuellen Fixes
 - [ ] Dediziertes Sprint-Budget (≥ 10 Dev-Tage)

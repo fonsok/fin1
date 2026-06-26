@@ -199,10 +199,19 @@ When implementing compliance features, reference:
 - **FORBIDDEN**: Importing `LegalConsent` rows with `source: onboarding` into the device store (`getDeviceLegalConsentAcknowledgements` and `syncAcknowledgementsFromServer` must only honour `source: app`).
 - **REQUIRED**: After Contact account creation and `finalizeRegistration`, mirror Gate 1 into `DeviceLegalConsentStore` (`mirrorSignupLegalGateToDeviceStore`) so fresh sign-up on the same install does not show a redundant modal.
 
+### Post-onboarding Re-Consent (account version drift)
+
+- **REQUIRED**: When active `TermsContent.version` is **newer** than the user's stored `accepted*Version` on `_User`, regulated product use is blocked until explicit re-acceptance (`resolveRequiredReConsents`, `getUserMe.requiredReConsents`, `assertProductAccessEligible`).
+- **REQUIRED**: iOS flow after login: Device-Gate first (`evaluateLegalConsentRequirement`), then Re-Consent (`evaluateReConsentRequirement` → `ReConsentModalView`) for remaining blocking `requiredReConsents`.
+- **REQUIRED**: Re-Consent accept paths use `recordLegalConsent` / `recordRoleAgreementConsent` with **`source: app`** (append-only audit; distinct from onboarding `source: onboarding`).
+- **REQUIRED**: Role Agreement re-consent uses scroll-to-end + checkbox (`RoleAgreementReConsentView`), same contract as onboarding Step 24.
+- **FORBIDDEN**: Forcing re-consent on legacy users with `acceptedTerms=true` but **no** `acceptedTermsVersion` (grandfather rule in `resolveRequiredReConsents`).
+- **Canonical abnahme**: `Documentation/RELEASE_ABNAHME_RE_CONSENT.md`.
+
 ### Backend
 
 - **REQUIRED**: `persistOnboardingLegalConsents` writes `source: onboarding`; `recordLegalConsent` writes `source: app`.
-- **REQUIRED**: `assertProductAccessEligible` (`productAccessGate.js`) on regulated product Cloud Functions — requires `onboardingCompleted`, both account legal flags, role agreement (retail), and **`companyKybStatus === approved`** for `accountType === company`.
+- **REQUIRED**: `assertProductAccessEligible` (`productAccessGate.js`) on regulated product Cloud Functions — requires `onboardingCompleted`, both account legal flags, role agreement (retail), **no blocking re-consent version drift** (`resolveRequiredReConsents`), and **`companyKybStatus === approved`** for `accountType === company`.
 - **REQUIRED**: New users without both consents rejected in `userBeforeSave`.
 
 ### Retail role (Investor / Trader)
@@ -228,7 +237,7 @@ When implementing compliance features, reference:
 - **No hardcoded risk logic**: Must use `RiskClassCalculationService` (no legacy duplicate in `SignUpData`)
 - **No missing compliance checks**: All financial transactions must have pre-trade validation
 - **No unlogged trades**: All order placements and executions must be logged
-- **No legal bypass**: Do not skip Legal Gate 1, device install gate, or `productAccessGate` on product-critical flows
+- **No legal bypass**: Do not skip Legal Gate 1, device install gate, **post-onboarding re-consent**, or `productAccessGate` on product-critical flows
 - **No single-click legal dismiss**: Post-login modal requires both TOS and Privacy device acks
 - **No retail role change after signup**: Do not allow investor↔trader changes after `POST /users` (UI, progress blob, or `_User.save`)
 - **No MainTabView during onboarding**: Do not mount dashboard/tabs until `onboardingCompleted`
