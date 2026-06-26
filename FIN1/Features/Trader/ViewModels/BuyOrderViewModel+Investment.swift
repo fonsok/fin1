@@ -3,6 +3,23 @@ import Foundation
 
 extension BuyOrderViewModel {
 
+    var poolInvestmentSnapshot: BuyOrderPoolInvestmentSnapshot {
+        BuyOrderPoolInvestmentSnapshot(
+            investmentCount: self.reservedInvestments.count,
+            totalCapital: self.reservedInvestments.reduce(0) { $0 + $1.amount }
+        )
+    }
+
+    /// Schedules pool split recalc after pool load and when quantity/security inputs stabilize.
+    func scheduleInvestmentOrderRecalc() {
+        guard !self.isPlacementLocked else { return }
+        guard self.didLoadPoolInvestments else { return }
+        self.investmentCalculationTask?.cancel()
+        self.investmentCalculationTask = Task { @MainActor [weak self] in
+            await self?.calculateInvestmentOrder()
+        }
+    }
+
     @MainActor
     func calculateInvestmentOrder() async {
         let price = Double(searchResult.askPrice.replacingOccurrences(of: ",", with: ".")) ?? 0.0
@@ -88,14 +105,13 @@ extension BuyOrderViewModel {
     func setupInvestmentObservation() {
         investmentService.investmentsPublisher
             .receive(on: DispatchQueue.main)
+            .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
             .sink { [weak self] _ in
                 guard let self else { return }
+                let priorSnapshot = self.poolInvestmentSnapshot
                 self.updateReservedInvestments()
-                guard !self.isPlacementLocked else { return }
-                self.investmentCalculationTask?.cancel()
-                self.investmentCalculationTask = Task { @MainActor [weak self] in
-                    await self?.calculateInvestmentOrder()
-                }
+                guard self.poolInvestmentSnapshot != priorSnapshot else { return }
+                self.scheduleInvestmentOrderRecalc()
             }
             .store(in: &cancellables)
 

@@ -58,18 +58,23 @@ extension BuyOrderViewModel {
             }
             .store(in: &cancellables)
 
-        Publishers.CombineLatest(
-            $quantityText.debounce(for: .milliseconds(300), scheduler: RunLoop.main),
-            $searchResult
-        )
-        .sink { [weak self] _, _ in
-            guard let self else { return }
-            guard !self.isPlacementLocked else { return }
-            self.investmentCalculationTask?.cancel()
-            self.investmentCalculationTask = Task { @MainActor [weak self] in
-                await self?.calculateInvestmentOrder()
+        let debouncedQuantity = $quantityText
+            .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
+            .map { text -> Int in
+                let parsed = OrderCalculationUtility.parseGermanQuantity(text)
+                return max(parsed, 0)
             }
-        }
-        .store(in: &cancellables)
+            .removeDuplicates()
+
+        let debouncedSecurityInputs = $searchResult
+            .map { buyOrderPoolRecalcSecurityInputs(from: $0) }
+            .removeDuplicates()
+            .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
+
+        Publishers.CombineLatest(debouncedQuantity, debouncedSecurityInputs)
+            .sink { [weak self] _, _ in
+                self?.scheduleInvestmentOrderRecalc()
+            }
+            .store(in: &cancellables)
     }
 }

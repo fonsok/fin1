@@ -181,7 +181,6 @@ struct BuyOrderView: View {
             print("🔍 BuyOrderView: loading trader pool investments from backend")
             #endif
             await self.viewModel.loadPoolInvestmentsIfNeeded()
-            await self.viewModel.calculateInvestmentOrder()
         }
         .onChange(of: self.viewModel.shouldShowDepotView) { _, newValue in
             if newValue {

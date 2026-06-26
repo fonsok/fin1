@@ -206,11 +206,6 @@ final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
 
         // Setup investment observation
         setupInvestmentObservation()
-
-        // Calculate investment order when quantity or price changes
-        Task {
-            await calculateInvestmentOrder()
-        }
     }
 
     func reloadPrice() {

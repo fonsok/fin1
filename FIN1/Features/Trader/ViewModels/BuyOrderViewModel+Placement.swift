@@ -25,6 +25,7 @@ extension BuyOrderViewModel {
         await self.refreshInvestmentsFromBackend()
         self.didLoadPoolInvestments = true
         self.reloadPrice()
+        self.scheduleInvestmentOrderRecalc()
     }
 
     /// Call synchronously on Kaufen before `placeOrder()` — freezes staleness ramp during transmission.
