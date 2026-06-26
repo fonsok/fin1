@@ -1,0 +1,6 @@
+node_modules/
+package-lock.json
+
+# RC5 signup flow — regenerate via `npm run build` in this directory
+rc5-signup-flow*.pdf
+rc5-signup-flow*.png

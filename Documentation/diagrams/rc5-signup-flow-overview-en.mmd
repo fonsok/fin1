@@ -1,0 +1,33 @@
+%%{init: {"flowchart": {"useMaxWidth": false}, "themeVariables": {"fontSize": "15px"}}}%%
+flowchart TD
+    TITLE(["<b>Page 1 – Overview</b><br/>FIN1 KYC: When is Risk Class 5 assigned?<br/>Steps 15, 16, 17 in Sign-Up (Landing → Get Started)"])
+
+    ROLES["<b>Two roles – different rules</b><br/>• <b>Investor</b> → Page 2 (special pathway possible)<br/>• <b>Trader</b> → Page 3 (score pathway only)"]
+
+    COMMON["<b>Same for both roles (step 17)</b><br/>✓ Total loss risk: Yes<br/>✓ Knowledge test passed<br/>→ Otherwise: final RC 1 (regardless of score)"]
+
+    GATE_INV["<b>Investor – step 16c gate</b><br/>✓ 1–10 transactions (or more)<br/>✓ €1,000–€10,000 invested (or more)<br/>✓ Holding period: days to weeks (or shorter)<br/>→ Without this profile: max. RC 4"]
+
+    GATE_TR["<b>Trader – step 16c gate</b><br/>✓ 50+ transactions<br/>✓ ≥ €10,000 invested<br/>✓ Holding period: minutes to hours<br/>→ Without this profile: max. RC 4"]
+
+    DIFF["<b>Investor vs. Trader differences</b><br/><br/>| | Investor | Trader |<br/>| Path to RC 5 | Score 19–25 <b>or</b> special pathway | score 19–25 only |<br/>| Step 15 | Employment ≠ Unemployed (special pathway) | points only |<br/>| Safety cap | return 10% only | derivatives + return 10% |<br/>| Derivative points | lower weight | higher weight |"]
+
+    OUTCOMES["<b>Possible outcomes (steps 15–17)</b><br/>🟢 <b>RC 5</b> – candidate for platform access<br/>🟠 <b>RC 4</b> – score sufficient, but 16c gate missing<br/>🟠 <b>RC 2</b> – conservative pattern (safety cap)<br/>🔴 <b>RC 1</b> – step 17 not passed<br/>⚪ <b>RC 1–4</b> – score too low"]
+
+    COMPLETE["<b>Completion (page 4)</b><br/>Step <b>22</b> risk note → <b>23</b> RC7 confirmation (RC7 only)<br/>→ <b>24</b> role agreement (trader/investor)<br/>→ complete registration · dashboard"]
+
+    TITLE --> ROLES
+    ROLES --> COMMON
+    COMMON --> GATE_INV
+    COMMON --> GATE_TR
+    GATE_INV --> DIFF
+    GATE_TR --> DIFF
+    DIFF --> OUTCOMES
+    OUTCOMES --> COMPLETE
+
+    classDef title fill:#edf2f7,stroke:#2d3748,stroke-width:2px
+    classDef info fill:#e8f4fc,stroke:#2b6cb0,stroke-width:2px
+    classDef result fill:#e6ffed,stroke:#276749,stroke-width:2px
+    class TITLE title
+    class ROLES,COMMON,GATE_INV,GATE_TR,DIFF,COMPLETE info
+    class OUTCOMES result

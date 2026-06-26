@@ -1,0 +1,33 @@
+%%{init: {"flowchart": {"useMaxWidth": false}, "themeVariables": {"fontSize": "15px"}}}%%
+flowchart TD
+    TITLE(["<b>Seite 1 – Übersicht</b><br/>FIN1 KYC: Wann wird Risikoklasse 5 vergeben?<br/>Schritte 15, 16, 17 im Sign-Up (Landing → Get Started)"])
+
+    ROLES["<b>Zwei Rollen – unterschiedliche Regeln</b><br/>• <b>Investor</b> → Seite 2 (Sonderpfad möglich)<br/>• <b>Trader</b> → Seite 3 (nur Score-Pfad)"]
+
+    COMMON["<b>Für beide Rollen gleich (Schritt 17)</b><br/>✓ Totalverlustrisiko: Ja<br/>✓ Wissenstest bestanden<br/>→ Sonst: finale RC 1 (unabhängig vom Score)"]
+
+    GATE_INV["<b>Investor – Schritt 16c Gate</b><br/>✓ 1–10 Transaktionen (oder mehr)<br/>✓ 1.000–10.000 € investiert (oder mehr)<br/>✓ Haltedauer: Tage bis Wochen (oder kürzer)<br/>→ Ohne dieses Profil: max. RC 4"]
+
+    GATE_TR["<b>Trader – Schritt 16c Gate</b><br/>✓ 50+ Transaktionen<br/>✓ ≥ 10.000 € investiert<br/>✓ Haltedauer: Minuten bis Stunden<br/>→ Ohne dieses Profil: max. RC 4"]
+
+    DIFF["<b>Unterschiede Investor vs. Trader</b><br/><br/>| | Investor | Trader |<br/>| Weg zu RC 5 | Score 19–25 <b>oder</b> Sonderpfad | nur Score 19–25 |<br/>| Schritt 15 | Beschäftigung ≠ Arbeitslos (Sonderpfad) | nur Punkte |<br/>| Sicherheitsdeckel | nur Rendite 10 % | Derivate + Rendite 10 % |<br/>| Derivative-Punkte | niedriger | höher |"]
+
+    OUTCOMES["<b>Mögliche Ergebnisse (Schritte 15–17)</b><br/>🟢 <b>RC 5</b> – Kandidat für Plattform-Zugang<br/>🟠 <b>RC 4</b> – Score reicht, aber 16c-Gate fehlt<br/>🟠 <b>RC 2</b> – konservatives Muster (Schutzdeckel)<br/>🔴 <b>RC 1</b> – Schritt 17 nicht bestanden<br/>⚪ <b>RC 1–4</b> – Score zu niedrig"]
+
+    COMPLETE["<b>Abschluss (Seite 4)</b><br/>Schritt <b>22</b> RK-Hinweis → <b>23</b> RK7-Bestätigung (nur RK7)<br/>→ <b>24</b> Role Agreement (Trader/Investor)<br/>→ Registrierung abschließen · Dashboard"]
+
+    TITLE --> ROLES
+    ROLES --> COMMON
+    COMMON --> GATE_INV
+    COMMON --> GATE_TR
+    GATE_INV --> DIFF
+    GATE_TR --> DIFF
+    DIFF --> OUTCOMES
+    OUTCOMES --> COMPLETE
+
+    classDef title fill:#edf2f7,stroke:#2d3748,stroke-width:2px
+    classDef info fill:#e8f4fc,stroke:#2b6cb0,stroke-width:2px
+    classDef result fill:#e6ffed,stroke:#276749,stroke-width:2px
+    class TITLE title
+    class ROLES,COMMON,GATE_INV,GATE_TR,DIFF,COMPLETE info
+    class OUTCOMES result

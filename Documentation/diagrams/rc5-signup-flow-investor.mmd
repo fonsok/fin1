@@ -1,0 +1,70 @@
+flowchart TD
+    TITLE(["<b>Seite 2 – Investor</b><br/>Wann erhält ein Investor Risikoklasse 5?<br/>Schritte 15, 16, 17"])
+
+    subgraph S15["<b>Schritt 15 – Finanzielle Informationen</b>"]
+        S15A["Dropdown <b>Beschäftigungsstatus</b><br/>Sonderpfad: darf <b>nicht</b> „Arbeitslos“ sein<br/>(Employed, Self-Employed, Student, Retired = OK)"]
+        S15B["Dropdowns <b>Einkommen</b> & <b>liquide Mittel</b><br/>→ 0–12 Score-Punkte<br/>(höher = mehr Punkte, erleichtert Weg 1)"]
+        S15C["Einkommensquellen (Mehrfachauswahl)<br/>Assets +2, Erbe +1, Abfindung +1 Punkte"]
+    end
+
+    subgraph S16["<b>Schritt 16 – Anlageerfahrung</b>"]
+        S16A["a) Aktien, b) ETFs<br/>Anzahl + Betrag → Score-Punkte<br/>(nicht Pflicht, aber hilfreich für Weg 1)"]
+        S16B["<b>c) Zertifikate & Derivate – PFLICHT für RC 5</b>"]
+        S16C["Investor-Gate (Minimum):<br/>✓ Anzahl: <b>1–10</b> (+1 Pkt.) oder höher<br/>✓ Betrag: <b>1.000–10.000 €</b> (+1) oder höher<br/>✓ Haltedauer: <b>Tage bis Wochen</b> (+1 Pkt.) oder kürzer"]
+        S16D["d) Immobilien (+2) / Gold (+1) → Zusatzpunkte"]
+    end
+
+    subgraph S17["<b>Schritt 17 – Gewinnziel & Risikoprüfung</b>"]
+        S17A["Dropdown Rendite:<br/>✓ <b>≥ 50 %</b> (+3 Pkt.) oder <b>≥ 100 %</b> (+5 Pkt.)<br/>✗ <b>≥ 10 %</b> → Sicherheitsdeckel max. RC 2"]
+        S17B["Totalverlustrisiko: <b>Ja</b> bestätigen"]
+        S17C["Wissenstest: <b>alle Fragen richtig</b><br/>Bei Nein oder Fehlern → <b>finale RC 1</b>"]
+    end
+
+    TITLE --> S15A
+    S15A --> PATH
+    S15B --> PATH
+    S15C --> PATH
+    S16A --> PATH
+    S16B --> S16C
+    S16C --> GATE
+    S16D --> PATH
+    S17A --> PATH
+    S17B --> FINAL
+    S17C --> OUT_RC1
+
+    PATH{"<b>Weg 1: Score-Pfad</b><br/>Gesamtpunkte aus Schritten 15–17<br/><b>19–25 Punkte</b> → Kandidat RC 5"}
+
+    PATH -->|"19–25 Punkte"| GATE
+    PATH -->|"weniger als 19"| SPEC
+
+    SPEC{"<b>Weg 2: Investor-Sonderpfad</b><br/>Auch bei niedrigem Score möglich,<br/>wenn <b>alle drei</b> erfüllt:<br/>1. Beschäftigung ≠ Arbeitslos<br/>2. Derivatives-Gate 16c (siehe oben)<br/>3. Rendite ≥ 50 %"}
+
+    SPEC -->|alle ja| GATE
+    SPEC -->|ein Kriterium fehlt| OUT_LOW
+
+    GATE{"<b>Investor-Gate 16c erfüllt?</b><br/>1–10 / 1.000–10.000 € / Tage–Wochen (oder höher)"}
+    GATE -->|nein| OUT_RC4
+    GATE -->|ja| CAP
+
+    CAP{"<b>Investor-Sicherheitsdeckel</b><br/>Rendite nur „≥ 10 %“?"}
+    CAP -->|ja| OUT_RC2
+    CAP -->|nein| FINAL
+
+    FINAL{"<b>Schritt 17 abschließend</b><br/>Totalverlust = Ja<br/>und Wissenstest bestanden?"}
+    FINAL -->|nein| OUT_RC1
+    FINAL -->|ja| OUT_RC5
+
+    OUT_LOW(["<b>Ergebnis: RC 1–4</b><br/>Weder Score 19–25<br/>noch Sonderpfad erfüllt"])
+    OUT_RC4(["<b>Ergebnis: max. RC 4</b><br/>Score/Sonderpfad OK,<br/>aber 16c-Gate fehlt"])
+    OUT_RC2(["<b>Ergebnis: max. RC 2</b><br/>Rendite nur 10 % gewählt"])
+    OUT_RC1(["<b>Finale RC 1</b><br/>Nein zum Totalverlust<br/>oder Wissenstest nicht bestanden"])
+    OUT_RC5(["<b>Finale RC 5 ✓</b><br/>Kandidat für Plattform-Zugang<br/><i>Abschluss: Seite 4 — Schritte 22→23 (RK7) → 24</i>"])
+
+    classDef step fill:#e8f4fc,stroke:#2b6cb0,stroke-width:2px
+    classDef gate fill:#fff7e6,stroke:#c05621,stroke-width:2px
+    classDef ok fill:#e6ffed,stroke:#276749,stroke-width:2px
+    classDef block fill:#fff5f5,stroke:#c53030,stroke-width:2px
+    class S15,S16,S17 step
+    class PATH,SPEC,GATE,CAP,FINAL gate
+    class OUT_RC5 ok
+    class OUT_LOW,OUT_RC4,OUT_RC2,OUT_RC1 block

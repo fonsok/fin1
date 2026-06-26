@@ -1,0 +1,54 @@
+flowchart TD
+    TITLE(["<b>Page 4 – Completion & Role Agreement</b><br/>Steps 22–24 · Phase „Legal & Consent“<br/>Trader & Investor"])
+
+    ENTRY["<b>Entry</b> after steps 18–21<br/>18 AML · 19 Summary (investor)<br/>or 19 Insider + 20 Summary (trader)"]
+
+    subgraph S22["<b>Step 22 – Risk classification note</b><br/>(progress ~20 investor / ~21 trader)"]
+        S22A["RC <b>7</b> (or manually upgraded to RC7)<br/>→ continue registration"]
+        S22B["RC <b>1–6</b> without RC7 upgrade<br/>→ <b>Return to landing</b> (no platform access)"]
+        S22C["Optional: manually select <b>RC 7</b><br/>(risk class picker)"]
+        S22D["Toolbar Back + in-step Back<br/>(footer nav intentionally hidden)"]
+    end
+
+    subgraph S23["<b>Step 23 – RC7 confirmation</b>"]
+        S23A["Only when final RC = <b>7</b>"]
+        S23B["High-risk warning + Legal Gate 1 read-only<br/>(TOS/Privacy from Contact)"]
+        S23C["Button: <b>Continue to agreement</b>"]
+    end
+
+    subgraph S24["<b>Step 24 – Role Agreement (Legal Gate 2)</b><br/>(SignUpStep.roleAgreement)"]
+        S24A["<b>Trader:</b> signal provider agreement<br/><b>Investor:</b> investor agreement"]
+        S24B["Scroll-to-end in document area<br/>+ active checkbox (no pre-selection)"]
+        S24C["<b>recordRoleAgreementConsent</b><br/>Audit: time, IP, version, PDF email"]
+        S24D["Button: <b>Accept and complete registration</b>"]
+        S24E["<b>finalizeRegistration</b><br/>consents + verification → Dashboard"]
+    end
+
+    ORDER["<b>UI order (signupFlowOrder):</b><br/>Summary → RC note → RC7 (if 7) → <b>Terms</b> → Role Agreement<br/><i>Terms (enum 20) comes after the RC block in the flow, not before.</i>"]
+
+    TITLE --> ENTRY
+    ENTRY --> S22A
+    ENTRY --> S22B
+    S22C --> S22A
+    S22A --> S23A
+    S22D -.-> S22A
+    S23A --> S23B
+    S23B --> S23C
+    S23C --> S24A
+    S24A --> S24B
+    S24B --> S24C
+    S24C --> S24D
+    S24D --> S24E
+
+    S24E -.-> ORDER
+
+    classDef step fill:#e8f4fc,stroke:#2b6cb0,stroke-width:2px
+    classDef gate fill:#fff7e6,stroke:#c05621,stroke-width:2px
+    classDef ok fill:#e6ffed,stroke:#276749,stroke-width:2px
+    classDef block fill:#fff5f5,stroke:#c53030,stroke-width:2px
+    classDef hint fill:#faf5ff,stroke:#6b46c1,stroke-width:1px
+    class S22,S23,S24 step
+    class S24B,S24C gate
+    class S24E ok
+    class S22B block
+    class ORDER hint

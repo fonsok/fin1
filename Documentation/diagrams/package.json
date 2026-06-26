@@ -1,0 +1,17 @@
+{
+  "name": "fin1-signup-diagrams",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Build RC5 signup flow diagrams (PDF/SVG/PNG) — 4 pages incl. steps 22–24",
+  "scripts": {
+    "build": "node build-centered-pdfs.mjs",
+    "build:onboarding-epic": "node onboarding-epic-v2/build-epic-pdf.mjs"
+  },
+  "dependencies": {
+    "pdf-lib": "^1.17.1",
+    "pngjs": "^7.0.0"
+  },
+  "devDependencies": {
+    "@mermaid-js/mermaid-cli": "11.4.0"
+  }
+}

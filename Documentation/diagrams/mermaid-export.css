@@ -1,0 +1,22 @@
+html,
+body {
+  margin: 0;
+  padding: 64px;
+  min-width: max-content;
+  min-height: max-content;
+  overflow: visible;
+  box-sizing: border-box;
+  background: #ffffff;
+}
+
+#d,
+body > div,
+.mermaid,
+svg {
+  overflow: visible !important;
+}
+
+svg {
+  display: block;
+  max-width: none !important;
+}
