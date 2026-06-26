@@ -1,6 +1,7 @@
 'use strict';
 
 const { normalizeString } = require('./shared');
+const { isLegalVersionOutdated } = require('../../utils/legalVersionCompare');
 
 const CONSENT_TYPE_TO_USER_FIELDS = {
   terms_of_service: {
@@ -241,11 +242,95 @@ async function persistResolvedRoleAgreementIfNeeded(user, resolved) {
   return true;
 }
 
+const RE_CONSENT_LEGAL_SPECS = [
+  {
+    consentType: 'terms_of_service',
+    documentType: 'terms',
+    acceptedFlag: 'acceptedTerms',
+    versionField: 'acceptedTermsVersion',
+    blocking: true,
+    requiresScrollToAccept: false,
+  },
+  {
+    consentType: 'privacy_policy',
+    documentType: 'privacy',
+    acceptedFlag: 'acceptedPrivacyPolicy',
+    versionField: 'acceptedPrivacyPolicyVersion',
+    blocking: true,
+    requiresScrollToAccept: false,
+  },
+];
+
+/**
+ * Lists consents where stored user version is set and older than active TermsContent.
+ * Legacy users without version columns are not forced into re-consent (grandfather).
+ */
+async function resolveRequiredReConsents(user, options = {}) {
+  const language = normalizeString(options.language || 'de') || 'de';
+  if (!user?.id) {
+    return { required: [] };
+  }
+
+  const required = [];
+
+  for (const spec of RE_CONSENT_LEGAL_SPECS) {
+    if (user.get(spec.acceptedFlag) !== true) {
+      continue;
+    }
+
+    const userVersion = normalizeString(user.get(spec.versionField));
+    if (!userVersion) {
+      continue;
+    }
+
+    const activeVersion = await getCurrentActiveLegalVersion(spec.documentType, language);
+    if (!activeVersion || !isLegalVersionOutdated(userVersion, activeVersion)) {
+      continue;
+    }
+
+    required.push({
+      consentType: spec.consentType,
+      documentType: spec.documentType,
+      activeVersion,
+      userVersion,
+      blocking: spec.blocking,
+      requiresScrollToAccept: spec.requiresScrollToAccept,
+    });
+  }
+
+  const role = normalizeString(user.get('role'))?.toLowerCase();
+  if (role === 'trader' || role === 'investor') {
+    const consentType = ROLE_TO_CONSENT_TYPE[role];
+    const mapping = CONSENT_TYPE_TO_USER_FIELDS[consentType];
+    const documentType = role === 'trader' ? 'trader_agreement' : 'investor_agreement';
+
+    if (user.get(mapping.acceptedFlag) === true) {
+      const userVersion = normalizeString(user.get(mapping.versionField));
+      if (userVersion) {
+        const activeVersion = await getCurrentActiveLegalVersion(documentType, language);
+        if (activeVersion && isLegalVersionOutdated(userVersion, activeVersion)) {
+          required.push({
+            consentType,
+            documentType,
+            activeVersion,
+            userVersion,
+            blocking: true,
+            requiresScrollToAccept: true,
+          });
+        }
+      }
+    }
+  }
+
+  return { required };
+}
+
 module.exports = {
   getCurrentActiveLegalVersion,
   findLatestLegalConsentVersion,
   resolveUserLegalAcceptanceState,
   resolveUserRoleAgreementState,
+  resolveRequiredReConsents,
   persistResolvedLegalAcceptanceIfNeeded,
   persistResolvedRoleAgreementIfNeeded,
   syncParseUserLegalAcceptance,
