@@ -101,6 +101,7 @@ FIN1Tests/SignUpLegalConsentGateTests.swift
 FIN1Tests/SignUpRiskClass5DerivativesGateTests.swift
 FIN1Tests/SignUpRiskClassPersistenceTests.swift
 FIN1Tests/SignUpRoleImmutabilityTests.swift
+FIN1Tests/MockUserService.swift
 FIN1Tests/TermsAcceptanceServiceDeviceConsentTests.swift
 FIN1UITests/SignUpContactStepUITests.swift
 backend/parse-server/cloud/contracts/riskClass5DerivativesGate.json

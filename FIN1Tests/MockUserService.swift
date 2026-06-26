@@ -146,6 +146,37 @@ final class MockUserService: UserServiceProtocol, @unchecked Sendable {
         // Default: no-op
     }
 
+    func applyRiskTolerance(_ riskTolerance: Int) async {
+        await MainActor.run {
+            self.currentUser?.riskTolerance = riskTolerance
+        }
+    }
+
+    func applyOnboardingCompletion(onboardingStep: String) async {
+        await MainActor.run {
+            self.currentUser?.onboardingCompleted = true
+            self.currentUser?.onboardingStep = onboardingStep
+        }
+    }
+
+    func applyRoleAgreementAcceptanceIfNeeded(role: UserRole, version: String?, accepted: Bool) async {
+        guard accepted else { return }
+        await MainActor.run {
+            guard var user = self.currentUser else { return }
+            switch role {
+            case .trader:
+                user.acceptedTraderAgreement = true
+                user.acceptedTraderAgreementVersion = version ?? user.acceptedTraderAgreementVersion
+            case .investor:
+                user.acceptedInvestorAgreement = true
+                user.acceptedInvestorAgreementVersion = version ?? user.acceptedInvestorAgreementVersion
+            default:
+                return
+            }
+            self.currentUser = user
+        }
+    }
+
     func syncToBackend() async {
         // Mock: no-op
     }
