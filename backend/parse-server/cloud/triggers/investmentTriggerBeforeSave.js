@@ -4,6 +4,7 @@ const { newBusinessCaseId } = require('../utils/accountingHelper/businessCaseId'
 const { generateSequentialNumber, generateInvestorInvestmentNumber } = require('../utils/helpers');
 const { getAppServiceChargeRateForAccountType, loadConfig } = require('../utils/configHelper/index.js');
 const { round2 } = require('../utils/accountingHelper/shared');
+const { formatProfileShortDisplayName } = require('../utils/profileDisplayName');
 const { validateInvestmentAmountAgainstLimits } = require('../utils/investmentLimitsValidation');
 const { validatePoolMirrorReservationCapacity } = require('../utils/poolMirrorBuyCap');
 const { isBatchPoolCapValidated } = require('../utils/investmentBatchContext');
@@ -158,7 +159,8 @@ Parse.Cloud.beforeSave('Investment', async (request) => {
         const profile = await profileQuery.first({ useMasterKey: true });
 
         if (profile) {
-          investment.set('traderName', `${profile.get('firstName')} ${profile.get('lastName').charAt(0)}.`);
+          const traderUsername = String(trader.get('username') || '').trim() || 'Trader';
+          investment.set('traderName', formatProfileShortDisplayName(profile, traderUsername));
         }
       }
     } catch (err) {

@@ -1,5 +1,7 @@
 'use strict';
 
+const { formatProfileShortDisplayName } = require('../utils/profileDisplayName');
+
 async function handleDiscoverTraders(request) {
   const { minRiskClass, maxRiskClass, limit = 20, skip = 0 } = request.params || {};
 
@@ -34,7 +36,10 @@ async function handleDiscoverTraders(request) {
     result.push({
       traderId: trader.id,
       username: trader.get('username') || null,
-      displayName: profile ? `${profile.get('firstName')} ${profile.get('lastName').charAt(0)}.` : 'Trader',
+      displayName: formatProfileShortDisplayName(
+        profile,
+        trader.get('username') || 'Trader',
+      ),
       riskClass: risk ? risk.get('riskClass') : null,
       investorCount: activeInvestments.length,
       totalAUM,
