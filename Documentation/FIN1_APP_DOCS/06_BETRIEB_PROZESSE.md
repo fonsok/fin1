@@ -1,7 +1,7 @@
 ---
 title: "FIN1 – Betriebs- und Prozessdokumentation (Runbook)"
 audience: ["Betrieb", "SRE/Ops", "Release Management", "Security"]
-lastUpdated: "2026-05-02"
+lastUpdated: "2026-06-26"
 ---
 
 ## Zweck
@@ -201,14 +201,26 @@ Typisch:
 
 ## 7) CI / Repository-Qualität (GitHub Actions)
 
-Workflow: **`.github/workflows/ci.yml`** (Branches `main` / `master` und zugehörige PRs).
+Zwei Workflows auf `main` / `master` (und zugehörige PRs); **`workflow_dispatch`** auf `ci.yml` für manuelle Läufe.
+
+### `.github/workflows/ci.yml`
 
 | Job | Runner | Inhalt (Kurz) |
 |-----|--------|----------------|
-| **`admin-portal`** | `ubuntu-latest`, Node 20 | Im Verzeichnis `admin-portal/`: `npm ci` → **`npm run lint`** (ESLint 9 Flat Config) → **`npm run test:run`** (Vitest) → **`npm run build`** (`tsc` + Vite; Postbuild synchronisiert `dist/` nach `admin/` im Repo) |
-| **`build-test-lint`** | `macos-14` | SwiftFormat, SwiftLint, Xcode Build & Tests (Simulator), ggf. Danger auf PRs |
+| **`parse-smoke-local-mock`** | `ubuntu-latest` | Repo-Guards (keine getrackten Admin-SPA-Artefakte, kein `configHelper.js`-Shadow, Parse-Naming), Order-Cash-SSOT, lokaler Parse-API-Smoke (`scripts/ci-smoke-local-mock.sh`) |
+| **`parse-server-unit-tests`** | `ubuntu-latest`, Node 20 | `backend/parse-server`: `npm ci` → **`npm test -- --ci`** (volle Jest-Suite) |
+| **`admin-portal`** | `ubuntu-latest`, Node 20 | `admin-portal/`: `npm ci` → **`npm run lint`** → **`npm run test:run`** (Vitest) → **`npm run build`** (Postbuild spiegelt `dist/` nach `admin/`) |
+| **`build-test-lint`** | `macos-15`, Xcode **26.0.1** | SwiftFormat (lint, nur `FIN1*`-Roots), SwiftLint (non-strict), Order-Cash-SSOT, **Release + Staging + Prod** Simulator-Builds, Static Analyzer, Bundle-Size-Check, Prod-xcconfig-Skript, Separation-of-Concerns, **File-Size-Baseline** (`scripts/file-size-baseline.json`, +5 Slack); **Danger** nur auf PRs |
 
-**Release-Hinweis:** Vor einem Release, das das Admin-Web-Portal betrifft, sollte der Job **`admin-portal`** grün sein (keine bewusst ignorierten Lint-/Testfehler). Details zur Portal-Funktion: `FIN1_APP_DOCS/10_ADMIN_PORTAL_REQUIREMENTS.md`; Entwickler-Quickstart: `admin-portal/README.md`.
+**Hinweis:** iOS-**Unit-Tests** (`FIN1Tests` via `scripts/run-ios-tests.sh`) laufen **nicht** in `build-test-lint`, sondern im separaten Workflow unten (schnelleres Feedback, weniger Doppelarbeit).
+
+### `.github/workflows/responsive-design-compliance.yml`
+
+| Job | Runner | Inhalt (Kurz) |
+|-----|--------|----------------|
+| **`responsive-design-compliance`** | `macos-15`, Xcode **26.0.1** | Path-Filter: nur bei Änderungen unter `FIN1/`, Test-Targets, `FIN1.xcodeproj/`, ResponsiveDesign-Skripten → ResponsiveDesign-Check, SwiftLint/SwiftFormat, Debug-Build (generic Simulator), **`FIN1Tests`** (`IOS_TEST_TARGETS=FIN1Tests`). Backend-/Docs-only-Diffs: Job skipped (~Sekunden). |
+
+**Release-Hinweis:** Vor einem Release mit Admin-Portal-Änderungen Job **`admin-portal`** grün. Vor iOS-Release zusätzlich **`responsive-design-compliance`** (bei Swift-Diff) und sinnvollerweise voller **`ci.yml`**-Lauf. Details Portal: `FIN1_APP_DOCS/10_ADMIN_PORTAL_REQUIREMENTS.md`; Quickstart: `admin-portal/README.md`.
 
 ## 8) Admin-Web-Portal (statisches Frontend)
 

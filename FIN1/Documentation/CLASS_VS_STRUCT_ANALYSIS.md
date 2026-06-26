@@ -72,18 +72,15 @@ In Swift, if a class doesn't need inheritance, it should be marked `final` for:
 // ⚠️ CURRENT
 class AuthenticationViewModel: ObservableObject { ... }
 class TradesOverviewViewModel: ObservableObject { ... }
-class BuyOrderViewModel: ObservableObject { ... }
 class DashboardViewModel: ObservableObject { ... }
 class InvestorDiscoveryViewModel: ObservableObject { ... }
 class SecuritiesSearchViewModel: ObservableObject { ... }
 class TraderDepotViewModel: ObservableObject { ... }
-class NewBuyOrderViewModel: ObservableObject { ... }
 
 // ✅ RECOMMENDED
 final class AuthenticationViewModel: ObservableObject { ... }
 final class TradesOverviewViewModel: ObservableObject { ... }
-final class BuyOrderViewModel: ObservableObject { ... }
-// ... etc
+// BuyOrderViewModel: bereits final (Extensions +Types, +Bindings, +Investment, +Placement, …)
 ```
 
 #### Services (Should be final)
@@ -126,9 +123,8 @@ final class SavedSecuritiesFiltersRepository: ObservableObject { ... }
 ## ✅ Already Correct
 
 These classes are already marked `final`:
+- `BuyOrderViewModel: final class` ✅ (SSOT Kauf-Order; Legacy `NewBuyOrderViewModel` / `SimplifiedBuyOrderViewModel` entfernt 2026-06)
 - `InvoiceViewModel: final class` ✅
-- `SimplifiedSellOrderViewModel: final class` ✅
-- `SimplifiedBuyOrderViewModel: final class` ✅
 - `TradingStateStore: final class` ✅
 - `InvestmentDetailViewModel: final class` ✅
 - `InvestmentFormViewModel: final class` ✅

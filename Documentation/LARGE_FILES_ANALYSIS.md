@@ -1,6 +1,6 @@
 # Analyse: Zu große Script-/Code-Dateien (Backend & FIN1 App)
 
-**Stand:** 2026-03-19
+**Stand:** 2026-06-26
 **Kontext:** Cursor Rules (architecture.md) – File Size Limits: Models ≤200, Views ≤300, ViewModels/Services ≤400, Protocols ≤100.
 
 ---
@@ -50,7 +50,8 @@
 | `CustomerSupportService+Tickets.swift` | **548** | Service | 400 | Weitere Extension-Dateien pro Thema (Tickets, Templates, etc.). |
 | `UserServiceProtocol.swift` | **520** | Protocol | 100 | Protocol auf Kern-API reduzieren; erweiterte APIs in `UserServiceProtocol+Extensions`. |
 | `AppServicesBuilder.swift` | **~18** (war 463) | Builder | 400 | Erledigt: Orchestrierung in Hauptdatei; Build in +BuildContext, +Core, +Trader, +Investment, +Remaining. |
-| `BuyOrderViewModel.swift` | **~256** (war 463) | ViewModel | 400 | **Erledigt:** Orchestrierung in Hauptdatei; Logik in +Types, +Bindings, +Investment, +TransactionLimits. |
+| `BuyOrderViewModel.swift` | **~339** (war 463) | ViewModel | 400 | **Erledigt (Orchestrierung):** Extensions +Types, +Bindings, +Investment, +Placement, +TransactionLimits, +Formatting; Hauptdatei noch über 300 — Baseline-grandfathered. |
+| `BuyOrderPlacementService.swift` | **470** | Service | 400 | Grandfathered (Baseline 2026-06); Paired-Buy-Placement — bei Wachstum Placement-Session/Guards weiter auslagern. |
 | `InvoiceService.swift` | **~319** (war 470) | Service | 400 | **Erledigt:** PDF in `InvoicePDFService`; Backfill in `+CompletedTrades`, Validierung in `+Validation`; Kern-CRUD in Hauptdatei. |
 | `OrderManagementService.swift` | **423** | Service | 400 | Nah am Limit; bei Erweiterung Lifecycle vs. API trennen. |
 

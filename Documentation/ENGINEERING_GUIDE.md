@@ -26,18 +26,19 @@
   - Lifecycle/telemetry changes should be validated if behavior changes.
 - **Documented test gaps (non-goals for default CI):** Full E2E against a live Parse host, manual accounting sign-off (IFRS/GOB), and full UI graph coverage are **not** implied by green `ci.yml`. When you touch ledgers, settlements, or compliance flows, extend **Jest** (`backend/parse-server`) and/or **focused `FIN1Tests`** and call out residual risk in the PR.
 - Local commands:
-  - Build & test (simulator):
-    - `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project FIN1.xcodeproj -scheme FIN1 -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 15 Pro' test`
+  - Build & test (simulator, CI parity): `./scripts/run-ios-tests.sh` (optional `IOS_TEST_DESTINATION=…`; siehe `.cursor/rules/ci-cd.md`)
+  - One-off: `xcodebuild -project FIN1.xcodeproj -scheme FIN1 -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 16,OS=<runtime>' test`
 
 #### Linting and Formatting
 - SwiftLint config: `.swiftlint.yml` (enforces DI rules, bans `.shared` in non-root, and default singletons in VM inits).
 - SwiftFormat config: `.swiftformat` (formatting rules in lint mode on CI).
-- Local commands:
-  - `swiftlint --strict`
-  - `swiftformat . --lint`
+- Local commands (same roots as CI — **not** `swiftformat .`, avoids `build/` noise):
+  - `swiftlint` (CI non-strict; `swiftlint --strict` locally for zero-warning burn-down)
+  - `swiftformat FIN1 FIN1Tests FIN1UITests FIN1InvestorTests FIN1CoreRegressionTests --lint`
 
 #### File Size Policy (Permanent)
-- Default engineering guardrail: keep Swift source files at **≤ 300 lines**.
+- Default engineering guardrail: keep **new** Swift source files at **≤ 300 lines**.
+- **CI (`build-test-lint`):** `scripts/check-file-sizes.sh --mode baseline` — grandfathered files in `scripts/file-size-baseline.json` may exceed 300 but not baseline **+5** lines; regenerate after intentional splits: `./scripts/generate-file-size-baseline.sh` (see `Documentation/ARCHITECTURE_GUARDRAILS.md`).
 - When a type grows, split into focused extensions/files by responsibility, e.g.:
   - `Type.swift` (core state, init, protocol conformance surface)
   - `Type+Loading.swift`
@@ -64,12 +65,14 @@
   4. **Merge:** CI grün; Konflikte im Feature-Branch lösen — **kein** Force-Push / History-Rewrite auf `main`.
   5. **Git-Historie:** Bereits auf `origin/main` liegende Bündelungen **nicht** nachträglich per Squash/Rebase umschreiben. Für absichtlich als **zwei Commits** auf `main` gelassene Fixes (Bezug: `cfc62b0`, `c78a7af`): das bleibt der sinnvolle Call; Squash dort ist obsolet, sobald sie im Remote stehen — künftige Arbeit wieder in kleinen PRs führen.
 
-#### CI (GitHub Actions ready)
-- Workflow: `.github/workflows/ci.yml` includes:
-  - **Job `parse-smoke-local-mock`:** among other checks, **`scripts/check-no-tracked-admin-spa-artifacts.sh`** — fails if `admin-portal/dist/` or bundle files under repo-root `admin/` are **tracked** (builds belong on the server / CI artifact only; see `.gitignore` `/admin/`).
-  - **Job `admin-portal`** (Ubuntu, Node 20): `npm ci` → **`npm run lint`** (ESLint 9 Flat Config) → **`npm run test:run`** (Vitest) → **`npm run build`** unter `admin-portal/`.
-  - **Job `build-test-lint`** (macOS): SwiftFormat (lint mode), SwiftLint (strict), Xcode build & tests on iOS Simulator (iPhone 15 Pro), Danger on PRs.
-- If using a different environment, mirror these steps in your CI to keep guardrails.
+#### CI (GitHub Actions)
+- **`.github/workflows/ci.yml`** (push/PR `main`|`master`, `workflow_dispatch`):
+  - **`parse-smoke-local-mock`:** repo guards + local Parse-shaped API smoke; includes **`scripts/check-no-tracked-admin-spa-artifacts.sh`** (fails if `admin-portal/dist/` or repo-root `admin/` bundles are tracked).
+  - **`parse-server-unit-tests`:** `backend/parse-server` → `npm ci` + **`npm test -- --ci`** (full Jest).
+  - **`admin-portal`** (Ubuntu, Node 20): `npm ci` → lint → Vitest → production build.
+  - **`build-test-lint`** (`macos-15`, Xcode 26.0.1): SwiftFormat/SwiftLint (FIN1* roots), Release/Staging/Prod simulator builds, static analyzer, bundle size, file-size baseline, SoC validation; **Danger** on PRs only. **No iOS unit tests** in this job.
+- **`.github/workflows/responsive-design-compliance.yml`:** path-filtered iOS pipeline — ResponsiveDesign check, SwiftLint/SwiftFormat, Debug build, **`FIN1Tests`** via `scripts/run-ios-tests.sh` when Swift/xcodeproj changes; skipped for backend/docs-only diffs.
+- Green `ci.yml` alone does **not** imply full UI/E2E coverage; extend Jest/`FIN1Tests` when touching regulated flows (see **Documented test gaps** above).
 
 #### Deploy — Happy-Path Lesepfad (Index)
 - Ziele/Hosts/IPs: **`Documentation/OPERATIONAL_DEPLOY_HOSTS.md`**
