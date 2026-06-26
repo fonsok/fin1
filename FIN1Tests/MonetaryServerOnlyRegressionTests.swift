@@ -112,7 +112,6 @@ private final class ProdMonetaryConfigurationStub: ObservableObject, Configurati
     var appCommissionRate: Double { 0.05 }
     var investorCommissionRateTotal: Double { 0.1 }
     var appServiceChargeRate: Double { 0.02 }
-    var isAdminMode: Bool { false }
     var showCommissionBreakdownInCreditNote: Bool { false }
     var maximumRiskExposurePercent: Double { 2 }
     var walletFeatureEnabled: Bool { false }

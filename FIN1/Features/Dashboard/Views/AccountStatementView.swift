@@ -77,6 +77,9 @@ struct AccountStatementView: View {
         .task {
             self.viewModel.refresh()
         }
+        .refreshable {
+            self.viewModel.refresh()
+        }
         .alert("Account Statement Generated", isPresented: self.$showGenerationSuccess) {
             Button("OK") { }
         } message: {
@@ -226,7 +229,9 @@ struct AccountStatementView: View {
     }
 
     private func openReferencedDocument(for entry: AccountStatementEntry) {
-        if let cached = entry.referencedDocument(documentService: services.documentService) {
+        if let cached = entry.referencedDocument(documentService: services.documentService),
+           cached.matchesBelegReference(for: entry),
+           !cached.needsTraderBelegSnapshotRefresh {
             self.selectedDocument = cached
             return
         }

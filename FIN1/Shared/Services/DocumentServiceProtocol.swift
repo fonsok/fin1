@@ -270,7 +270,11 @@ final class DocumentService: DocumentServiceProtocol, ServiceLifecycle, @uncheck
         guard !incoming.isEmpty else { return }
         var merged = Dictionary(uniqueKeysWithValues: self.documents.map { ($0.id, $0) })
         for doc in incoming where DocumentInboxPolicy.isDisplayableInNotificationsInbox(doc) {
-            merged[doc.id] = doc
+            if let existing = merged[doc.id] {
+                merged[doc.id] = Document.mergedPreservingTraderBelegSSOT(existing: existing, incoming: doc)
+            } else {
+                merged[doc.id] = doc
+            }
         }
         self.documents = Self.sanitizeInboxDocuments(Array(merged.values))
         self.lastInboxRefreshAt = Date()
@@ -391,7 +395,7 @@ final class DocumentService: DocumentServiceProtocol, ServiceLifecycle, @uncheck
             throw DocumentDeepLinkResolveError.backendUnavailable
         }
 
-        if let cached = getDocument(by: id) {
+        if let cached = getDocument(by: id), !cached.needsTraderBelegSnapshotRefresh {
             return cached
         }
 

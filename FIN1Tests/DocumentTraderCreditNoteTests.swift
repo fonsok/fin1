@@ -33,6 +33,53 @@ final class DocumentTraderCreditNoteTests: XCTestCase {
         XCTAssertEqual(doc.traderCreditNoteNavigationTitle, "Gutschrift (Trade #042)")
     }
 
+    func testResolvesCommissionAmountFromMetadataWhenInvoiceMissing() {
+        let metadata = TraderCollectionBillBelegMetadata(
+            belegSchemaVersion: nil,
+            belegKind: nil,
+            belegLabel: nil,
+            traderId: "trader1",
+            traderDisplayName: nil,
+            traderUsername: nil,
+            executionType: nil,
+            symbol: nil,
+            instrumentLine: nil,
+            amount: nil,
+            quantity: nil,
+            price: nil,
+            orderId: nil,
+            sellOrderId: nil,
+            wkn: nil,
+            fees: nil,
+            totalWithFees: nil,
+            valueDate: nil,
+            closingDate: nil,
+            tradingVenue: nil,
+            tradeNumber: 1,
+            tradeStatus: nil,
+            generatedAt: nil,
+            partialSell: nil,
+            commissionAmount: 71.89,
+            commissionRate: 0.05,
+            grossProfit: 1_437.78,
+            netProfit: 1_365.89
+        )
+        let doc = Document(
+            userId: "trader1",
+            name: "CN-2026-0000001",
+            type: .traderCreditNote,
+            status: .verified,
+            fileURL: "",
+            size: 1,
+            uploadedAt: Date(),
+            tradeId: "trade-abc",
+            tradeNumber: 1,
+            documentNumber: "CN-2026-0000001",
+            traderCollectionBillMetadata: metadata
+        )
+        XCTAssertEqual(doc.resolvedTraderCreditNoteCommissionAmount ?? 0, 71.89, accuracy: 0.01)
+    }
+
     private static func makeCreditNote(
         tradeNumber: Int?,
         name: String,

@@ -16,6 +16,18 @@ jest.mock('../tradingIdentity', () => ({
   getUserStableId: jest.fn(() => 'trader-stable-1'),
 }));
 
+jest.mock('../../functions/legal/legalConsentUserSync', () => ({
+  resolveUserLegalAcceptanceState: jest.fn(async () => ({
+    acceptedTerms: true,
+    acceptedPrivacyPolicy: true,
+  })),
+  resolveUserRoleAgreementState: jest.fn(async () => ({
+    required: true,
+    accepted: true,
+    role: 'trader',
+  })),
+}));
+
 jest.mock('../../utils/helpers', () => ({
   calculateOrderFees: jest.fn(() => ({
     orderFee: 5,
@@ -26,7 +38,14 @@ jest.mock('../../utils/helpers', () => ({
 }));
 
 function makeUser(role = 'trader') {
-  return { get: (k) => (k === 'role' ? role : null) };
+  return {
+    id: 'trader-user-1',
+    get: (k) => {
+      if (k === 'role') return role;
+      if (k === 'onboardingCompleted') return true;
+      return null;
+    },
+  };
 }
 
 function makeOrder(attrs = {}) {

@@ -126,6 +126,25 @@ final class AccountStatementViewModel: ObservableObject {
                 self.refresh()
             }
             .store(in: &self.cancellables)
+
+        // Trader commission settled / document inbox refreshed (CN- Gutschrift after trade completion)
+        NotificationCenter.default.publisher(for: .commissionSettled)
+            .merge(with: NotificationCenter.default.publisher(for: .userDocumentInboxShouldRefresh))
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] notification in
+                guard let self = self,
+                      let currentUser = self.userService.currentUser,
+                      currentUser.role == .trader else {
+                    return
+                }
+                if let userInfo = notification.userInfo,
+                   let targetUserId = userInfo["userId"] as? String,
+                   targetUserId != currentUser.id {
+                    return
+                }
+                self.refresh()
+            }
+            .store(in: &self.cancellables)
     }
 
     // MARK: - Intent

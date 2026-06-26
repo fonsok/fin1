@@ -28,6 +28,11 @@ struct TraderCollectionBillBelegMetadata: Codable, Equatable, Hashable, Sendable
     let tradeStatus: String?
     let generatedAt: String?
     let partialSell: PartialSell?
+    /// Trader Gutschrift (CN-): net commission booked on Personenkonto.
+    let commissionAmount: Double?
+    let commissionRate: Double?
+    let grossProfit: Double?
+    let netProfit: Double?
 
     struct Fees: Codable, Equatable, Hashable, Sendable {
         let orderFee: BelegEURMoney?
@@ -81,6 +86,10 @@ struct TraderCollectionBillBelegMetadata: Codable, Equatable, Hashable, Sendable
         case tradeStatus
         case generatedAt
         case partialSell
+        case commissionAmount
+        case commissionRate
+        case grossProfit
+        case netProfit
     }
 
     init(
@@ -107,7 +116,11 @@ struct TraderCollectionBillBelegMetadata: Codable, Equatable, Hashable, Sendable
         tradeNumber: Int?,
         tradeStatus: String?,
         generatedAt: String?,
-        partialSell: PartialSell?
+        partialSell: PartialSell?,
+        commissionAmount: Double? = nil,
+        commissionRate: Double? = nil,
+        grossProfit: Double? = nil,
+        netProfit: Double? = nil
     ) {
         self.belegSchemaVersion = belegSchemaVersion
         self.belegKind = belegKind
@@ -133,6 +146,10 @@ struct TraderCollectionBillBelegMetadata: Codable, Equatable, Hashable, Sendable
         self.tradeStatus = tradeStatus
         self.generatedAt = generatedAt
         self.partialSell = partialSell
+        self.commissionAmount = commissionAmount
+        self.commissionRate = commissionRate
+        self.grossProfit = grossProfit
+        self.netProfit = netProfit
     }
 
     init(from decoder: Decoder) throws {
@@ -167,6 +184,10 @@ struct TraderCollectionBillBelegMetadata: Codable, Equatable, Hashable, Sendable
         self.tradeStatus = try container.decodeIfPresent(String.self, forKey: .tradeStatus)
         self.generatedAt = try container.decodeIfPresent(String.self, forKey: .generatedAt)
         self.partialSell = try container.decodeIfPresent(PartialSell.self, forKey: .partialSell)
+        self.commissionAmount = try container.decodeIfPresent(Double.self, forKey: .commissionAmount)
+        self.commissionRate = try container.decodeIfPresent(Double.self, forKey: .commissionRate)
+        self.grossProfit = try container.decodeIfPresent(Double.self, forKey: .grossProfit)
+        self.netProfit = try container.decodeIfPresent(Double.self, forKey: .netProfit)
     }
 
     func encode(to encoder: Encoder) throws {
@@ -195,6 +216,10 @@ struct TraderCollectionBillBelegMetadata: Codable, Equatable, Hashable, Sendable
         try container.encodeIfPresent(self.tradeStatus, forKey: .tradeStatus)
         try container.encodeIfPresent(self.generatedAt, forKey: .generatedAt)
         try container.encodeIfPresent(self.partialSell, forKey: .partialSell)
+        try container.encodeIfPresent(self.commissionAmount, forKey: .commissionAmount)
+        try container.encodeIfPresent(self.commissionRate, forKey: .commissionRate)
+        try container.encodeIfPresent(self.grossProfit, forKey: .grossProfit)
+        try container.encodeIfPresent(self.netProfit, forKey: .netProfit)
     }
 
     var normalizedExecutionType: String? {

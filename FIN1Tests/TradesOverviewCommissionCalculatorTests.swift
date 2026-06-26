@@ -101,6 +101,65 @@ final class TradesOverviewCommissionCalculatorTests: XCTestCase {
         XCTAssertEqual(amount, 250.5, accuracy: 0.01)
     }
 
+    func testMetadataCommissionUsedWhenInvoiceDataMissing() async {
+        let documents = MockDocumentService()
+        let doc = Document(
+            userId: self.traderId,
+            name: "CN-2026-0000001",
+            type: .traderCreditNote,
+            status: .verified,
+            fileURL: "file://credit",
+            size: 100,
+            uploadedAt: Date(),
+            tradeId: "trade-meta",
+            tradeNumber: 1,
+            traderCollectionBillMetadata: TraderCollectionBillBelegMetadata(
+                belegSchemaVersion: nil,
+                belegKind: nil,
+                belegLabel: nil,
+                traderId: self.traderId,
+                traderDisplayName: nil,
+                traderUsername: nil,
+                executionType: nil,
+                symbol: nil,
+                instrumentLine: nil,
+                amount: nil,
+                quantity: nil,
+                price: nil,
+                orderId: nil,
+                sellOrderId: nil,
+                wkn: nil,
+                fees: nil,
+                totalWithFees: nil,
+                valueDate: nil,
+                closingDate: nil,
+                tradingVenue: nil,
+                tradeNumber: 1,
+                tradeStatus: nil,
+                generatedAt: nil,
+                partialSell: nil,
+                commissionAmount: 71.89,
+                commissionRate: 0.05,
+                grossProfit: nil,
+                netProfit: nil
+            )
+        )
+        documents.documents = [doc]
+
+        let calculator = TradesOverviewCommissionCalculator(
+            invoiceService: nil,
+            tradeService: nil,
+            poolTradeParticipationService: nil,
+            commissionCalculationService: nil,
+            settlementAPIService: nil,
+            documentService: documents
+        )
+
+        await calculator.refreshCommissionCache(traderId: self.traderId)
+        let amount = await calculator.calculateCommission(tradeId: "trade-meta", hasProfit: true)
+        XCTAssertEqual(amount, 71.89, accuracy: 0.01)
+    }
+
     func testNoProfitReturnsZeroWithoutLookup() async {
         let documents = MockDocumentService()
         documents.documents = [

@@ -100,7 +100,6 @@ extension CollectionBillDocumentViewModel {
         )
 
         trade = tradeOverview
-        isLoading = false
     }
 
     func extractTradeNumberFromDocumentName(_ name: String) -> Int? {

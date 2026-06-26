@@ -36,6 +36,7 @@ struct QuantityInputField: View {
     let onSubmit: (() -> Void)?
     let maxValueWarning: MaxValueWarning?
     let errorMessage: String?
+    let isEditable: Bool
 
     struct MaxValueWarning {
         let enteredValue: Int
@@ -50,7 +51,8 @@ struct QuantityInputField: View {
         accessibilityHint: String,
         onSubmit: (() -> Void)? = nil,
         maxValueWarning: MaxValueWarning? = nil,
-        errorMessage: String? = nil
+        errorMessage: String? = nil,
+        isEditable: Bool = true
     ) {
         self._text = text
         self.isFocused = isFocused
@@ -60,6 +62,7 @@ struct QuantityInputField: View {
         self.onSubmit = onSubmit
         self.maxValueWarning = maxValueWarning
         self.errorMessage = errorMessage
+        self.isEditable = isEditable
     }
 
     var body: some View {
@@ -93,6 +96,8 @@ struct QuantityInputField: View {
                     .accessibilityIdentifier("QuantityInputField")
                     .accessibilityLabel(self.accessibilityLabel)
                     .accessibilityHint(self.accessibilityHint)
+                    .disabled(!self.isEditable)
+                    .opacity(self.isEditable ? 1 : 0.75)
 
                     // Custom placeholder
                     if self.text.isEmpty {

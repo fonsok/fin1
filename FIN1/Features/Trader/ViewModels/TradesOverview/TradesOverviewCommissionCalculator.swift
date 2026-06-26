@@ -130,8 +130,7 @@ final class TradesOverviewCommissionCalculator {
         for document in documentService.getDocuments(for: traderId) {
             guard document.type == .traderCreditNote,
                   let tradeId = document.tradeId,
-                  let invoice = document.invoiceData,
-                  let gross = TradesOverviewCommissionAmounts.grossCommission(from: invoice),
+                  let gross = document.resolvedTraderCreditNoteCommissionAmount,
                   gross > 0 else { continue }
             map[tradeId] = gross
         }

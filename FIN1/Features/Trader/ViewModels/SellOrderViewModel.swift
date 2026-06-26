@@ -31,8 +31,42 @@ final class SellOrderViewModel: ObservableObject, LimitOrderMonitor {
     let holding: DepotHolding
     private let traderService: any TraderServiceProtocol
     private let userService: (any UserServiceProtocol)?
+    private let maxPartialSells: Int
     private nonisolated(unsafe) var cancellables = Set<AnyCancellable>()
     private nonisolated(unsafe) var timerCancellable: AnyCancellable?
+
+    /// Teil-Verkaufs-Limit (Admin `maxTraderPartialSells`, 0–3).
+    var effectiveMaxPartialSells: Int {
+        min(3, max(0, self.maxPartialSells))
+    }
+
+    /// Letzter erlaubter Teil-Verkauf — Restposition muss vollständig verkauft werden.
+    var mustSellFullRemaining: Bool {
+        let maxAllowed = self.effectiveMaxPartialSells
+        if maxAllowed == 0 { return true }
+        let events = self.holding.traderPartialSellEventCount ?? 0
+        return events >= maxAllowed - 1
+    }
+
+    var quantityInputLocked: Bool {
+        self.mustSellFullRemaining
+    }
+
+    var partialSellLimitInfoMessage: String? {
+        guard self.mustSellFullRemaining, self.maxQuantity > 0 else { return nil }
+        let maxAllowed = self.effectiveMaxPartialSells
+        if maxAllowed == 0 {
+            return "Teil-Verkäufe sind deaktiviert: bitte die gesamte Restposition verkaufen."
+        }
+        let events = self.holding.traderPartialSellEventCount ?? 0
+        if events >= maxAllowed {
+            return "Teil-Verkaufs-Limit (\(maxAllowed)) erreicht: verbleibende "
+                + "\(self.maxQuantity.formattedAsLocalizedInteger()) St. müssen vollständig verkauft werden — "
+                + "danach ist das Depot leer."
+        }
+        return "Teil-Verkaufs-Limit (\(maxAllowed) erlaubt): dieser Verkauf (Nr. \(events + 1)) muss alle verbleibenden "
+            + "\(self.maxQuantity.formattedAsLocalizedInteger()) Stück umfassen — das Depot wird danach geleert."
+    }
 
     // MARK: - Current Trader ID
     /// Returns the current trader's ID from the user service
@@ -96,12 +130,18 @@ final class SellOrderViewModel: ObservableObject, LimitOrderMonitor {
     }
 
     // MARK: - Initialization
-    init(holding: DepotHolding, traderService: any TraderServiceProtocol, userService: (any UserServiceProtocol)? = nil) {
+    init(
+        holding: DepotHolding,
+        traderService: any TraderServiceProtocol,
+        userService: (any UserServiceProtocol)? = nil,
+        maxPartialSells: Int = 3
+    ) {
         self.holding = holding
         self.traderService = traderService
         self.userService = userService
+        self.maxPartialSells = maxPartialSells
 
-        // Set default quantity to all remaining shares
+        // Default quantity: full remaining (required on last allowed partial sell)
         self.quantityText = String(holding.remainingQuantity)
 
         // Initialize current bid price with holding's geldKurs
@@ -166,6 +206,11 @@ final class SellOrderViewModel: ObservableObject, LimitOrderMonitor {
 
     // MARK: - Public Methods
     func validateAndCorrectQuantity() {
+        if self.mustSellFullRemaining {
+            self.quantityText = String(self.maxQuantity)
+            return
+        }
+
         let enteredQuantity = OrderCalculationUtility.parseGermanQuantity(self.quantityText)
 
         // Auto-correct if quantity exceeds maximum
@@ -335,12 +380,12 @@ final class SellOrderViewModel: ObservableObject, LimitOrderMonitor {
         self.timerCancellable?.cancel()
         self.priceValidityProgress = 1.0
 
-        self.timerCancellable = Timer.publish(every: 0.05, on: .main, in: .common)
+        self.timerCancellable = Timer.publish(every: 0.25, on: .main, in: .common)
             .autoconnect()
             .sink { [weak self] _ in
                 guard let self = self else { return }
 
-                let decrement = 0.05 / 5.0 // 5 seconds duration
+                let decrement = 0.25 / 8.0 // 8 s staleness ramp, 4 Hz (matches buy order)
                 self.priceValidityProgress -= decrement
 
                 if self.priceValidityProgress <= 0 {

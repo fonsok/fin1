@@ -33,6 +33,8 @@ struct DepotHolding: Identifiable {
     let totalValue: Double
     let denomination: Int?
     let subscriptionRatio: Double?
+    /// Server SSOT (`Trade.traderPartialSellEventCount`) — für Teil-Verkaufs-Limit UI.
+    let traderPartialSellEventCount: Int?
 
     init(
         orderId: String?,
@@ -53,7 +55,8 @@ struct DepotHolding: Identifiable {
         remainingQuantity: Int,
         totalValue: Double,
         denomination: Int? = nil,
-        subscriptionRatio: Double? = nil
+        subscriptionRatio: Double? = nil,
+        traderPartialSellEventCount: Int? = nil
     ) {
         self.orderId = orderId
         self.tradeId = tradeId
@@ -74,6 +77,7 @@ struct DepotHolding: Identifiable {
         self.totalValue = totalValue
         self.denomination = denomination
         self.subscriptionRatio = subscriptionRatio
+        self.traderPartialSellEventCount = traderPartialSellEventCount
     }
 
     // Computed properties for partial sales
@@ -157,7 +161,8 @@ struct DepotHolding: Identifiable {
             remainingQuantity: newRemainingQuantity,
             totalValue: self.totalValue,
             denomination: self.denomination,
-            subscriptionRatio: self.subscriptionRatio
+            subscriptionRatio: self.subscriptionRatio,
+            traderPartialSellEventCount: self.traderPartialSellEventCount
         )
     }
 }

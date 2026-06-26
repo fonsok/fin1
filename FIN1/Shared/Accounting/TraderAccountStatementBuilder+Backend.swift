@@ -26,18 +26,25 @@ extension TraderAccountStatementBuilder {
 
         let fetchResult = await fetchAllBackendEntries(settlementAPIService: settlementAPIService)
         if fetchResult.entries.isEmpty {
-            if serverOnly {
+            if fetchResult.fetchFailed, serverOnly {
                 print("⚠️ TraderAccountStatementBuilder: \(TraderMonetaryMessages.accountStatementUnavailable)")
+                return self.emptyServerOnlySnapshot(openingBalance: openingBalance)
+            }
+            if serverOnly {
                 return self.emptyServerOnlySnapshot(openingBalance: openingBalance)
             }
             return buildSnapshot(for: user, invoiceService: invoiceService, configurationService: configurationService)
         }
 
         if fetchResult.entries.contains(where: { $0.source == "customer_display" }) {
-            return self.buildSnapshotFromCustomerDisplayBackend(
+            let snapshot = self.buildSnapshotFromCustomerDisplayBackend(
                 entries: fetchResult.entries,
                 openingBalance: openingBalance,
                 timelineTruncated: fetchResult.timelineTruncated
+            )
+            return await self.mergeMissingCommissionCredits(
+                into: snapshot,
+                settlementAPIService: settlementAPIService
             )
         }
 
@@ -135,6 +142,7 @@ extension TraderAccountStatementBuilder {
             ?? entry.description
 
         return AccountStatementEntry(
+            id: Self.stableEntryId(from: entry.objectId),
             title: title,
             subtitle: subtitle,
             occurredAt: occurredAt,
@@ -152,6 +160,7 @@ extension TraderAccountStatementBuilder {
     private struct BackendEntriesFetchResult {
         let entries: [BackendAccountEntry]
         let timelineTruncated: Bool
+        let fetchFailed: Bool
     }
 
     /// Same amounts as **Kontoauszug** `commission_credit` rows — fetched with `entryType` filter (not full timeline).
@@ -165,6 +174,45 @@ extension TraderAccountStatementBuilder {
             totals[tradeId, default: 0] += abs(entry.amount)
         }
         return totals
+    }
+
+    /// Ensures `commission_credit` rows from the filtered API are present even when the merged timeline omits them.
+    private static func mergeMissingCommissionCredits(
+        into snapshot: TraderAccountStatementSnapshot,
+        settlementAPIService: any SettlementAPIServiceProtocol
+    ) async -> TraderAccountStatementSnapshot {
+        let creditBackendRows = await fetchCommissionCreditBackendEntries(settlementAPIService: settlementAPIService)
+        guard !creditBackendRows.isEmpty else { return snapshot }
+
+        let existingObjectIds = Set(snapshot.entries.compactMap(\.reference))
+        let existingDocumentNumbers = Set(
+            snapshot.entries.compactMap(\.referenceDocumentNumber).filter { !$0.isEmpty }
+        )
+
+        var extras: [AccountStatementEntry] = []
+        for row in creditBackendRows {
+            let objectId = row.objectId
+            let documentNumber = row.referenceDocumentNumber ?? ""
+            if existingObjectIds.contains(objectId) { continue }
+            if !documentNumber.isEmpty, existingDocumentNumbers.contains(documentNumber) { continue }
+            guard let converted = convertCustomerDisplayBackendEntry(row) else { continue }
+            extras.append(converted)
+        }
+
+        guard !extras.isEmpty else { return snapshot }
+
+        let merged = snapshot.entries + extras
+        let recalculated = recalculateBalanceAfter(entries: merged, openingBalance: snapshot.openingBalance)
+        return TraderAccountStatementSnapshot(
+            entries: AccountStatementEntry.sortedForChronologicalDisplay(recalculated),
+            openingBalance: snapshot.openingBalance,
+            closingBalance: recalculated.last?.balanceAfter ?? snapshot.closingBalance,
+            timelineTruncated: snapshot.timelineTruncated
+        )
+    }
+
+    private static func stableEntryId(from objectId: String) -> UUID {
+        UUID(uuidString: objectId) ?? UUID()
     }
 
     /// Paginated `getAccountStatement(entryType: commission_credit)` with full-timeline fallback.
@@ -232,9 +280,9 @@ extension TraderAccountStatementBuilder {
                 }
                 if !response.hasMore || response.entries.isEmpty { break }
             } while skip < 2_000
-            return BackendEntriesFetchResult(entries: all, timelineTruncated: timelineTruncated)
+            return BackendEntriesFetchResult(entries: all, timelineTruncated: timelineTruncated, fetchFailed: false)
         } catch {
-            return BackendEntriesFetchResult(entries: [], timelineTruncated: false)
+            return BackendEntriesFetchResult(entries: [], timelineTruncated: false, fetchFailed: true)
         }
     }
 }

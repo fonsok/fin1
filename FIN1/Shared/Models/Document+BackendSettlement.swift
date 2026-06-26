@@ -24,8 +24,61 @@ extension Document {
             uploadedAt: Date(),
             tradeId: backend.tradeId,
             investmentId: backend.investmentId,
-            documentNumber: backend.accountingDocumentNumber
+            documentNumber: backend.accountingDocumentNumber,
+            accountingSummaryText: backend.accountingSummaryText,
+            traderCollectionBillMetadata: backend.traderCollectionBillMetadata
         )
+    }
+
+    /// Keeps GoB SSOT fields when settlement sync merges a sparse row over a richer inbox cache entry.
+    static func mergedPreservingTraderBelegSSOT(existing: Document, incoming: Document) -> Document {
+        let summary = Self.preferredNonEmptyText(incoming.accountingSummaryText, existing.accountingSummaryText)
+        let metadata: TraderCollectionBillBelegMetadata? = {
+            if incoming.traderCollectionBillMetadata?.isUsableForDisplay == true {
+                return incoming.traderCollectionBillMetadata
+            }
+            if existing.traderCollectionBillMetadata?.isUsableForDisplay == true {
+                return existing.traderCollectionBillMetadata
+            }
+            return incoming.traderCollectionBillMetadata ?? existing.traderCollectionBillMetadata
+        }()
+        let displayName = incoming.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            ? existing.name
+            : incoming.name
+        return Document(
+            id: incoming.id,
+            userId: incoming.userId.isEmpty ? existing.userId : incoming.userId,
+            name: displayName,
+            type: incoming.type,
+            status: incoming.status,
+            fileURL: Self.preferredNonEmptyText(incoming.fileURL, existing.fileURL) ?? "",
+            size: incoming.size > 0 ? incoming.size : existing.size,
+            uploadedAt: incoming.uploadedAt,
+            verifiedAt: incoming.verifiedAt ?? existing.verifiedAt,
+            expiresAt: incoming.expiresAt ?? existing.expiresAt,
+            invoiceData: existing.invoiceData,
+            tradeId: incoming.tradeId ?? existing.tradeId,
+            tradeNumber: incoming.tradeNumber ?? existing.tradeNumber,
+            investmentId: incoming.investmentId ?? existing.investmentId,
+            statementYear: incoming.statementYear ?? existing.statementYear,
+            statementMonth: incoming.statementMonth ?? existing.statementMonth,
+            statementRole: incoming.statementRole ?? existing.statementRole,
+            documentNumber: Self.preferredNonEmptyText(
+                incoming.documentNumber,
+                existing.documentNumber
+            ),
+            traderCommissionRateSnapshot: incoming.traderCommissionRateSnapshot
+                ?? existing.traderCommissionRateSnapshot,
+            accountingSummaryText: summary,
+            traderCollectionBillMetadata: metadata
+        )
+    }
+
+    private static func preferredNonEmptyText(_ primary: String?, _ fallback: String?) -> String? {
+        let trimmedPrimary = primary?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !trimmedPrimary.isEmpty { return trimmedPrimary }
+        let trimmedFallback = fallback?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmedFallback.isEmpty ? nil : trimmedFallback
     }
 
     init(backendCollectionBill backend: BackendCollectionBill) {

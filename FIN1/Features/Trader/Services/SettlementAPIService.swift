@@ -157,10 +157,54 @@ struct BackendSettlementDocument: Decodable, Identifiable {
     let tradeId: String?
     let investmentId: String?
     let accountingDocumentNumber: String?
+    /// GoB Klartext (`traderCollectionBillBelegSnapshot` → Parse `accountingSummaryText`).
+    let accountingSummaryText: String?
+    /// Investor settlement / commission metadata (non-trader bills).
     let metadata: BackendDocumentMetadata?
+    /// Trader TBC/TSC structured beleg (`Document.metadata` SSOT).
+    let traderCollectionBillMetadata: TraderCollectionBillBelegMetadata?
     let source: String?
 
     var id: String { self.objectId }
+
+    enum CodingKeys: String, CodingKey {
+        case objectId
+        case userId
+        case type
+        case name
+        case tradeId
+        case investmentId
+        case accountingDocumentNumber
+        case accountingSummaryText
+        case metadata
+        case source
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.objectId = try container.decode(String.self, forKey: .objectId)
+        self.userId = try container.decodeIfPresent(String.self, forKey: .userId) ?? ""
+        self.type = try container.decodeIfPresent(String.self, forKey: .type) ?? DocumentType.other.rawValue
+        self.name = try container.decodeIfPresent(String.self, forKey: .name) ?? "Document"
+        self.tradeId = try container.decodeIfPresent(String.self, forKey: .tradeId)
+        self.investmentId = try container.decodeIfPresent(String.self, forKey: .investmentId)
+        self.accountingDocumentNumber = try container.decodeIfPresent(String.self, forKey: .accountingDocumentNumber)
+        self.accountingSummaryText = try container.decodeIfPresent(String.self, forKey: .accountingSummaryText)
+        self.source = try container.decodeIfPresent(String.self, forKey: .source)
+
+        let normalizedType = self.type.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        if normalizedType == DocumentType.traderCollectionBill.rawValue.lowercased()
+            || normalizedType == "trade_execution_document" {
+            self.traderCollectionBillMetadata = try container.decodeIfPresent(
+                TraderCollectionBillBelegMetadata.self,
+                forKey: .metadata
+            )
+            self.metadata = nil
+        } else {
+            self.metadata = try container.decodeIfPresent(BackendDocumentMetadata.self, forKey: .metadata)
+            self.traderCollectionBillMetadata = nil
+        }
+    }
 }
 
 struct BackendDocumentMetadataInvestorLine: Decodable {

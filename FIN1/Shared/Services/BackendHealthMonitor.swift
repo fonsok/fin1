@@ -280,3 +280,15 @@ extension BackendHealthMonitor {
         }
     }
 }
+
+#if DEBUG
+extension BackendHealthMonitor {
+    /// Resets shared health state so unit tests are not coupled to prior network checks.
+    func resetToHealthyForUnitTests() {
+        self.isHealthy = true
+        self.lastHealthCheck = Date()
+        self.lastError = nil
+        self.consecutiveFailures = 0
+    }
+}
+#endif

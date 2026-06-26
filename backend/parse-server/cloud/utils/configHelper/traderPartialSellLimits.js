@@ -86,6 +86,35 @@ async function assertTraderPartialSellWithinLimit(trade, previousTrade, maxOverr
     return;
   }
 
+  if (newCount > prevCount) {
+    const prevSold = previousTrade ? deriveSoldQuantity(previousTrade) : 0;
+    const prevRemaining = Math.max(0, buyQty - prevSold);
+    const thisSellQty = soldQty - prevSold;
+    const sellsAllRemaining = prevRemaining > QTY_EPS && thisSellQty >= prevRemaining - QTY_EPS;
+
+    // Last allowed slot (N von N): must sell entire remaining position.
+    if (max > 0 && prevCount === max - 1 && buyQty > 0 && soldQty < buyQty - QTY_EPS && !sellsAllRemaining) {
+      throw new Parse.Error(
+        Parse.Error.INVALID_VALUE,
+        `Der ${max}. Teil-Verkauf (letzter erlaubter) muss die gesamte Restposition verkaufen `
+        + `(${prevRemaining} St.). `
+        + 'Eine kleinere Menge ist nach Erreichen des Teil-Verkaufs-Limits nicht möglich.',
+      );
+    }
+
+    // Limit already exhausted but depot still open (legacy rows): only full remaining exit allowed.
+    if (max > 0 && prevCount >= max && prevRemaining > QTY_EPS) {
+      if (!sellsAllRemaining) {
+        throw new Parse.Error(
+          Parse.Error.INVALID_VALUE,
+          `Teil-Verkaufs-Limit (${max}) erreicht. Verbleibende ${prevRemaining} St. `
+          + 'müssen in einem abschließenden Verkauf vollständig verkauft werden.',
+        );
+      }
+      return;
+    }
+  }
+
   if (newCount > max) {
     throw new Parse.Error(
       Parse.Error.INVALID_VALUE,
