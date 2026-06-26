@@ -1,0 +1,54 @@
+flowchart TD
+    TITLE(["<b>Seite 4 – Abschluss & Role Agreement</b><br/>Schritte 22–24 · Phase „Legal & Consent“<br/>Trader & Investor"])
+
+    ENTRY["<b>Einstieg</b> nach Schritten 18–21<br/>18 Geldwäsche · 19 Zusammenfassung (Investor)<br/>bzw. 19 Insider + 20 Zusammenfassung (Trader)"]
+
+    subgraph S22["<b>Schritt 22 – Hinweis Risikoklassifizierung</b><br/>(Fortschritt ~20 Investor / ~21 Trader)"]
+        S22A["RK <b>7</b> (oder manuell auf RK7 erhöht)<br/>→ Registrierung fortsetzen"]
+        S22B["RK <b>1–6</b> ohne RK7-Upgrade<br/>→ <b>Zur Startseite</b> (kein Plattform-Zugang)"]
+        S22C["Optional: RK manuell auf <b>7</b> wählen<br/>(Risikoklassen-Auswahl)"]
+        S22D["Toolbar-Back + In-Step-Back<br/>(Footer-Nav absichtlich aus)"]
+    end
+
+    subgraph S23["<b>Schritt 23 – RK7-Bestätigung</b>"]
+        S23A["Nur wenn finale RK = <b>7</b>"]
+        S23B["Hochrisiko-Warnung + Legal Gate 1 read-only<br/>(TOS/Privacy aus Contact)"]
+        S23C["Button: <b>Weiter zur Vereinbarung</b>"]
+    end
+
+    subgraph S24["<b>Schritt 24 – Role Agreement (Legal Gate 2)</b><br/>(SignUpStep.roleAgreement)"]
+        S24A["<b>Trader:</b> Signalgeber-Vereinbarung<br/><b>Investor:</b> Investor-Vereinbarung"]
+        S24B["Scroll-to-end im Dokumentfeld<br/>+ aktive Checkbox (kein Pre-Select)"]
+        S24C["<b>recordRoleAgreementConsent</b><br/>Audit: Zeit, IP, Version, PDF-E-Mail"]
+        S24D["Button: <b>Zustimmen und Registrierung abschließen</b>"]
+        S24E["<b>finalizeRegistration</b><br/>consents + verification → Dashboard"]
+    end
+
+    ORDER["<b>UI-Reihenfolge (signupFlowOrder):</b><br/>Zusammenfassung → RK-Hinweis → RK7 (falls 7) → <b>Terms</b> → Role Agreement<br/><i>Terms (enum 20) liegt im Flow nach dem RK-Block, nicht davor.</i>"]
+
+    TITLE --> ENTRY
+    ENTRY --> S22A
+    ENTRY --> S22B
+    S22C --> S22A
+    S22A --> S23A
+    S22D -.-> S22A
+    S23A --> S23B
+    S23B --> S23C
+    S23C --> S24A
+    S24A --> S24B
+    S24B --> S24C
+    S24C --> S24D
+    S24D --> S24E
+
+    S24E -.-> ORDER
+
+    classDef step fill:#e8f4fc,stroke:#2b6cb0,stroke-width:2px
+    classDef gate fill:#fff7e6,stroke:#c05621,stroke-width:2px
+    classDef ok fill:#e6ffed,stroke:#276749,stroke-width:2px
+    classDef block fill:#fff5f5,stroke:#c53030,stroke-width:2px
+    classDef hint fill:#faf5ff,stroke:#6b46c1,stroke-width:1px
+    class S22,S23,S24 step
+    class S24B,S24C gate
+    class S24E ok
+    class S22B block
+    class ORDER hint

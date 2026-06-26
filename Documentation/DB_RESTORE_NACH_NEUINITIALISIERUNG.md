@@ -110,6 +110,6 @@ Die konfigurierbare Variable ist **nicht** in der Datenbank „gespeichert“ al
 
 - **iOS:** `FIN1/Features/Dashboard/Views/Components/DashboardContainer.swift`, `ConfigurationService*`, `ConfigurationServiceProtocol`
 - **Admin-Portal:** `admin-portal/src/pages/Configuration/ConfigurationPage.tsx` (Sektion „Anzeige“, Parameter `maximumRiskExposurePercent`)
-- **Backend:** `backend/parse-server/cloud/functions/configuration.js`, `backend/parse-server/cloud/utils/configHelper/`, `backend/parse-server/cloud/main.js` (getConfig/updateConfig)
+- **Backend:** `backend/parse-server/cloud/functions/configuration/`, `backend/parse-server/cloud/utils/configHelper/`, `backend/parse-server/cloud/main.js` (`getConfig`; `updateConfig` deprecated)
 
 Nach einem DB-Restore verwendet die App wieder die Daten aus dem Backup (inkl. Konfigurationswerte). Die genannte Implementierung bleibt bestehen; nur wenn im Backup noch keine `Configuration`/`Config` mit `maximumRiskExposurePercent` existierte, greift der Default 2 %.

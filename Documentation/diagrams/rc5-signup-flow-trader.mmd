@@ -1,0 +1,77 @@
+flowchart TD
+    TITLE(["<b>Seite 3 – Trader</b><br/>Wann erhält ein Trader Risikoklasse 5?<br/>Schritte 15, 16, 17"])
+
+    NOTE["<b>Wichtig:</b> Trader hat <b>keinen Sonderpfad</b>.<br/>RC 5 nur über Score 19–25 Punkte<br/>+ alle Gates und ohne konservatives Muster."]
+
+    subgraph S15["<b>Schritt 15 – Finanzielle Informationen</b>"]
+        S15A["Dropdowns:<br/>• Beschäftigungsstatus (nur Score, kein Gate)<br/>• Einkommensbereich (0–5 Pkt.)<br/>• Liquide Mittel (0–5 Pkt.)"]
+        S15B["Einkommensquellen: Assets +2, Erbe +1, Abfindung +1"]
+    end
+
+    subgraph S16["<b>Schritt 16 – Anlageerfahrung</b>"]
+        S16A["a) Aktien: Anzahl 0–3 Pkt., Betrag 0–4 Pkt."]
+        S16B["b) ETFs: Anzahl 0–3 Pkt., Betrag 0–4 Pkt."]
+        S16C["<b>c) Zertifikate & Derivate – PFLICHT-GATE + hohe Punkte</b>"]
+        S16D["Trader-Gewichtung Derivate:<br/>✓ Anzahl <b>50+</b> → <b>+8 Pkt.</b> (Investor nur +3)<br/>✓ Betrag <b>10.000–100.000 €</b> → <b>+4 Pkt.</b><br/>✓ Betrag <b>&gt; 100.000 €</b> → <b>+6 Pkt.</b><br/>✓ Haltedauer <b>Minuten–Stunden</b> → <b>+4 Pkt.</b>"]
+        S16E["<b>Gate für RC 5</b> (zusätzlich zu Punkten):<br/>50+ UND ≥ 10.000 € UND Minuten–Stunden<br/>Sonst: max. RC 4 trotz hohem Score"]
+        S16F["d) Immobilien (+2) / Gold (+1)"]
+    end
+
+    subgraph S17["<b>Schritt 17 – Gewinnziel & Risikoprüfung</b>"]
+        S17A["Dropdown Rendite:<br/>✓ <b>≥ 50 %</b> (+3 Pkt.) oder <b>≥ 100 %</b> (+5 Pkt.)<br/>✗ <b>≥ 10 %</b> → konservatives Muster → max. RC 2"]
+        S17B["Totalverlustrisiko: <b>Ja</b>"]
+        S17C["Wissenstest: <b>alle richtig</b><br/>Nein/Fehler → <b>finale RC 1</b>"]
+    end
+
+    TITLE --> NOTE
+    NOTE --> S15A
+    S15A --> SCORE
+    S15B --> SCORE
+    S16A --> SCORE
+    S16B --> SCORE
+    S16C --> S16D
+    S16D --> S16E
+    S16D --> SCORE
+    S16F --> SCORE
+    S17A --> SCORE
+    S17B --> FINAL
+    S17C --> OUT_RC1
+
+    SCORE{"<b>Score-Pfad (einziger Weg)</b><br/>Summe aller Punkte aus Schritten 15–17<br/><b>19–25 Punkte</b> nötig für RC 5"}
+
+    SCORE -->|"19–25 Punkte"| GATE
+    SCORE -->|"unter 19"| OUT_LOW
+
+    GATE{"<b>Derivatives-Gate 16c erfüllt?</b><br/>50+ / ≥ 10.000 € / Minuten–Stunden"}
+    GATE -->|nein| OUT_RC4
+    GATE -->|ja| CONS
+
+    CONS{"<b>Trader-Sicherheitsdeckel</b><br/>Konservatives Muster?<br/>✗ Derivate: None, 1–10, 10–50<br/>✗ Betrag: 0–1.000 € oder 1.000–10.000 €<br/>✗ Haltedauer: Monate–Jahre<br/>✗ Rendite: nur 10 %<br/><i>Ein Treffer reicht → Deckel RC 2</i>"}
+
+    CONS -->|ja, konservativ| OUT_RC2
+    CONS -->|nein| FINAL
+
+    FINAL{"<b>Schritt 17 abschließend</b><br/>Totalverlust = Ja<br/>und Wissenstest bestanden?"}
+    FINAL -->|nein| OUT_RC1
+    FINAL -->|ja| OUT_RC5
+
+    EXAMPLE["<b>Minimalbeispiel Trader (19 Pkt.)</b><br/>Schritt 15: niedriges Einkommen/Vermögen (0 Pkt.)<br/>Schritt 16: Derivate 50+ (+8), 10k–100k (+4), Minuten (+4)<br/>Schritt 17: Rendite ≥ 50 % (+3)<br/>= 19 Pkt. → RC 5 (wenn alle Gates OK)"]
+
+    OUT_LOW(["<b>Ergebnis: RC 1–4</b><br/>Score unter 19 Punkten"])
+    OUT_RC4(["<b>Ergebnis: max. RC 4</b><br/>Score 19–25, aber 16c-Gate fehlt<br/>(z. B. Haltedauer „Monate–Jahre“)"])
+    OUT_RC2(["<b>Ergebnis: max. RC 2</b><br/>Konservatives Muster in 16c oder 17"])
+    OUT_RC1(["<b>Finale RC 1</b><br/>Nein zum Totalverlust<br/>oder Wissenstest nicht bestanden"])
+    OUT_RC5(["<b>Finale RC 5 ✓</b><br/>Kandidat für Plattform-Zugang<br/><i>Abschluss: Seite 4 — Schritte 22→23 (RK7) → 24</i>"])
+
+    OUT_RC5 -.-> EXAMPLE
+
+    classDef step fill:#e8f4fc,stroke:#2b6cb0,stroke-width:2px
+    classDef gate fill:#fff7e6,stroke:#c05621,stroke-width:2px
+    classDef ok fill:#e6ffed,stroke:#276749,stroke-width:2px
+    classDef block fill:#fff5f5,stroke:#c53030,stroke-width:2px
+    classDef hint fill:#faf5ff,stroke:#6b46c1,stroke-width:1px
+    class S15,S16,S17 step
+    class SCORE,GATE,CONS,FINAL gate
+    class OUT_RC5 ok
+    class OUT_LOW,OUT_RC4,OUT_RC2,OUT_RC1 block
+    class NOTE,EXAMPLE hint

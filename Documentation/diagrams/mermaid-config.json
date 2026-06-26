@@ -1,0 +1,12 @@
+{
+  "flowchart": {
+    "useMaxWidth": false,
+    "htmlLabels": true,
+    "curve": "basis",
+    "padding": 48,
+    "diagramPadding": 24
+  },
+  "themeVariables": {
+    "fontSize": "14px"
+  }
+}
