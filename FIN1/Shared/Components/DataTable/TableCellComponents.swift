@@ -7,20 +7,14 @@ struct DataCell: View {
 
     var body: some View {
         if self.column.id == "trader" {
-            // Special handling for trader name (clickable)
-            Button(action: {
-                self.row.onTap?()
-            }) {
-                Text(self.row.cells[self.column.id] ?? "")
-                    .font(self.tableDataFont)
-                    .fontWeight(.regular)
-                    .foregroundColor(AppTheme.accentLightBlue)
-                    .frame(maxWidth: .infinity, alignment: self.column.alignment)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-                    .contentShape(Rectangle())
+            if let onTap = self.row.onTap {
+                Button(action: onTap) {
+                    self.traderNameLabel
+                }
+                .buttonStyle(PlainButtonStyle())
+            } else {
+                self.traderNameLabel
             }
-            .buttonStyle(PlainButtonStyle())
         } else {
             Text(self.row.cells[self.column.id] ?? "")
                 .font(self.tableDataFont)
@@ -47,6 +41,19 @@ struct DataCell: View {
             return .headline
         }
         return .body
+    }
+
+    private var traderNameLabel: some View {
+        Text(self.row.cells[self.column.id] ?? "")
+            .font(self.tableDataFont)
+            .fontWeight(.regular)
+            .foregroundColor(
+                self.row.onTap == nil ? AppTheme.fontColor.opacity(0.55) : AppTheme.accentLightBlue
+            )
+            .frame(maxWidth: .infinity, alignment: self.column.alignment)
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+            .contentShape(Rectangle())
     }
 }
 

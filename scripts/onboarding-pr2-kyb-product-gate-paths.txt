@@ -33,6 +33,9 @@ FIN1/Shared/Services/ConfigurationService.swift
 FIN1/Shared/Services/ConfigurationServiceModels.swift
 FIN1/Shared/Services/ConfigurationServiceProtocol+Defaults.swift
 FIN1/Shared/Services/ConfigurationServiceProtocol.swift
+FIN1/Shared/Components/DataTable/DataTable.swift
+FIN1/Shared/Components/DataTable/DataTableHelpers.swift
+FIN1/Shared/Components/DataTable/TableCellComponents.swift
 admin-portal/src/api/admin/users.ts
 admin-portal/src/pages/Approvals/ApprovalsList.tsx
 admin-portal/src/pages/Configuration/configResolve.ts
