@@ -143,6 +143,7 @@ jobs:
           npm install -g danger@13
 
       # Lint Swift sources only (avoid scanning local build trees; matches clean CI checkout).
+      - name: SwiftFormat
         run: |
           swiftformat FIN1 FIN1Tests FIN1UITests FIN1InvestorTests FIN1CoreRegressionTests --lint
 
