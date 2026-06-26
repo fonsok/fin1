@@ -69,7 +69,7 @@ struct LandingDebugButtonsView: View {
                 }
             )
 
-            CompanyKybDebugSection(style: self.viewModel.designStyle)
+            CompanyKybDebugSection(style: self.viewModel.designStyle, viewModel: self.viewModel)
         }
     }
 }
@@ -78,23 +78,39 @@ struct LandingDebugButtonsView: View {
 
 private struct CompanyKybDebugSection: View {
     let style: LandingViewModel.DesignStyle
+    @ObservedObject var viewModel: LandingViewModel
     @State private var showKybWizard = false
 
     var body: some View {
         VStack(spacing: ResponsiveDesign.spacing(6)) {
-            Text("Company KYB (Mock)")
+            Text("Company Investors (KYB)")
                 .font(self.style == .typewriter
                     ? ResponsiveDesign.monospacedFont(size: 14, weight: .bold)
                     : ResponsiveDesign.captionFont())
                 .foregroundColor(self.style == .typewriter ? Color("InputText") : AppTheme.tertiaryText)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
+            ForEach(TestConstants.CompanyInvestorTestAccount.allCases, id: \.self) { account in
+                LandingDebugButton(
+                    text: account.displayLabel,
+                    style: self.style,
+                    accentColor: .orange,
+                    isLoading: self.viewModel.isLoading,
+                    action: {
+                        Task {
+                            await self.viewModel.signInAsCompanyInvestor(account)
+                        }
+                    },
+                    accessibilityIdentifier: "LoginCompany\(account.rawValue.capitalized)Button"
+                )
+            }
+
             Button(action: { self.showKybWizard = true }) {
                 if self.style == .typewriter {
                     HStack(spacing: ResponsiveDesign.spacing(6)) {
                         Image(systemName: "building.2")
                             .font(ResponsiveDesign.scaledSystemFont(size: 12))
-                        Text("Company KYB Wizard (8 Steps)")
+                        Text("Company KYB Wizard (Mock, offline)")
                             .font(ResponsiveDesign.monospacedFont(size: 12, weight: .regular))
                     }
                     .foregroundColor(Color("InputText"))
@@ -103,20 +119,20 @@ private struct CompanyKybDebugSection: View {
                     HStack(spacing: ResponsiveDesign.spacing(6)) {
                         Image(systemName: "building.2")
                             .font(ResponsiveDesign.captionFont())
-                        Text("Company KYB Wizard (8 Steps)")
+                        Text("Company KYB Wizard (Mock, offline)")
                             .font(ResponsiveDesign.captionFont())
                     }
-                    .foregroundColor(.orange.opacity(0.9))
+                    .foregroundColor(.orange.opacity(0.7))
                     .frame(maxWidth: .infinity)
                     .frame(height: 32)
                     .background(Color.clear)
                     .overlay(
                         RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(8))
-                            .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+                            .stroke(Color.orange.opacity(0.25), lineWidth: 1)
                     )
                 }
             }
-            .accessibilityIdentifier("DebugCompanyKybButton")
+            .accessibilityIdentifier("DebugCompanyKybMockWizardButton")
             .fullScreenCover(isPresented: self.$showKybWizard) {
                 CompanyKybView(companyKybAPIService: MockCompanyKybAPIService())
             }

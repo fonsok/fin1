@@ -30,6 +30,8 @@ echo "▸ sync shared/contracts → cloud/contracts (App-Ledger SSOT inside Pars
 mkdir -p "$PROJECT_ROOT/backend/parse-server/cloud/contracts"
 cp "$PROJECT_ROOT/shared/contracts/appLedgerTransactionTypes.json" \
   "$PROJECT_ROOT/backend/parse-server/cloud/contracts/appLedgerTransactionTypes.json"
+cp "$PROJECT_ROOT/shared/contracts/signUpStepNumbers.json" \
+  "$PROJECT_ROOT/backend/parse-server/cloud/contracts/signUpStepNumbers.json"
 
 echo "▸ rsync cloud/ (exclude Jest tests: __tests__, *.test.js) …"
 rsync -avz \
@@ -78,6 +80,9 @@ rsync -avz \
   "$PROJECT_ROOT/scripts/smoke-admin-get-user-details.sh" \
   "$PROJECT_ROOT/scripts/smoke-commission-rate-bundle-e2e.sh" \
   "$PROJECT_ROOT/scripts/smoke-legal-app-name-e2e.sh" \
+  "$PROJECT_ROOT/scripts/run-onboarding-signup-indexes-migration.sh" \
+  "$PROJECT_ROOT/scripts/load-test-signup-onboarding.js" \
+  "$PROJECT_ROOT/scripts/run-signup-onboarding-load-test.sh" \
   "${REMOTE_USER}@${REMOTE_HOST}:~/fin1-server/scripts/"
 
 echo "▸ remove configHelper.js shadow (if any) + restart parse-server …"

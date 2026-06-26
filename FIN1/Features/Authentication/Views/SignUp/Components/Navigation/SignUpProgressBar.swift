@@ -18,6 +18,7 @@ struct SignUpProgressBar: View {
                     Text("Schritt \(self.currentStep) von \(self.totalSteps)")
                         .font(ResponsiveDesign.captionFont())
                         .foregroundColor(AppTheme.fontColor.opacity(0.65))
+                        .accessibilityIdentifier("SignUpProgressStepLabel")
                 }
 
                 Spacer(minLength: ResponsiveDesign.spacing(8))

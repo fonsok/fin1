@@ -4,30 +4,27 @@ import SwiftUI
 /// Root view that handles authentication state and shows appropriate content
 struct AuthenticationView: View {
     @Environment(\.appServices) private var services
-    @State private var isAuthenticated = false
+    @StateObject private var session = UserSessionObserver()
     @State private var showTermsAcceptance = false
     @State private var isResolvingLegalConsentGate = false
-    @State private var showOnboardingResume = false
+    @State private var isSignUpPresented = false
     @State private var showCompanyKybResume = false
     @State private var showCompanyKybStatus = false
     @State private var companyKybReviewStatus: CompanyKybReviewStatus?
+    @State private var onboardingRePresentTask: Task<Void, Never>?
 
     var body: some View {
         ZStack {
             AppTheme.screenBackground.ignoresSafeArea()
 
             Group {
-                if self.isAuthenticated {
+                if self.session.isAuthenticated {
                     Group {
                         if self.isResolvingLegalConsentGate {
                             self.legalConsentGatePlaceholder
                         } else {
                             self.authenticatedMainContent
                         }
-                    }
-                    .fullScreenCover(isPresented: self.$showOnboardingResume) {
-                        SignUpView()
-                            .environment(\.appServices, self.services)
                     }
                     .fullScreenCover(isPresented: self.$showCompanyKybResume) {
                         if let kybService = services.companyKybAPIService {
@@ -48,58 +45,87 @@ struct AuthenticationView: View {
                         }
                     }
                 } else {
-                    LandingView(userService: self.services.userService)
-                        .accessibilityIdentifier("LandingView")
-                        .onAppear {
-                            print("🚪 LandingView appeared - User is not authenticated")
-                        }
+                    LandingView(
+                        userService: self.services.userService,
+                        isSignUpPresented: self.$isSignUpPresented
+                    )
+                    .accessibilityIdentifier("LandingView")
+                    .onAppear {
+                        print("🚪 LandingView appeared - User is not authenticated")
+                    }
                 }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityIdentifier("AuthenticationView")
+        .fullScreenCover(isPresented: self.$isSignUpPresented, onDismiss: {
+            SignUpFlowSession.end()
+            // Do not post userDataDidUpdate here — it used to call checkOnboardingStatus()
+            // immediately and fight SwiftUI dismiss, causing onboarding flicker loops.
+            self.scheduleOnboardingResumeIfNeededAfterDismiss()
+        }) {
+            SignUpView()
+                .environment(\.appServices, self.services)
+        }
         .onAppear {
-            self.isAuthenticated = self.services.userService.isAuthenticated
-            if self.isAuthenticated {
+            self.session.bind(to: self.services.userService)
+            if self.session.isAuthenticated {
                 self.beginLegalConsentGateCheck()
                 self.checkOnboardingStatus()
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .userDidSignIn)) { _ in
-            self.isAuthenticated = true
+            SignUpFlowSession.reset()
             print("🔍 AuthenticationView: User signed in")
             self.beginLegalConsentGateCheck()
             self.checkOnboardingStatus()
         }
         .onReceive(NotificationCenter.default.publisher(for: .userDidSignOut)) { _ in
-            self.isAuthenticated = false
             self.isResolvingLegalConsentGate = false
             self.showTermsAcceptance = false
-            self.showOnboardingResume = false
+            self.isSignUpPresented = false
+            self.onboardingRePresentTask?.cancel()
+            self.onboardingRePresentTask = nil
+            SignUpFlowSession.reset()
             self.showCompanyKybResume = false
             self.showCompanyKybStatus = false
             self.companyKybReviewStatus = nil
             print("🔍 AuthenticationView: User signed out")
         }
         .onReceive(NotificationCenter.default.publisher(for: .userDataDidUpdate)) { _ in
-            if self.isAuthenticated {
+            if self.session.isAuthenticated {
                 self.showTermsAcceptanceModalIfStillRequired()
-                self.checkOnboardingStatus()
+                if self.session.onboardingCompleted {
+                    self.isSignUpPresented = false
+                    SignUpFlowSession.end()
+                }
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .registrationDidFinalize)) { _ in
+            self.isSignUpPresented = false
+            SignUpFlowSession.end()
+        }
         .onReceive(NotificationCenter.default.publisher(for: .legalConsentAcceptanceCompleted)) { _ in
-            self.showTermsAcceptance = false
+            Task {
+                await self.evaluateLegalConsentRequirement(showOnlyIfNeeded: false)
+            }
         }
     }
 
     // MARK: - Onboarding Status
 
     private func checkOnboardingStatus() {
-        guard let user = services.userService.currentUser else {
-            self.showOnboardingResume = false
+        guard let user = self.session.currentUser else {
+            self.isSignUpPresented = false
+            SignUpFlowSession.end()
             self.showCompanyKybResume = false
             self.showCompanyKybStatus = false
             return
+        }
+
+        if user.onboardingCompleted {
+            self.isSignUpPresented = false
+            SignUpFlowSession.end()
         }
 
         // Company accounts: KYB takes precedence over personal onboarding
@@ -110,7 +136,6 @@ struct AuthenticationView: View {
             if kybStatus == "draft" && !user.companyKybCompleted {
                 self.showCompanyKybResume = true
                 self.showCompanyKybStatus = false
-                self.showOnboardingResume = false
                 return
             }
 
@@ -122,32 +147,72 @@ struct AuthenticationView: View {
                     self.showCompanyKybStatus = false
                 }
                 self.showCompanyKybResume = false
-                self.showOnboardingResume = false
                 return
             }
 
             if user.companyKybStep != nil {
                 self.showCompanyKybResume = true
                 self.showCompanyKybStatus = false
-                self.showOnboardingResume = false
                 return
             }
         }
 
         self.showCompanyKybResume = false
         self.showCompanyKybStatus = false
-        self.showOnboardingResume = !user.onboardingCompleted && user.onboardingStep != nil
+
+        guard !user.onboardingCompleted, user.onboardingStep != nil else {
+            return
+        }
+
+        if SignUpFlowSession.isPresentingFromLanding {
+            return
+        }
+
+        if SignUpFlowSession.userLeftOnboarding {
+            return
+        }
+
+        guard !self.isSignUpPresented else { return }
+
+        self.isSignUpPresented = true
+    }
+
+    /// Re-open onboarding only after an unintentional cover dismiss (debounced).
+    private func scheduleOnboardingResumeIfNeededAfterDismiss() {
+        self.onboardingRePresentTask?.cancel()
+        self.onboardingRePresentTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 300_000_000)
+            guard !Task.isCancelled else { return }
+            guard !SignUpFlowSession.userLeftOnboarding else { return }
+            guard !self.isSignUpPresented else { return }
+            self.checkOnboardingStatus()
+        }
     }
 
     // MARK: - Private Methods
 
     private var authenticatedMainContent: some View {
         ZStack {
-            MainTabView(services: self.services)
-                .accessibilityIdentifier("MainTabView")
-                .onAppear {
-                    print("🏠 MainTabView appeared - User is authenticated")
-                }
+            if self.session.onboardingCompleted {
+                MainTabView(services: self.services)
+                    .accessibilityIdentifier("MainTabView")
+                    .onAppear {
+                        print("🏠 MainTabView appeared - User is authenticated")
+                    }
+            } else {
+                OnboardingPausedView(
+                    onContinue: {
+                        SignUpFlowSession.resumeAfterExplicitPause()
+                        self.isSignUpPresented = true
+                    },
+                    onSignOut: {
+                        Task {
+                            await self.services.userService.signOut()
+                        }
+                    }
+                )
+                .accessibilityIdentifier("OnboardingPausedView")
+            }
 
             if self.showTermsAcceptance {
                 TermsAcceptanceModalView(
@@ -194,7 +259,9 @@ struct AuthenticationView: View {
             return
         }
 
-        if let parseAPIClient = services.parseAPIClient {
+        // Server sync only on full gate checks (login / completion). Partial accepts must not
+        // import onboarding LegalConsent rows into the device store via userDataDidUpdate.
+        if !showOnlyIfNeeded, let parseAPIClient = services.parseAPIClient {
             await DeviceLegalConsentStore.syncAcknowledgementsFromServer(
                 user: user,
                 parseAPIClient: parseAPIClient
@@ -220,11 +287,10 @@ struct AuthenticationView: View {
             user: user,
             currentServerVersion: privacyVersion
         )
-
         await MainActor.run {
             if needsTerms || needsPrivacy {
                 self.showTermsAcceptance = true
-            } else if !showOnlyIfNeeded {
+            } else {
                 self.showTermsAcceptance = false
             }
             self.isResolvingLegalConsentGate = false

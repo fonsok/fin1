@@ -76,6 +76,33 @@
 - Pflichtablauf nach Cloud/Admin-Änderungen: **`.cursor/rules/ci-cd.md`** → Abschnitt **FIN1-Server Deploy**
 - Admin-UI Build + `rsync`: **`admin-portal/deploy.sh`** (Ziel `~/fin1-server/admin/`)
 
+#### Remote configuration (Admin / `getConfig` SSOT)
+
+**Maßgeblich bei neuen Finanz-/Display-Parametern, Feature Flags und dem Fehlerbild „Portal zeigt X, App zeigt Y“.**
+
+| Rolle | SSOT / Verhalten |
+|--------|------------------|
+| **Schreiben** | Parse-Klasse **`Configuration`** — ausschließlich **Admin Web Portal** (`requestConfigurationChange`, ggf. **`approveConfigurationChange`** / 4-Augen). Kritische Parameter: `backend/parse-server/cloud/utils/configHelper/criticalParameters.js`. |
+| **Admin lesen** | Cloud Function **`getConfiguration`** → `buildDisplay()` aus `loadConfig()` — flache + `display`-Sektion für das Portal. |
+| **Clients lesen (iOS)** | Cloud Function **`getConfig`** — merged **`Configuration`** (via `loadConfig`) in `financial`, `tax`, `limits`, **`display`**. Legacy-Klasse **`Config`** (environment) nur noch für ältere `features`/Limits; **Display-Flags aus dem Portal müssen explizit aus `liveConfig.display` gemerged werden** (Helfer: `cloud/functions/configuration/getConfigDisplayFlags.js`). |
+| **iOS Cache** | `ConfigurationService.fetchRemoteDisplayConfig()` bei Start/Login → lokaler Cache (`AppConfiguration`/UserDefaults). **Keine Remote-Writes** aus der App (`ConfigurationError.serverManagedConfiguration`); Ausnahme: CSR-only **`updateSLAMonitoringInterval`** (lokal). |
+| **Legacy blockiert** | **`updateConfig`** deprecated (`rejectDeprecatedUpdateConfig.js`) — früherer iOS-Admin-Pfad in legacy `Config.display`. |
+
+**Checkliste — neuer Display-/Finanz-Parameter:**
+
+1. **`parameterDefinitions.ts`** (Admin Portal) + Validierung in **`validateConfigValue.js`**
+2. **`loadConfig.js`** — Feld aus `Configuration` in `display`/`financial`/`limits`/`tax` lesen
+3. **`buildDisplay()`** (`functions/configuration/shared.js`) — für **`getConfiguration`**
+4. **`getConfig`** in **`main.js`** — Wert aus **`liveConfig`** in Client-`display`/`financial` mergen (nicht nur legacy `Config`)
+5. **iOS:** `GetConfigResponse` + `ConfigurationService.fetchRemoteDisplayConfig()` — kein `updateConfig`
+6. **Doku:** [`FIN1_APP_DOCS/03_TECHNISCHE_SPEZIFIKATION.md`](FIN1_APP_DOCS/03_TECHNISCHE_SPEZIFIKATION.md), [`CONFIGURATION_4EYES_DEPLOYMENT.md`](CONFIGURATION_4EYES_DEPLOYMENT.md)
+
+**Beispiel (2026-06):** `showCommissionBreakdownInCreditNote` — Portal „Aktiv“, App „aus“, weil `getConfig` den Merge aus `Configuration` fehlte; Fix in `getConfigDisplayFlags.js`.
+
+**Beispiel (2026-06):** `showTraderDashboardInvestmentActiveStatus` — steuert die Depot-Kachel „Investment-Pool“ (`HoldingCard`), nicht Dashboard Quick Stats. Admin-Label: „Trader-Depot: Investment-Pool Status anzeigen“.
+
+**iOS Admin-Tab:** `AdminDashboardView` = Read-only Diagnose (Ledger, Beleg-Suche, Drift); Role Testing nur **`#if DEBUG`**. Vollständige Konfiguration/Reports: Web-Portal.
+
 #### How to Add a New ViewModel
 - Create under `Features/<Feature>/ViewModels/`.
 - `init(dependencies: any Protocols)` — do not default to singletons.
@@ -117,6 +144,9 @@
 - **Backend (Parse Cloud Functions)**: Remains **authoritative** for validation, compliance-relevant decisions, and audit (`sanitizeObject`, `validateStepData`, `OnboardingAudit`). Client DTOs are **not** a substitute for server-side checks.
 - **Contract alignment**: JSON keys produced by encoding Swift DTOs must match what `backend/parse-server/cloud/functions/user/onboarding.js` and `backend/parse-server/cloud/utils/validation.js` expect. When adding fields, update server validation if the field is required for a step.
 - **Partial save vs completion**: **“Save for later”** should persist **`currentStep` + `savedData`** only; append **`completedSteps`** (and phase completion) only on successful **`completeOnboardingStep`** (or the equivalent Cloud Function), not on partial saves — keeps resume semantics clear and payloads smaller.
+- **Signup load (2026-06):** iOS coalesces partial saves (~400 ms debounce in `SignUpCoordinator+Persistence`); server upserts one `OnboardingProgress` per user, rate-limits saves, mirrors RC-5 gate on `completeOnboardingStep`. Post-deploy: run `./scripts/run-onboarding-signup-indexes-migration.sh` and optionally `LOAD_TEST_ON_SERVER=1 ./scripts/run-signup-onboarding-load-test.sh`. See [`Documentation/SCHEMA_MIGRATIONS.md`](SCHEMA_MIGRATIONS.md) and [`FIN1_APP_DOCS/02A_FEATURE_KATALOG_GUARDRAILS.md`](FIN1_APP_DOCS/02A_FEATURE_KATALOG_GUARDRAILS.md).
+- **Retail role immutability (2026-06):** `_User.role` is set at Contact (`POST /users`) and must not change afterward. iOS: `WelcomeStep.isRoleSelectionLocked`, `restoreFromSavedData(lockAccountRole:)`, `applyServerRoleToSignUpData()`. Server: `assertImmutableOnboardingRole` in `saveOnboardingProgress`, `userTriggerBeforeSave` blocks investor↔trader updates. See [`FIN1_APP_DOCS/02A_FEATURE_KATALOG_GUARDRAILS.md`](FIN1_APP_DOCS/02A_FEATURE_KATALOG_GUARDRAILS.md) §3.3.
+- **Onboarding shell / defer (2026-06):** `AuthenticationView` shows `MainTabView` only when `onboardingCompleted`; `AppRootContent` skips retail background sync until then; `SLAMonitoringService.canRunMonitoring` is staff-only (`admin` / `customerService`). `discoverTraders` uses `profileDisplayName.js` for safe `displayName`. Ops smoke: `./scripts/run-smoke-signup-role-immutability.sh`.
 - **Per-step schemas (Joi)**: Implemented in [`backend/parse-server/cloud/utils/onboardingStepSchemas.js`](../backend/parse-server/cloud/utils/onboardingStepSchemas.js) (complete + partial). Optional: add JSON Schema docs under `Documentation/` for non-developer readers.
 - **Leveraged-products knowledge test (Step 17 / backend step `risk`)**: Question catalog and version are duplicated SSOT — iOS `LeveragedProductsKnowledgeTest.swift` and `backend/parse-server/cloud/utils/leveragedProductsKnowledgeTest.js`. Server validates answer **completeness** only; RK1 assignment on failed quiz or declined total-loss acknowledgement is **client product logic** (`requiresConservativeRiskClassFromOnboarding`). Document in `Documentation/FIN1_APP_DOCS/02A_FEATURE_KATALOG_GUARDRAILS.md` and `02_REQUIREMENTS.md`.
 - **When changing shapes**: Add a short note to this guide or an ADR under `Documentation/` (see `.cursor/rules/documentation-checkpoints.md`). See [`Documentation/ADR-002-Onboarding-Codable-DTO.md`](ADR-002-Onboarding-Codable-DTO.md).

@@ -21,7 +21,11 @@ extension SignUpData {
             throw UserCreationError.invalidUsername
         }
 
-        return self.makeUser()
+        guard self.hasRequiredLegalConsents else {
+            throw UserCreationError.legalConsentsIncomplete
+        }
+
+        return try self.makeUser(mode: .earlyAccount)
     }
 
     // MARK: - User Creation
@@ -45,19 +49,73 @@ extension SignUpData {
 
         // dateOfBirth is always set to a default value, so no need to check for nil
 
-        guard acceptedTerms else {
-            throw UserCreationError.termsNotAccepted
+        guard self.hasRequiredLegalConsents else {
+            throw UserCreationError.legalConsentsIncomplete
         }
 
-        guard acceptedPrivacyPolicy else {
-            throw UserCreationError.privacyPolicyNotAccepted
+        guard self.isFinancialInfoValid else {
+            throw UserCreationError.incompleteFinancialProfile
         }
 
-        return self.makeUser()
+        guard self.isInvestmentExperienceValid else {
+            throw UserCreationError.incompleteInvestmentExperience
+        }
+
+        return try self.makeUser(mode: .finalRegistration)
     }
 
-    private func makeUser() -> User {
-        User(
+    /// Merges the completed onboarding answers onto the authenticated session user (preserves Parse `objectId`).
+    func mergedUserForFinalRegistration(base: User) throws -> User {
+        let assembled = try self.makeUser(mode: .finalRegistration)
+        var merged = assembled.withId(base.id)
+        if !base.customerNumber.isEmpty {
+            merged.customerNumber = base.customerNumber
+        }
+        merged.onboardingCompleted = base.onboardingCompleted
+        merged.onboardingStep = base.onboardingStep
+        merged.kycStatus = base.kycStatus
+        merged.companyKybCompleted = base.companyKybCompleted
+        merged.companyKybStep = base.companyKybStep
+        merged.companyKybStatus = base.companyKybStatus
+        merged.isEmailVerified = base.isEmailVerified
+        merged.acceptedTermsVersion = base.acceptedTermsVersion ?? merged.acceptedTermsVersion
+        merged.acceptedTermsDate = base.acceptedTermsDate ?? merged.acceptedTermsDate
+        merged.acceptedPrivacyPolicyVersion = base.acceptedPrivacyPolicyVersion ?? merged.acceptedPrivacyPolicyVersion
+        merged.acceptedPrivacyPolicyDate = base.acceptedPrivacyPolicyDate ?? merged.acceptedPrivacyPolicyDate
+        merged.acceptedTraderAgreement = self.acceptedTraderAgreement || base.acceptedTraderAgreement
+        merged.acceptedTraderAgreementVersion = base.acceptedTraderAgreementVersion ?? merged.acceptedTraderAgreementVersion
+        merged.acceptedTraderAgreementDate = base.acceptedTraderAgreementDate ?? merged.acceptedTraderAgreementDate
+        merged.acceptedInvestorAgreement = self.acceptedInvestorAgreement || base.acceptedInvestorAgreement
+        merged.acceptedInvestorAgreementVersion = base.acceptedInvestorAgreementVersion ?? merged.acceptedInvestorAgreementVersion
+        merged.acceptedInvestorAgreementDate = base.acceptedInvestorAgreementDate ?? merged.acceptedInvestorAgreementDate
+        merged.lastLoginDate = base.lastLoginDate
+        merged.createdAt = base.createdAt
+        return merged
+    }
+
+    private enum UserAssemblyMode {
+        case earlyAccount
+        case finalRegistration
+    }
+
+    private func makeUser(mode: UserAssemblyMode) throws -> User {
+        let resolvedEmploymentStatus: EmploymentStatus
+        let resolvedIncomeRange: IncomeRange
+
+        switch mode {
+        case .earlyAccount:
+            // In-memory placeholders only; omitted from Parse sign-up payload (see UserFactory.parseSignUpParameters).
+            resolvedEmploymentStatus = .employed
+            resolvedIncomeRange = .middle
+        case .finalRegistration:
+            guard let employmentStatus, let incomeRange else {
+                throw UserCreationError.incompleteFinancialProfile
+            }
+            resolvedEmploymentStatus = employmentStatus
+            resolvedIncomeRange = incomeRange
+        }
+
+        return User(
             id: UUID().uuidString,
             customerNumber: customerNumber,
             accountType: accountType,
@@ -78,9 +136,9 @@ extension SignUpData {
             placeOfBirth: placeOfBirth,
             countryOfBirth: countryOfBirth,
             role: userRole,
-            employmentStatus: employmentStatus,
+            employmentStatus: resolvedEmploymentStatus,
             income: Double(income) ?? 0,
-            incomeRange: incomeRange,
+            incomeRange: resolvedIncomeRange,
             riskTolerance: finalRiskClass.rawValue,
             address: address,
             nationality: nationality,
@@ -111,6 +169,12 @@ extension SignUpData {
             acceptedTerms: acceptedTerms,
             acceptedPrivacyPolicy: acceptedPrivacyPolicy,
             acceptedMarketingConsent: acceptedMarketingConsent,
+            acceptedTraderAgreement: acceptedTraderAgreement,
+            acceptedTraderAgreementVersion: acceptedTraderAgreementVersion,
+            acceptedTraderAgreementDate: acceptedTraderAgreement ? Date() : nil,
+            acceptedInvestorAgreement: acceptedInvestorAgreement,
+            acceptedInvestorAgreementVersion: acceptedInvestorAgreementVersion,
+            acceptedInvestorAgreementDate: acceptedInvestorAgreement ? Date() : nil,
             lastLoginDate: nil,
             createdAt: Date(),
             updatedAt: Date()
@@ -146,28 +210,31 @@ extension SignUpData {
     private func calculateInvestmentExperienceLevelLegacy() -> Int {
         var experience = 0
 
-        // Stocks experience
-        switch stocksTransactionsCount {
-        case .none: experience += 0
-        case .oneToTen: experience += 1
-        case .tenToFifty: experience += 2
-        case .fiftyPlus: experience += 3
+        if let stocksTransactionsCount {
+            switch stocksTransactionsCount {
+            case .none: experience += 0
+            case .oneToTen: experience += 1
+            case .tenToFifty: experience += 2
+            case .fiftyPlus: experience += 3
+            }
         }
 
-        // ETFs experience
-        switch etfsTransactionsCount {
-        case .none: experience += 0
-        case .oneToTen: experience += 1
-        case .tenToTwenty: experience += 2
-        case .moreThanTwenty: experience += 3
+        if let etfsTransactionsCount {
+            switch etfsTransactionsCount {
+            case .none: experience += 0
+            case .oneToTen: experience += 1
+            case .tenToTwenty: experience += 2
+            case .moreThanTwenty: experience += 3
+            }
         }
 
-        // Derivatives experience
-        switch derivativesTransactionsCount {
-        case .none: experience += 0
-        case .oneToTen: experience += 1
-        case .tenToFifty: experience += 2
-        case .fiftyPlus: experience += 3
+        if let derivativesTransactionsCount {
+            switch derivativesTransactionsCount {
+            case .none: experience += 0
+            case .oneToTen: experience += 1
+            case .tenToFifty: experience += 2
+            case .fiftyPlus: experience += 3
+            }
         }
 
         // Cap at 10 for the scale
@@ -177,6 +244,7 @@ extension SignUpData {
     private func calculateTradingFrequencyLegacy() -> Int {
         // For traders, base on derivatives experience
         if userRole == .trader {
+            guard let derivativesTransactionsCount else { return 0 }
             switch derivativesTransactionsCount {
             case .none: return 0
             case .oneToTen: return 2
@@ -197,9 +265,9 @@ extension SignUpData {
         knowledge += self.calculateInvestmentExperienceLevelLegacy()
 
         // Additional knowledge from investment amounts
-        if stocksInvestmentAmount != .hundredToTenThousand { knowledge += 1 }
-        if etfsInvestmentAmount != .hundredToTenThousand { knowledge += 1 }
-        if derivativesInvestmentAmount != .zeroToThousand { knowledge += 2 }
+        if stocksInvestmentAmount != nil && stocksInvestmentAmount != .hundredToTenThousand { knowledge += 1 }
+        if etfsInvestmentAmount != nil && etfsInvestmentAmount != .hundredToTenThousand { knowledge += 1 }
+        if derivativesInvestmentAmount != nil && derivativesInvestmentAmount != .zeroToThousand { knowledge += 2 }
 
         // Knowledge from other assets
         if otherAssets["Real estate"] == true { knowledge += 1 }
@@ -238,19 +306,19 @@ extension SignUpData {
             taxNumber: taxNumber,
             additionalResidenceCountry: additionalResidenceCountry,
             identificationType: identificationType.rawValue,
-            employmentStatus: employmentStatus.rawValue,
+            employmentStatus: employmentStatus?.rawValue,
             income: income,
-            incomeRange: incomeRange.rawValue,
+            incomeRange: incomeRange?.rawValue,
             incomeSources: incomeSources,
             otherIncomeSource: otherIncomeSource,
-            cashAndLiquidAssets: cashAndLiquidAssets.rawValue,
-            stocksTransactionsCount: stocksTransactionsCount.rawValue,
-            stocksInvestmentAmount: stocksInvestmentAmount.rawValue,
-            etfsTransactionsCount: etfsTransactionsCount.rawValue,
-            etfsInvestmentAmount: etfsInvestmentAmount.rawValue,
-            derivativesTransactionsCount: derivativesTransactionsCount.rawValue,
-            derivativesInvestmentAmount: derivativesInvestmentAmount.rawValue,
-            derivativesHoldingPeriod: derivativesHoldingPeriod.rawValue,
+            cashAndLiquidAssets: cashAndLiquidAssets?.rawValue,
+            stocksTransactionsCount: stocksTransactionsCount?.rawValue,
+            stocksInvestmentAmount: stocksInvestmentAmount?.rawValue,
+            etfsTransactionsCount: etfsTransactionsCount?.rawValue,
+            etfsInvestmentAmount: etfsInvestmentAmount?.rawValue,
+            derivativesTransactionsCount: derivativesTransactionsCount?.rawValue,
+            derivativesInvestmentAmount: derivativesInvestmentAmount?.rawValue,
+            derivativesHoldingPeriod: derivativesHoldingPeriod?.rawValue,
             otherAssets: otherAssets,
             desiredReturn: desiredReturn.rawValue,
             leveragedProductsTotalLossRiskAcknowledged: leveragedProductsTotalLossRiskAcknowledged,
@@ -261,12 +329,16 @@ extension SignUpData {
             finalRiskClass: finalRiskClass.rawValue,
             insiderTradingOptions: insiderTradingOptions,
             moneyLaunderingDeclaration: moneyLaunderingDeclaration,
-            assetType: assetType.rawValue,
+            assetType: assetType.onboardingBackendKey,
             leveragedProductsExperience: leveragedProductsExperience,
             financialProductsExperience: financialProductsExperience,
             acceptedTerms: acceptedTerms,
             acceptedPrivacyPolicy: acceptedPrivacyPolicy,
             acceptedMarketingConsent: acceptedMarketingConsent,
+            acceptedTraderAgreement: acceptedTraderAgreement,
+            acceptedInvestorAgreement: acceptedInvestorAgreement,
+            traderAgreementVersion: acceptedTraderAgreementVersion,
+            investorAgreementVersion: acceptedInvestorAgreementVersion,
             customerNumber: customerNumber,
             customerId: nil,
             questionnaireVersion: TermsVersionConstants.currentQuestionnaireVersion,
@@ -310,6 +382,10 @@ enum UserCreationError: LocalizedError {
     case missingDateOfBirth
     case termsNotAccepted
     case privacyPolicyNotAccepted
+    case legalConsentsIncomplete
+    case roleAgreementIncomplete
+    case incompleteFinancialProfile
+    case incompleteInvestmentExperience
 
     var errorDescription: String? {
         switch self {
@@ -331,6 +407,14 @@ enum UserCreationError: LocalizedError {
             return "Terms and conditions must be accepted"
         case .privacyPolicyNotAccepted:
             return "Privacy policy must be accepted"
+        case .legalConsentsIncomplete:
+            return "Terms of Service and Privacy Policy must be accepted"
+        case .roleAgreementIncomplete:
+            return "Role-specific agreement must be accepted"
+        case .incompleteFinancialProfile:
+            return "Financial information is incomplete"
+        case .incompleteInvestmentExperience:
+            return "Investment experience information is incomplete"
         }
     }
 }

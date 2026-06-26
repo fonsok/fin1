@@ -63,12 +63,22 @@ describe('onboardingStepSchemas', () => {
     expect(r.message).toMatch(/put_dow_jones_falling/i);
   });
 
-  test('complete risk accepts answer D as a valid option id', () => {
-    const payload = {
+  test('complete risk accepts onboarding assetType keys', () => {
+    const base = {
       leveragedProductsTotalLossRiskAcknowledged: true,
-      leveragedProductsKnowledgeTestAnswers: { put_dow_jones_falling: 'D' },
-      leveragedProductsKnowledgeTestPassed: false,
+      leveragedProductsKnowledgeTestAnswers: { put_dow_jones_falling: 'A' },
     };
-    expect(validateStepData('risk', payload)).toEqual({ valid: true });
+    expect(validateStepData('risk', { ...base, assetType: 'privateAssets' })).toEqual({ valid: true });
+    expect(validateStepData('risk', { ...base, assetType: 'private_assets' })).toEqual({ valid: true });
+  });
+
+  test('complete risk rejects unknown assetType', () => {
+    const r = validateStepData('risk', {
+      leveragedProductsTotalLossRiskAcknowledged: true,
+      leveragedProductsKnowledgeTestAnswers: { put_dow_jones_falling: 'A' },
+      assetType: 'invalid',
+    });
+    expect(r.valid).toBe(false);
+    expect(r.message).toMatch(/assetType/i);
   });
 });

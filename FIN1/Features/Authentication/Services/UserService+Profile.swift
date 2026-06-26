@@ -14,43 +14,8 @@ extension UserService {
             self?.currentUser = user
         }
 
-        if let apiClient = parseAPIClient {
-            Task {
-                do {
-                    struct UserUpdateInput: Codable {
-                        let username: String
-                        let email: String
-                        let firstName: String
-                        let lastName: String
-                        let phoneNumber: String
-                        let streetAndNumber: String
-                        let postalCode: String
-                        let city: String
-                        let country: String
-                    }
-
-                    let input = UserUpdateInput(
-                        username: user.username,
-                        email: user.email,
-                        firstName: user.firstName,
-                        lastName: user.lastName,
-                        phoneNumber: user.phoneNumber,
-                        streetAndNumber: user.streetAndNumber,
-                        postalCode: user.postalCode,
-                        city: user.city,
-                        country: user.country
-                    )
-
-                    _ = try await apiClient.updateObject(
-                        className: "_User",
-                        objectId: user.id,
-                        object: input
-                    )
-                    print("✅ User profile synced to backend: \(user.id)")
-                } catch {
-                    print("⚠️ Failed to sync user profile to backend: \(error.localizedDescription)")
-                }
-            }
+        if self.parseAPIClient != nil {
+            try await self.syncProfileToBackendIfPossible(user: user)
         } else {
             try await Task.sleep(nanoseconds: 1_000_000_000)
         }
@@ -84,5 +49,53 @@ extension UserService {
 
         try await Task.sleep(nanoseconds: 500_000_000)
         try UserValidationService.checkForRefreshErrors(currentUser: user)
+    }
+
+    /// Persists editable profile fields via the authenticated `updateProfile` Cloud Function.
+    func syncProfileToBackendIfPossible(user: User) async throws {
+        guard let apiClient = parseAPIClient else { return }
+
+        guard DocumentInboxPolicy.isParseObjectId(user.id) else {
+            print("⚠️ UserService: Skipping profile sync — user id is not a Parse objectId (\(user.id))")
+            return
+        }
+
+        guard self.sessionToken?.hasPrefix("r:") == true else {
+            print("⚠️ UserService: Skipping profile sync — no Parse session token")
+            return
+        }
+
+        let dateFormatter = ISO8601DateFormatter()
+        dateFormatter.formatOptions = [.withFullDate]
+
+        let parameters: [String: Any] = [
+            "firstName": user.firstName,
+            "lastName": user.lastName,
+            "salutation": user.salutation.rawValue,
+            "phoneNumber": user.phoneNumber,
+            "dateOfBirth": dateFormatter.string(from: user.dateOfBirth),
+            "streetAndNumber": user.streetAndNumber,
+            "postalCode": user.postalCode,
+            "city": user.city,
+            "country": user.country,
+            "state": user.state,
+            "username": user.username,
+            "email": user.email.lowercased().trimmingCharacters(in: .whitespaces)
+        ]
+
+        struct UpdateProfileResponse: Decodable {
+            let success: Bool
+        }
+
+        let response: UpdateProfileResponse = try await apiClient.callFunction(
+            "updateProfile",
+            parameters: parameters
+        )
+
+        guard response.success else {
+            throw AppError.serviceError(.operationFailed)
+        }
+
+        print("✅ User profile synced to backend: \(user.id)")
     }
 }

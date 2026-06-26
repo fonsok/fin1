@@ -4,6 +4,8 @@ import SwiftUI
 // Note: These components are now in the Navigation subfolder
 
 struct SignUpView: View {
+    private static let scrollTopAnchorID = "SignUpScrollTop"
+
     @Environment(\.dismiss) private var dismiss
     @Environment(\.appServices) private var appServices
     @StateObject private var coordinator = SignUpCoordinator()
@@ -44,13 +46,23 @@ struct SignUpView: View {
                     .padding(.top, ResponsiveDesign.spacing(8))
                     .padding(.bottom, ResponsiveDesign.spacing(12))
 
-                    ScrollView {
-                        VStack(spacing: ResponsiveDesign.spacing(0)) {
-                            self.currentStepView
+                    ScrollViewReader { scrollProxy in
+                        ScrollView {
+                            VStack(spacing: ResponsiveDesign.spacing(0)) {
+                                Color.clear
+                                    .frame(height: 0)
+                                    .id(SignUpView.scrollTopAnchorID)
+
+                                self.currentStepView
+                            }
+                            .padding(.bottom, ResponsiveDesign.spacing(16))
                         }
-                        .padding(.bottom, ResponsiveDesign.spacing(16))
+                        .scrollDisabled(self.coordinator.currentStep == .roleAgreement)
+                        .scrollIndicators(.hidden)
+                        .onChange(of: self.coordinator.currentStep) { _, _ in
+                            scrollProxy.scrollTo(SignUpView.scrollTopAnchorID, anchor: .top)
+                        }
                     }
-                    .scrollIndicators(.hidden)
 
                     self.signUpFooter
                 }
@@ -60,10 +72,33 @@ struct SignUpView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button(self.coordinator.isFirstStep ? "Abbrechen" : "Cancel") {
-                        self.dismiss()
+                    if self.coordinator.canGoBack {
+                        Button {
+                            self.coordinator.previousStep()
+                        } label: {
+                            HStack(spacing: ResponsiveDesign.spacing(4)) {
+                                Image(systemName: "chevron.left")
+                                Text("Back")
+                            }
+                        }
+                        .foregroundColor(AppTheme.accentLightBlue)
+                        .accessibilityIdentifier("SignUpBackButton")
+                    } else {
+                        Button("Abbrechen") {
+                            SignUpFlowSession.markUserLeftOnboarding()
+                            SignUpFlowSession.end()
+                            self.dismiss()
+                        }
+                        .foregroundColor(AppTheme.accentLightBlue)
                     }
-                    .foregroundColor(AppTheme.accentLightBlue)
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    if self.coordinator.canGoBack {
+                        Button("Cancel") {
+                            self.coordinator.requestReturnToLanding()
+                        }
+                        .foregroundColor(AppTheme.accentLightBlue)
+                    }
                 }
                 #if DEBUG
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -97,6 +132,7 @@ struct SignUpView: View {
         }
         .onAppear {
             self.coordinator.signUpData = self.signUpData
+            self.coordinator.setUserRole(self.signUpData.userRole)
             self.signUpData.injectServices(
                 riskClassCalculationService: self.appServices.riskClassCalculationService,
                 investmentExperienceCalculationService: self.appServices.investmentExperienceCalculationService
@@ -107,6 +143,7 @@ struct SignUpView: View {
             self.coordinator.configureServices(
                 onboardingAPIService: self.appServices.onboardingAPIService,
                 userService: self.appServices.userService,
+                termsContentService: self.appServices.termsContentService,
                 telemetryService: self.appServices.telemetryService
             )
             Task {
@@ -114,10 +151,12 @@ struct SignUpView: View {
                 #if DEBUG
                 self.applyDebugTestPrefill(force: false)
                 #endif
+                self.coordinator.applyServerRoleToSignUpData()
                 self.coordinator.startInactivityTimer()
             }
         }
         .onChange(of: self.signUpData.userRole) { _, newRole in
+            guard !self.isAccountRoleLocked else { return }
             self.coordinator.setUserRole(newRole)
         }
         .onChange(of: self.coordinator.currentStep) { _, newStep in
@@ -135,6 +174,8 @@ struct SignUpView: View {
         }
         .onChange(of: self.coordinator.shouldDismiss) { _, newValue in
             if newValue {
+                SignUpFlowSession.markUserLeftOnboarding()
+                SignUpFlowSession.end()
                 self.dismiss()
                 self.coordinator.shouldDismiss = false
             }
@@ -187,7 +228,8 @@ struct SignUpView: View {
         case .welcome:
             WelcomeStep(
                 accountType: self.$signUpData.accountType,
-                userRole: self.$signUpData.userRole
+                userRole: self.$signUpData.userRole,
+                isRoleSelectionLocked: self.isAccountRoleLocked
             )
         case .contact:
             ContactStep(
@@ -195,7 +237,9 @@ struct SignUpView: View {
                 phoneNumber: self.$signUpData.phoneNumber,
                 username: self.$signUpData.username,
                 password: self.$signUpData.password,
-                confirmPassword: self.$signUpData.confirmPassword
+                confirmPassword: self.$signUpData.confirmPassword,
+                acceptedTerms: self.$signUpData.acceptedTerms,
+                acceptedPrivacyPolicy: self.$signUpData.acceptedPrivacyPolicy
             )
         case .accountCreated:
             AccountCreatedStep()
@@ -301,11 +345,7 @@ struct SignUpView: View {
                 otherAssets: self.$signUpData.otherAssets
             )
         case .desiredReturn:
-            DesiredReturnStep(
-                desiredReturn: self.$signUpData.desiredReturn,
-                leveragedProductsKnowledgeTestAnswers: self.$signUpData.leveragedProductsKnowledgeTestAnswers,
-                leveragedProductsTotalLossRiskAcknowledged: self.$signUpData.leveragedProductsTotalLossRiskAcknowledged
-            )
+            DesiredReturnStep(signUpData: self.signUpData)
         case .nonInsiderDeclaration:
             NonInsiderDeclarationStep(insiderTradingOptions: self.$signUpData.insiderTradingOptions)
         case .moneyLaunderingDeclaration:
@@ -325,6 +365,15 @@ struct SignUpView: View {
             RiskClassificationNoteStep(signUpData: self.signUpData, coordinator: self.coordinator)
         case .riskClass7Confirmation:
             RiskClass7ConfirmationStep(signUpData: self.signUpData, coordinator: self.coordinator)
+        case .roleAgreement:
+            RoleAgreementStep(
+                signUpData: self.signUpData,
+                coordinator: self.coordinator,
+                termsContentService: self.appServices.termsContentService,
+                roleAgreementConsentService: RoleAgreementConsentService(
+                    parseAPIClient: self.appServices.parseAPIClient
+                )
+            )
         }
     }
 
@@ -338,36 +387,20 @@ struct SignUpView: View {
     }
     #endif
 
+    /// Role is fixed at `POST /users` (Contact step); no changes after account exists.
+    private var isAccountRoleLocked: Bool {
+        self.appServices.userService.isAuthenticated
+    }
+
     private func completeRegistration() {
         self.coordinator.isLoading = true
 
         Task {
             do {
-                let user = try signUpData.createUser()
-                let exportedData = self.signUpData.savedOnboardingData()
-
-                try await self.appServices.userService.updateProfile(user)
-
-                if let onboardingAPI = appServices.onboardingAPIService {
-                    // Records LegalConsent audit rows (AGB + DSE) via completeOnboardingStep(consents).
-                    _ = try await onboardingAPI.completeStep(
-                        step: OnboardingPhase.legalConsent.completionBackendStep,
-                        data: exportedData
-                    )
-                    // Mark the final verification step
-                    _ = try await onboardingAPI.completeStep(
-                        step: "verification",
-                        data: exportedData
-                    )
-                }
-
-                try await self.appServices.userService.refreshUserData()
-
-                if let user = self.appServices.userService.currentUser {
-                    DeviceLegalConsentStore.markAcknowledgedFromUser(user)
-                }
-
-                self.coordinator.trackOnboardingCompleted()
+                try await self.coordinator.finalizeRegistration(
+                    signUpData: self.signUpData,
+                    appServices: self.appServices
+                )
                 self.coordinator.isLoading = false
                 self.dismiss()
             } catch {

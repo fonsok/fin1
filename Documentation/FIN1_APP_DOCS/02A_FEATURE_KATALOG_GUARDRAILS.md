@@ -157,10 +157,11 @@ Diese Regeln schützen **bereits korrekte Finanzwerte** vor “Formel-Drift” (
     - **Bei Contact:** `POST /users` / `createEarlyAccountUser` persistiert `_User.role` — ab dann SSOT auf dem Server.
     - **Nach Kontoanlage:** Rolle **nicht** mehr änderbar — weder in der UI (`WelcomeStep.isRoleSelectionLocked`), noch per `saveOnboardingProgress` (abweichende `userRole` im Blob → `OPERATION_FORBIDDEN`), noch per `_User.save` (`userTriggerBeforeSave` blockiert Investor↔Trader).
     - **Resume:** `restoreFromSavedData(..., lockAccountRole: true)` ignoriert gespeicherte `userRole` im Blob; `applyServerRoleToSignUpData()` gleicht UI/Coordinator mit `_User.role` ab (kein Client-Sync zurück zum Server).
-  - **Step 20 (Terms):** keine Duplikat-Consent-Toggles mehr; RC7 zeigt nur read-only Consent-Status mit Link zurück zu Contact bei Lücken.
+  - **Schritt `terms` (SignUpStep enum 20, UI-Flow nach RK-Hinweis/RK7):** Marketing-Consent optional; bei RC7-Pfad nur read-only Legal-Gate-1-Status (keine Duplikat-Toggles); Link zurück zu Contact bei Lücken.
+  - **RC-Berechnung (SSOT, seit 2026-06):** Score-Logik **nur** in `RiskClassCalculationService` (`RiskClassCalculationServiceProtocol`); `SignUpData` injiziert den Service standardmäßig (Default + `AppServices` in `SignUpView.onAppear`). **Kein** Legacy-Fallback/`calculateRiskClassLegacy` in `SignUpDataRiskCalculation.swift`. Gate-Helfer (`meetsRiskClass5DerivativesExperienceCriteria`, `cappedForRiskClass5DerivativesGate`, `syncOnboardingRiskClassSelection`) bleiben in `SignUpDataRiskCalculation.swift`.
   - **Step 16 (Experience):** bei Transaktionsanzahl `none` werden €-/Zeit-Follow-up-Picker ausgeblendet und Werte geleert; Screen scrollt beim Step-Wechsel nach oben.
   - **Step 16c (Zertifikate & Derivate) — RC-5-Gate (rollenspezifisch, iOS):**
-    - SSOT: `SignUpDataRiskCalculation.swift` → `meetsRiskClass5DerivativesExperienceCriteria`, `cappedForRiskClass5DerivativesGate`.
+    - Gate-SSOT: `SignUpDataRiskCalculation.swift` → `meetsRiskClass5DerivativesExperienceCriteria`, `cappedForRiskClass5DerivativesGate` (angewendet in `RiskClassCalculationService`).
     - Berechnete RK 5 wird ohne passendes Profil auf **max. RK 4** gekappt.
     - **Investor** (`meetsInvestorRiskClass5DerivativesExperienceCriteria`) — Mindestprofil:
       - Transaktionen: **1–10** (oder höher: 10–50, 50+)
@@ -176,18 +177,23 @@ Diese Regeln schützen **bereits korrekte Finanzwerte** vor “Formel-Drift” (
   - **Signup-Last (Skalierung):** `saveOnboardingProgress` — ein `OnboardingProgress`-Dokument pro Nutzer (Upsert), `_User.save` nur bei Schrittwechsel, Position-only überschreibt keine Blob-Daten, Rate-Limit ~40/min/Nutzer; iOS debounced partial saves (~400 ms); Finalize ohne doppeltes `risk`-Complete; Mongo-Indexes via Migration `onboarding_signup_indexes_v1`.
   - **Onboarding-Shell / Ressourcen (iOS, seit 2026-06):** Während `!onboardingCompleted` kein `MainTabView`, kein SLA-Polling, kein Retail-Background-Sync (siehe §3.2). Telemetrie `onboarding_started` beim Verlassen von Welcome (`persistStepTransition`); Default-Rolle in `SignUpData` bleibt `.investor`. Kontoauszug-Fetch (`TraderAccountStatementBuilder`): leere Server-Timeline bei neuem Konto **ohne** Fehler-Log (nur bei echtem API-Fehler warnen).
   - **Step 17 (Gewinnziel, Verlusttragfähigkeit & Wissenstest):**
+    - **UI:** `DesiredReturnStep` mit `@ObservedObject signUpData` (keine losen Bindings für Gate-Felder).
     - **UI-Reihenfolge:** Gewinnziel → Verlusttragfähigkeit & Risikobereitschaft → Wissenstest; Screen scrollt beim Step-Wechsel nach oben.
     - Nutzer muss **alle** Wissenstest-Fragen beantworten und **Ja/Nein** zum Totalverlustrisiko wählen, um weiterzugehen.
     - **Falsche Quiz-Antworten blockieren nicht** — stattdessen Lernhinweis + Link zur In-App-Lernseite (`LeveragedProductsLearningView`).
-    - **Risikoklasse 1 (konservativ)** wird in der Zusammenfassung erzwungen, wenn `leveragedProductsTotalLossRiskAcknowledged == false` **oder** der Wissenstest beantwortet, aber nicht bestanden ist (`requiresConservativeRiskClassFromOnboarding` in `SignUpData`).
+    - **Risikoklasse 1 (konservativ)** wenn `leveragedProductsTotalLossRiskAcknowledged == false` **oder** Wissenstest beantwortet, aber nicht bestanden (`requiresConservativeRiskClassFromOnboarding`).
+    - **RK1-Sync reaktiv (seit 2026-06):** `updateLeveragedProductsTotalLossRiskAcknowledged` / `updateLeveragedProductsKnowledgeTestAnswer` rufen sofort `syncOnboardingRiskClassSelection()` auf (nicht erst auf `SummaryStep.onAppear`). `SummaryStep.onAppear` bleibt zusätzliches Sicherheitsnetz.
     - iOS- und Backend-Fragenversion müssen übereinstimmen (aktuell **1.2**); Fragen/Optionen nur koordiniert in beiden SSOT-Dateien ändern.
-  - **Step 22 (Hinweis Risikoklassifizierung):**
-    - RK **1–4** → zurück zur Landing Page (wenn `shouldReturnToLandingAtRiskNote`).
-    - RK **5–6** → Landing nur, wenn der Nutzer die Risikoklasse **nicht** manuell erhöht hat (`shouldReturnToLandingAtRiskNote`).
-    - RK **7** → Onboarding fortsetzen → Schritt 23.
-  - **Step 23 (RK7-Bestätigung):** Hochrisiko-Warnung; Button **„Weiter zur Vereinbarung“** → Schritt 24 (kein direktes Finalize mehr).
-  - **Step 24 (Role Agreement — Legal Gate 2):** rollenspezifische Trader-/Investor-Vereinbarung (`getCurrentLegalDocument` → `trader_agreement`/`investor_agreement`, Fallback `RoleAgreementBundledContent`); `ScrollToAcceptReader` (Scroll-to-end, feste Höhe ~360 pt, Parent-Scroll disabled); Checkbox; `RoleAgreementConsentService` → `recordRoleAgreementConsent`; Button **„Zustimmen und Registrierung abschließen“** → `finalizeRegistration` (`mergedUserForFinalRegistration` behält Parse-`objectId` → `updateProfile` Cloud Function → `completeOnboardingStep` legalConsent + verification → `refreshUserData` → `applyOnboardingCompletion` → Device-Store-Mirror) → Dashboard via `UserSessionObserver`/`onboardingCompleted` (kein Downgrade nach Server-Refresh).
-  - **Server bleibt maßgeblich** für Joi-Validierung und `OnboardingAudit`-Snapshot beim Schritt `risk` (siehe `onboarding.js`); **Produkt-Guard** `productAccessGate` erzwingt Rollenvereinbarung vor Trading/Investing.
+  - **Step 22 / Fortschritt ~20 Investor (`riskClassificationNote`):** RK-Hinweis — RK **1–4** → Landing; RK **5–6** → Landing nur ohne manuelle RK-Erhöhung; RK **7** → Schritt 23. **Navigation:** Toolbar-Back/Cancel in `SignUpView` + In-Step-Back auf dem RK-Hinweis (Footer-Nav ist auf diesem Schritt absichtlich ausgeblendet).
+  - **Step 23 (`riskClass7Confirmation`):** Hochrisiko-Warnung; Button **„Weiter zur Vereinbarung“** → Schritt 24 (kein direktes Finalize mehr).
+  - **Step 24 (`roleAgreement` — Legal Gate 2):** rollenspezifische Trader-/Investor-Vereinbarung (`getCurrentLegalDocument` → `trader_agreement`/`investor_agreement`, Fallback `RoleAgreementBundledContent`); `ScrollToAcceptReader` (Scroll-to-end, feste Höhe ~360 pt, Parent-Scroll disabled); Checkbox; `RoleAgreementConsentService` → `recordRoleAgreementConsent` (mit `role` im Request); Button **„Zustimmen und Registrierung abschließen“** → `finalizeRegistration`:
+    1. `mergedUserForFinalRegistration` (Parse-`objectId` + Role-Agreement-Flags aus `SignUpData`)
+    2. `updateProfile` Cloud Function
+    3. `completeOnboardingStep` **`consents`** (inkl. `persistOnboardingRoleAgreementConsent` auf dem Server) + **`verification`**
+    4. `applyRoleAgreementAcceptanceIfNeeded` → `refreshUserData` → erneut `applyRoleAgreementAcceptanceIfNeeded` (kein Downgrade bei `getUserMe`-Lag)
+    5. `UserFactory.applyUserMeResponse`: monotonic merge für `acceptedTraderAgreement` / `acceptedInvestorAgreement`; `roleAgreementAccepted` aus `getUserMe`
+    6. `applyOnboardingCompletion` + `mirrorSignupLegalGateToDeviceStore` → Dashboard via `onboardingCompleted`
+  - **Server bleibt maßgeblich** für Joi-Validierung und `OnboardingAudit`-Snapshot beim Schritt `risk` (siehe `onboarding.js`); **`getUserMe`** leitet Rollenvereinbarung bei fehlendem `_User`-Flag aus `LegalConsent` ab (`resolveUserRoleAgreementState`, `persistResolvedRoleAgreementIfNeeded`); **Produkt-Guard** `productAccessGate` erzwingt Rollenvereinbarung vor Trading/Investing.
 - **Minimal-Checks**
   - Step Navigation funktioniert (vor/zurück, Progress).
   - Validation Errors werden korrekt angezeigt (kein “silent fail”).
@@ -195,10 +201,10 @@ Diese Regeln schützen **bereits korrekte Finanzwerte** vor “Formel-Drift” (
   - Welcome nach Kontoanlage: Investor/Trader-Picker disabled; Resume zeigt Server-Rolle (nicht Blob-`userRole`).
   - Step 16: `none` → keine €-/Zeit-Follow-ups; Step-Wechsel startet oben.
   - Step 16c: Investor-Gate (1–10 / €1k–10k / Tage–Wochen+) vs. Trader-Gate (50+ / ≥€10k / Minuten–Stunden); ohne Gate max. RK 4 trotz Score.
-  - Step 17: UI-Reihenfolge Gewinnziel → Verlusttragfähigkeit → Wissenstest; Nein bei Totalverlust → Summary zeigt RK1; falscher Quiz → RK1, Weiter trotzdem möglich.
-  - Step 22: Landing-Routing für RK1–6 wie oben; RK7 → Schritt 23.
+  - Step 17: UI-Reihenfolge Gewinnziel → Verlusttragfähigkeit → Wissenstest; Ja/Nein und Quiz-Antworten triggern **sofort** RK1-Sync (`updateLeveragedProducts*`); Nein bei Totalverlust → RK1 in Summary; falscher Quiz → RK1, Weiter trotzdem möglich.
+  - Step 22 / RK-Hinweis (~Schritt 20 Investor): Landing-Routing für RK1–6 wie oben; RK7 → Schritt 23; Back in Toolbar + In-Step-Button.
   - Step 23–24: Role Agreement nur nach RK7-Pfad; Scroll-Gate + Checkbox vor Abschluss; ohne Scroll kein aktiver Abschluss-Button.
-  - Step 24 Finalize: nach Erfolg `onboardingCompleted=true`, Wechsel zu `MainTabView` (kein blauer Placeholder-Loop).
+  - Step 24 Finalize: nach Erfolg `onboardingCompleted=true`, Rollenvereinbarung lokal **und** auf dem Server (`accepted*Agreement`); kein Dashboard-Hinweis „Bitte akzeptieren Sie die …-Vereinbarung“ nach frischem Sign-up; Wechsel zu `MainTabView`.
   - Trading/Investing ohne Rollenvereinbarung: serverseitig `OPERATION_FORBIDDEN` (`productAccessGate`).
   - Nach frischer Registrierung: kein redundantes Legal-Modal auf demselben Install.
   - Während Onboarding: kein `MainTabView appeared` in Logs; kein SLA-/Ticket-Fetch für Retail.
@@ -233,7 +239,7 @@ Diese Regeln schützen **bereits korrekte Finanzwerte** vor “Formel-Drift” (
   - **Pre-trade Checks** werden nicht umgangen:
     - Extend/verwende `BuyOrderValidator` Pattern (Compliance Rule).
   - **Paired-Buy-Schutz:** Kein Trader-only-Buy, wenn reserviertes Pool-Kapital serverseitig/lokal existiert (`TraderPairedBuyPlacementGuard`; Backend-Refresh vor Kauf in `BuyOrderPlacementService` / `BuyOrderViewModel`).
-  - **Pool-UX (Investor-Schutz):** Kein globales „Pool active“ im Dashboard; Status nur **pro Depot-Position** nach Mirror-Aktivierung (`DepotPositionPoolStatusResolver` / Kachel „Investment-Pool“). Reserviert (RSV) ≠ `active`.
+  - **Pool-UX (Investor-Schutz):** Kein globales „Pool active“ im Dashboard. Für **Trader** optional die Kachel-Zeile „Investment-Pool“ (active / -) **pro Depot-Position** nach abgeschlossener Kauforder (`HoldingCard` / `DepotPositionPoolStatusResolver`), gesteuert über Admin → Anzeige → `display.showTraderDashboardInvestmentActiveStatus` (4-Augen; Standard: **an**). Reserviertes Kapital ohne Mirror-Leg erscheint nicht als „active“.
   - **Audit Logging** bei Trading-Aktionen darf nicht “aus Versehen” entfernt werden (MiFID/Compliance).
   - Status-/Lifecycle Logik bleibt konsistent (Orders/Trades/Invoices/Notifications).
   - **Profit/ROI/Tax/Fee Displays bleiben konsistent** (siehe `1.1`):

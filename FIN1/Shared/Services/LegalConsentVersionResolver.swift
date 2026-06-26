@@ -47,6 +47,7 @@ enum LegalConsentVersionResolver {
         case .terms: self.termsLanguage()
         case .privacy: self.privacyLanguage(for: user)
         case .imprint: .german
+        case .traderAgreement, .investorAgreement: .german
         }
         return await self.resolveContent(
             user: user,
@@ -118,6 +119,12 @@ enum LegalConsentVersionResolver {
             return user.acceptedPrivacyPolicyVersion?.trimmingCharacters(in: .whitespacesAndNewlines).nonEmpty
         case .imprint:
             return nil
+        case .traderAgreement:
+            guard user.acceptedTraderAgreement else { return nil }
+            return user.acceptedTraderAgreementVersion?.trimmingCharacters(in: .whitespacesAndNewlines).nonEmpty
+        case .investorAgreement:
+            guard user.acceptedInvestorAgreement else { return nil }
+            return user.acceptedInvestorAgreementVersion?.trimmingCharacters(in: .whitespacesAndNewlines).nonEmpty
         }
     }
 
@@ -126,6 +133,7 @@ enum LegalConsentVersionResolver {
         case .terms: TermsVersionConstants.currentTermsVersion
         case .privacy: TermsVersionConstants.currentPrivacyPolicyVersion
         case .imprint: "1.0"
+        case .traderAgreement, .investorAgreement: "1.0"
         }
     }
 }

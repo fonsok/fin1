@@ -52,6 +52,13 @@ final class LandingViewModel: ObservableObject {
         #endif
     }
 
+    /// Signs in as a company investor test user (KYB variants).
+    func signInAsCompanyInvestor(_ account: TestConstants.CompanyInvestorTestAccount) async {
+        #if DEBUG
+        await self.performDebugLogin(email: account.email, role: account.displayLabel)
+        #endif
+    }
+
     /// Signs in as an admin test user
     func signInAsAdmin() async {
         #if DEBUG

@@ -33,8 +33,8 @@
   - `documentType`: `terms` | `privacy` | `imprint` | **`trader_agreement`** | **`investor_agreement`**
   - liefert aktive `TermsContent`-Version inkl. aufgelöster Platzhalter (Gebührensätze aus `Configuration`)
 
-- `recordRoleAgreementConsent(version, deviceInstallId, …)`
-  - Login required; rollenspezifische Vereinbarung (Trader Signalgeber / Investor)
+- `recordRoleAgreementConsent(role?, version, deviceInstallId, …)`
+  - Login required; `role` optional (Default: `_User.role`); rollenspezifische Vereinbarung (Trader Signalgeber / Investor)
   - schreibt `LegalConsent` mit `consentType: trader_agreement|investor_agreement`, Default-`source: onboarding`
   - synchronisiert `_User.acceptedTraderAgreement*` / `acceptedInvestorAgreement*` (`legalConsentUserSync.js`)
   - optional Bestätigungs-E-Mail mit PDF-Anhang (`roleAgreementEmail.js`)
@@ -228,8 +228,9 @@ Onboarding legt beim Schritt `consents` zwei `LegalConsent`-Zeilen mit `source: 
 
 - **Inhalt:** server-driven via `TermsContent` (`documentType: trader_agreement|investor_agreement`); Fallback `RoleAgreementBundledContent` (iOS).
 - **UI:** `RoleAgreementStep` (Step 24) — Volltext in `ScrollToAcceptReader` (Scroll-to-end via `onScrollGeometryChange`); Checkbox + Button **„Zustimmen und Registrierung abschließen“** erst nach Scroll-Gate (`hasReachedBottom`).
-- **Consent:** `RoleAgreementConsentService` → `recordRoleAgreementConsent` mit `deviceInstallId`, `version`, `documentHash`, `source: onboarding`.
-- **Profil:** `_User.acceptedTraderAgreement*` / `acceptedInvestorAgreement*` werden serverseitig gesetzt; `getUserMe` liefert `roleAgreementRequired`, `roleAgreementAccepted`, `roleAgreementVersion`.
+- **Consent:** `RoleAgreementConsentService` → `recordRoleAgreementConsent` mit `role`, `deviceInstallId`, `version`, `documentHash`, `source: onboarding`.
+- **Profil:** `_User.acceptedTraderAgreement*` / `acceptedInvestorAgreement*` werden serverseitig gesetzt; `getUserMe` liefert `roleAgreementRequired`, `roleAgreementAccepted`, `roleAgreementVersion`. **`resolveUserRoleAgreementState`** leitet Zustimmung aus vorhandenen `LegalConsent`-Zeilen ab, wenn das `_User`-Flag fehlt; **`persistResolvedRoleAgreementIfNeeded`** schreibt fehlende Flags nach (analog zu Gate-1-Legal).
+- **Finalize (iOS):** `completeOnboardingStep(consents)` ruft zusätzlich `persistOnboardingRoleAgreementConsent` auf (Blob: `acceptedTraderAgreement` / `acceptedInvestorAgreement` + Versionen). Nach `refreshUserData` setzt `applyRoleAgreementAcceptanceIfNeeded` die lokalen Flags; `UserFactory.applyUserMeResponse` downgradet Role-Agreement-Flags **nicht** (monotonic `||`-Merge + `roleAgreementAccepted`).
 - **Audit:** append-only `LegalConsent`; optional PDF-Bestätigungsmail an Nutzer-E-Mail.
 - **Produkt-Guard:** `productAccessGate.assertProductAccessEligible` blockiert Trading/Investing ohne abgeschlossenes Onboarding, Gate-1-Consents **und** passende Rollenvereinbarung.
 
@@ -278,8 +279,11 @@ Onboarding legt beim Schritt `consents` zwei `LegalConsent`-Zeilen mit `source: 
 - **Sign-up (Legal Gate 2 — Role Agreement):**
   - `RoleAgreementStep` / `RoleAgreementStepViewModel` (Step 24): lädt Vereinbarung via `getCurrentLegalDocument` (`trader_agreement`/`investor_agreement`)
   - `ScrollToAcceptReader`: Scroll-to-end-Binding; Parent-Scroll auf Step 24 deaktiviert (`SignUpView.scrollDisabled`)
-  - `RoleAgreementConsentService` → `recordRoleAgreementConsent`; danach `SignUpCoordinator.finalizeRegistration` (`updateProfile` → `completeOnboardingStep` ×2 → `refreshUserData` → `applyOnboardingCompletion`)
-  - `UserSessionObserver` + `AuthenticationView`: UI-Gate auf `onboardingCompleted` ohne Downgrade nach Finalize
+  - `RoleAgreementConsentService` → `recordRoleAgreementConsent` (mit `role`); danach `SignUpCoordinator.finalizeRegistration`:
+    - `updateProfile` → `completeOnboardingStep(consents)` inkl. `persistOnboardingRoleAgreementConsent` → `completeOnboardingStep(verification)`
+    - `applyRoleAgreementAcceptanceIfNeeded` → `refreshUserData` → erneut `applyRoleAgreementAcceptanceIfNeeded`
+    - `applyOnboardingCompletion` + `mirrorSignupLegalGateToDeviceStore`
+  - `UserSessionObserver` + `AuthenticationView`: UI-Gate auf `onboardingCompleted`; kein fälschlicher Role-Agreement-Blocker auf dem Dashboard nach frischem Sign-up
 
 - **Backend Produkt-Guard:** `utils/productAccessGate.js` (`assertProductAccessEligible`) auf kritischen Trading/Investment-Functions — erfordert `onboardingCompleted`, Gate-1-Consents **und** rollenspezifische Vereinbarung
 

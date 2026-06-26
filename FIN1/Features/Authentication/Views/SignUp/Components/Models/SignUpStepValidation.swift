@@ -16,13 +16,25 @@ struct DefaultStepValidation: StepValidation {
 
     var isTestModeEnabled: Bool { self.testModeService?.isTestModeEnabled ?? false }
 
+    private func legalConsentValidationMessage(for data: SignUpData) -> String? {
+        if !data.acceptedTerms {
+            return "Please accept the Terms of Service"
+        }
+        if !data.acceptedPrivacyPolicy {
+            return "Please accept the Privacy Policy"
+        }
+        return nil
+    }
+
     func canProceedToNextStep(for step: SignUpStep, with data: SignUpData) -> Bool {
         switch step {
         case .welcome:
             return true // Account type is always selected (defaults to .individual)
 
         case .contact:
-            return !data.email.isEmpty && !data.username.isEmpty && data.isUsernameValid && !data.password.isEmpty && data.password.count >= 8
+            return !data.email.isEmpty && !data.username.isEmpty && data.isUsernameValid
+                && !data.password.isEmpty && data.password.count >= 8
+                && data.hasRequiredLegalConsents
 
         case .accountCreated:
             return true
@@ -85,10 +97,10 @@ struct DefaultStepValidation: StepValidation {
             return true // Success step, always proceed
 
         case .financial:
-            return true // Employment status and income range have defaults
+            return data.isFinancialStepComplete
 
         case .experience:
-            return true // Multi-field step, always proceed
+            return data.isExperienceStepComplete
 
         case .desiredReturn:
             return data.hasAnsweredAllLeveragedProductsKnowledgeTestQuestions
@@ -101,7 +113,7 @@ struct DefaultStepValidation: StepValidation {
             return data.moneyLaunderingDeclaration && data.assetType == .privateAssets
 
         case .terms:
-            return data.acceptedTerms && data.acceptedPrivacyPolicy
+            return data.hasRequiredLegalConsents
 
         case .summary:
             return true // Always proceed
@@ -110,10 +122,14 @@ struct DefaultStepValidation: StepValidation {
             return true // Always proceed
 
         case .riskClass7Confirmation:
-            return true // Always proceed
+            return data.hasRequiredLegalConsents
+
+        case .roleAgreement:
+            return data.hasRequiredRoleAgreement
         }
     }
 
+    // swiftlint:disable:next cyclomatic_complexity
     func getValidationMessage(for step: SignUpStep, with data: SignUpData) -> String? {
         switch step {
         case .welcome:
@@ -130,6 +146,8 @@ struct DefaultStepValidation: StepValidation {
                 return "Please enter your password"
             } else if data.password.count < 8 {
                 return "Password must be at least 8 characters"
+            } else if let legalMessage = self.legalConsentValidationMessage(for: data) {
+                return legalMessage
             }
             return nil
 
@@ -218,10 +236,43 @@ struct DefaultStepValidation: StepValidation {
             return nil // Success step, always proceed
 
         case .financial:
-            return nil // Employment status and income range have defaults
+            if data.employmentStatus == nil {
+                return "Please select your employment status"
+            }
+            if data.incomeRange == nil {
+                return "Please select your income range"
+            }
+            if data.cashAndLiquidAssets == nil {
+                return "Please select your cash and liquid assets"
+            }
+            if !data.incomeSources.values.contains(true) {
+                return SignUpStepSelectionPrompt.incomeSources
+            }
+            return nil
 
         case .experience:
-            return nil // Multi-field step, always proceed
+            if !data.isStocksExperienceComplete {
+                if data.stocksTransactionsCount == nil {
+                    return "Please answer all questions for stocks (section a)"
+                }
+                return "Please select how much you invested in stocks (section a)"
+            }
+            if !data.isEtfsExperienceComplete {
+                if data.etfsTransactionsCount == nil {
+                    return "Please answer all questions for investment funds and ETFs (section b)"
+                }
+                return "Please select how much you invested in investment funds and ETFs (section b)"
+            }
+            if !data.isDerivativesExperienceComplete {
+                if data.derivativesTransactionsCount == nil {
+                    return "Please answer all questions for certificates and derivatives (section c)"
+                }
+                return "Please answer the follow-up questions for certificates and derivatives (section c)"
+            }
+            if !data.otherAssets.values.contains(true) {
+                return SignUpStepSelectionPrompt.otherAssets
+            }
+            return nil
 
         case .desiredReturn:
             if !data.hasAnsweredAllLeveragedProductsKnowledgeTestQuestions {
@@ -244,12 +295,7 @@ struct DefaultStepValidation: StepValidation {
             return nil
 
         case .terms:
-            if !data.acceptedTerms {
-                return "Please accept the Terms of Service"
-            } else if !data.acceptedPrivacyPolicy {
-                return "Please accept the Privacy Policy"
-            }
-            return nil
+            return self.legalConsentValidationMessage(for: data)
 
         case .summary:
             return nil // Always proceed
@@ -258,7 +304,20 @@ struct DefaultStepValidation: StepValidation {
             return nil // Always proceed
 
         case .riskClass7Confirmation:
-            return nil // Always proceed
+            return self.legalConsentValidationMessage(for: data)
+
+        case .roleAgreement:
+            if !data.hasRequiredRoleAgreement {
+                switch data.userRole {
+                case .trader:
+                    return "Bitte stimmen Sie der Signalgeber-Vereinbarung zu."
+                case .investor:
+                    return "Bitte stimmen Sie der Investor-Vereinbarung zu."
+                default:
+                    return "Bitte stimmen Sie der Rollenvereinbarung zu."
+                }
+            }
+            return nil
         }
     }
 }

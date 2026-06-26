@@ -87,6 +87,10 @@ struct SavedOnboardingData: Codable, Sendable {
     let acceptedTerms: Bool?
     let acceptedPrivacyPolicy: Bool?
     let acceptedMarketingConsent: Bool?
+    let acceptedTraderAgreement: Bool?
+    let acceptedInvestorAgreement: Bool?
+    let traderAgreementVersion: String?
+    let investorAgreementVersion: String?
 
     // Meta (prefer `customerNumber`; `customerId` is legacy JSON from older saves)
     let customerNumber: String?

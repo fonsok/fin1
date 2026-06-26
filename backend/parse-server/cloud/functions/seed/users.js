@@ -1,11 +1,16 @@
 'use strict';
 
 const { requireAdminRole } = require('../../utils/permissions');
+const { applyProductAccessFields } = require('./testUserProductAccess');
 
 // ============================================================================
 // 5 Investors (ANL-) + 10 Traders (TRD-)
 // All users are fully onboarded with KYC verified, as if they completed
 // the registration process including PostIdent verification.
+//
+// riskClass: FIN1 RiskClass 1–7 stored in _User.riskTolerance (iOS UserExtensions).
+// Landing debug users (investor/trader 1–5) use RC ≥ 5 so invest/trade is never blocked.
+// Keep in sync with FIN1/Shared/Constants/TestUserConstants.swift.
 // ============================================================================
 
 const INVESTORS = [
@@ -17,7 +22,7 @@ const INVESTORS = [
     phoneNumber: '+49 30 12345601', nationality: 'DE',
     placeOfBirth: 'Berlin', countryOfBirth: 'Deutschland',
     taxNumber: 'DE123456781', employmentStatus: 'employed', incomeRange: 'range_50k_100k',
-    riskTolerance: 5, investmentExperience: 3, financialProductsExperience: true,
+    riskClass: 5, investmentExperience: 3, financialProductsExperience: true,
   },
   {
     email: 'investor2@test.com', username: 'smueller',
@@ -27,7 +32,7 @@ const INVESTORS = [
     phoneNumber: '+49 89 23456702', nationality: 'DE',
     placeOfBirth: 'München', countryOfBirth: 'Deutschland',
     taxNumber: 'DE234567892', employmentStatus: 'self_employed', incomeRange: 'range_100k_plus',
-    riskTolerance: 7, investmentExperience: 5, financialProductsExperience: true,
+    riskClass: 7, investmentExperience: 5, financialProductsExperience: true,
   },
   {
     email: 'investor3@test.com', username: 'oschneider',
@@ -37,7 +42,7 @@ const INVESTORS = [
     phoneNumber: '+49 211 34567803', nationality: 'DE',
     placeOfBirth: 'Düsseldorf', countryOfBirth: 'Deutschland',
     taxNumber: 'DE345678903', employmentStatus: 'employed', incomeRange: 'range_50k_100k',
-    riskTolerance: 3, investmentExperience: 2, financialProductsExperience: false,
+    riskClass: 5, investmentExperience: 2, financialProductsExperience: false,
   },
   {
     email: 'investor4@test.com', username: 'eweber',
@@ -47,7 +52,7 @@ const INVESTORS = [
     phoneNumber: '+49 40 45678904', nationality: 'DE',
     placeOfBirth: 'Hamburg', countryOfBirth: 'Deutschland',
     taxNumber: 'DE456789014', employmentStatus: 'employed', incomeRange: 'range_25k_50k',
-    riskTolerance: 4, investmentExperience: 1, financialProductsExperience: false,
+    riskClass: 6, investmentExperience: 1, financialProductsExperience: false,
   },
   {
     email: 'investor5@test.com', username: 'dbraun',
@@ -57,7 +62,7 @@ const INVESTORS = [
     phoneNumber: '+49 69 56789005', nationality: 'DE',
     placeOfBirth: 'Frankfurt am Main', countryOfBirth: 'Deutschland',
     taxNumber: 'DE567890125', employmentStatus: 'self_employed', incomeRange: 'range_100k_plus',
-    riskTolerance: 8, investmentExperience: 7, financialProductsExperience: true,
+    riskClass: 6, investmentExperience: 7, financialProductsExperience: true,
   },
 ];
 
@@ -70,7 +75,7 @@ const TRADERS = [
     phoneNumber: '+49 30 67890101', nationality: 'DE',
     placeOfBirth: 'Berlin', countryOfBirth: 'Deutschland',
     taxNumber: 'DE678901231', employmentStatus: 'self_employed', incomeRange: 'range_100k_plus',
-    riskTolerance: 9, tradingFrequency: 8, leveragedProductsExperience: true,
+    riskClass: 7, tradingFrequency: 8, leveragedProductsExperience: true,
   },
   {
     email: 'trader2@test.com', username: 'awolf',
@@ -80,7 +85,7 @@ const TRADERS = [
     phoneNumber: '+49 89 78901202', nationality: 'DE',
     placeOfBirth: 'München', countryOfBirth: 'Deutschland',
     taxNumber: 'DE789012342', employmentStatus: 'self_employed', incomeRange: 'range_100k_plus',
-    riskTolerance: 8, tradingFrequency: 7, leveragedProductsExperience: true,
+    riskClass: 6, tradingFrequency: 7, leveragedProductsExperience: true,
   },
   {
     email: 'trader3@test.com', username: 'lwagner',
@@ -90,7 +95,7 @@ const TRADERS = [
     phoneNumber: '+49 221 89012303', nationality: 'DE',
     placeOfBirth: 'Köln', countryOfBirth: 'Deutschland',
     taxNumber: 'DE890123453', employmentStatus: 'employed', incomeRange: 'range_50k_100k',
-    riskTolerance: 6, tradingFrequency: 5, leveragedProductsExperience: true,
+    riskClass: 6, tradingFrequency: 5, leveragedProductsExperience: true,
   },
   {
     email: 'trader4@test.com', username: 'thoffmann',
@@ -100,7 +105,7 @@ const TRADERS = [
     phoneNumber: '+49 69 90123404', nationality: 'DE',
     placeOfBirth: 'Frankfurt am Main', countryOfBirth: 'Deutschland',
     taxNumber: 'DE901234564', employmentStatus: 'self_employed', incomeRange: 'range_100k_plus',
-    riskTolerance: 9, tradingFrequency: 9, leveragedProductsExperience: true,
+    riskClass: 7, tradingFrequency: 9, leveragedProductsExperience: true,
   },
   {
     email: 'trader5@test.com', username: 'jrichter',
@@ -110,7 +115,7 @@ const TRADERS = [
     phoneNumber: '+49 40 01234505', nationality: 'DE',
     placeOfBirth: 'Hamburg', countryOfBirth: 'Deutschland',
     taxNumber: 'DE012345675', employmentStatus: 'employed', incomeRange: 'range_50k_100k',
-    riskTolerance: 7, tradingFrequency: 6, leveragedProductsExperience: true,
+    riskClass: 6, tradingFrequency: 6, leveragedProductsExperience: true,
   },
   {
     email: 'trader6@test.com', username: 'mklein',
@@ -120,7 +125,7 @@ const TRADERS = [
     phoneNumber: '+49 30 12345606', nationality: 'DE',
     placeOfBirth: 'Stuttgart', countryOfBirth: 'Deutschland',
     taxNumber: 'DE123456786', employmentStatus: 'self_employed', incomeRange: 'range_100k_plus',
-    riskTolerance: 8, tradingFrequency: 7, leveragedProductsExperience: true,
+    riskClass: 6, tradingFrequency: 7, leveragedProductsExperience: true,
   },
   {
     email: 'trader7@test.com', username: 'alehmann',
@@ -130,7 +135,7 @@ const TRADERS = [
     phoneNumber: '+49 89 23456707', nationality: 'DE',
     placeOfBirth: 'Nürnberg', countryOfBirth: 'Deutschland',
     taxNumber: 'DE234567897', employmentStatus: 'employed', incomeRange: 'range_50k_100k',
-    riskTolerance: 6, tradingFrequency: 5, leveragedProductsExperience: true,
+    riskClass: 6, tradingFrequency: 5, leveragedProductsExperience: true,
   },
   {
     email: 'trader8@test.com', username: 'fschmitt',
@@ -140,7 +145,7 @@ const TRADERS = [
     phoneNumber: '+49 341 34567808', nationality: 'DE',
     placeOfBirth: 'Leipzig', countryOfBirth: 'Deutschland',
     taxNumber: 'DE345678908', employmentStatus: 'self_employed', incomeRange: 'range_100k_plus',
-    riskTolerance: 9, tradingFrequency: 8, leveragedProductsExperience: true,
+    riskClass: 7, tradingFrequency: 8, leveragedProductsExperience: true,
   },
   {
     email: 'trader9@test.com', username: 'lkoch',
@@ -150,7 +155,7 @@ const TRADERS = [
     phoneNumber: '+49 711 45678909', nationality: 'DE',
     placeOfBirth: 'Stuttgart', countryOfBirth: 'Deutschland',
     taxNumber: 'DE456789019', employmentStatus: 'employed', incomeRange: 'range_50k_100k',
-    riskTolerance: 7, tradingFrequency: 6, leveragedProductsExperience: true,
+    riskClass: 6, tradingFrequency: 6, leveragedProductsExperience: true,
   },
   {
     email: 'trader10@test.com', username: 'nhartmann',
@@ -160,7 +165,7 @@ const TRADERS = [
     phoneNumber: '+49 511 56789010', nationality: 'DE',
     placeOfBirth: 'Hannover', countryOfBirth: 'Deutschland',
     taxNumber: 'DE567890110', employmentStatus: 'self_employed', incomeRange: 'range_100k_plus',
-    riskTolerance: 8, tradingFrequency: 7, leveragedProductsExperience: true,
+    riskClass: 6, tradingFrequency: 7, leveragedProductsExperience: true,
   },
 ];
 
@@ -176,6 +181,7 @@ Parse.Cloud.define('seedTestUsers', async (request) => {
   // ── Step 1: Remove old investor/trader users ──
   const deleteQuery = new Parse.Query(Parse.User);
   deleteQuery.containedIn('role', ['investor', 'trader']);
+  deleteQuery.notEqualTo('accountType', 'company');
   deleteQuery.limit(1000);
   const oldUsers = await deleteQuery.find({ useMasterKey: true });
 
@@ -192,7 +198,13 @@ Parse.Cloud.define('seedTestUsers', async (request) => {
     const data = INVESTORS[i];
     const customerNumber = `ANL-${year}-${String(i + 1).padStart(5, '0')}`;
     const user = await createFullUser(data, 'investor', customerNumber);
-    created.push({ email: data.email, customerNumber, role: 'investor', objectId: user.id });
+    created.push({
+      email: data.email,
+      customerNumber,
+      role: 'investor',
+      riskClass: data.riskClass,
+      objectId: user.id,
+    });
   }
 
   // ── Step 3: Create traders ──
@@ -200,12 +212,62 @@ Parse.Cloud.define('seedTestUsers', async (request) => {
     const data = TRADERS[i];
     const customerNumber = `TRD-${year}-${String(i + 1).padStart(5, '0')}`;
     const user = await createFullUser(data, 'trader', customerNumber);
-    created.push({ email: data.email, customerNumber, role: 'trader', objectId: user.id });
+    created.push({
+      email: data.email,
+      customerNumber,
+      role: 'trader',
+      riskClass: data.riskClass,
+      objectId: user.id,
+    });
   }
 
   console.log(`✅ Seeded ${created.length} test users (deleted ${deleted} old).`);
   return { success: true, deleted, created };
 });
+
+/**
+ * Patches existing investor/trader test users in place (no delete).
+ * Use after deploying seed fixes when re-seeding would destroy linked data.
+ */
+Parse.Cloud.define('repairTestUserProfiles', async (request) => {
+  if (!request.master) {
+    requireAdminRole(request);
+  }
+
+  const repaired = [];
+  const missing = [];
+
+  for (const data of INVESTORS) {
+    const user = await findTestUserByEmail(data.email);
+    if (!user) {
+      missing.push({ email: data.email, role: 'investor' });
+      continue;
+    }
+    applyProductAccessFields(user, 'investor', data.riskClass);
+    await user.save(null, { useMasterKey: true });
+    repaired.push({ email: data.email, role: 'investor', riskClass: data.riskClass, objectId: user.id });
+  }
+
+  for (const data of TRADERS) {
+    const user = await findTestUserByEmail(data.email);
+    if (!user) {
+      missing.push({ email: data.email, role: 'trader' });
+      continue;
+    }
+    applyProductAccessFields(user, 'trader', data.riskClass);
+    await user.save(null, { useMasterKey: true });
+    repaired.push({ email: data.email, role: 'trader', riskClass: data.riskClass, objectId: user.id });
+  }
+
+  console.log(`✅ Repaired ${repaired.length} test user profiles (${missing.length} missing).`);
+  return { success: true, repaired, missing };
+});
+
+async function findTestUserByEmail(email) {
+  const query = new Parse.Query(Parse.User);
+  query.equalTo('email', email);
+  return query.first({ useMasterKey: true });
+}
 
 async function createFullUser(data, role, customerNumber) {
   const user = new Parse.User();
@@ -218,8 +280,6 @@ async function createFullUser(data, role, customerNumber) {
 
   user.set('status', 'active');
   user.set('emailVerified', true);
-  user.set('onboardingCompleted', true);
-  user.set('kycStatus', 'verified');
 
   user.set('salutation', data.salutation);
   user.set('firstName', data.firstName);
@@ -238,7 +298,6 @@ async function createFullUser(data, role, customerNumber) {
   user.set('isNotUSCitizen', true);
   user.set('employmentStatus', data.employmentStatus);
   user.set('incomeRange', data.incomeRange);
-  user.set('riskTolerance', data.riskTolerance);
 
   if (role === 'investor') {
     user.set('investmentExperience', data.investmentExperience || 0);
@@ -248,13 +307,13 @@ async function createFullUser(data, role, customerNumber) {
     user.set('leveragedProductsExperience', data.leveragedProductsExperience || false);
   }
 
-  user.set('acceptedTerms', true);
-  user.set('acceptedPrivacyPolicy', true);
   user.set('moneyLaunderingDeclaration', true);
   user.set('identificationType', 'id_card');
   user.set('identificationConfirmed', true);
   user.set('addressConfirmed', true);
   user.set('accountType', 'individual');
+
+  applyProductAccessFields(user, role, data.riskClass);
 
   await user.signUp(null, { useMasterKey: true });
   return user;

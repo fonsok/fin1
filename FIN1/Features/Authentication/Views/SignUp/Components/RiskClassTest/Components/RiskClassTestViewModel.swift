@@ -4,27 +4,32 @@ import SwiftUI
 final class RiskClassTestViewModel: ObservableObject {
     @Published var signUpData = SignUpData()
 
+    // swiftlint:disable:next cyclomatic_complexity
     func calculateCurrentScore() -> Int {
         var score = 0
 
         // Income range
-        switch self.signUpData.incomeRange {
-        case .low: score += 0
-        case .lowMiddle: score += 1
-        case .middle: score += 2
-        case .highMiddle: score += 3
-        case .high: score += 4
-        case .veryHigh: score += 5
+        if let incomeRange = self.signUpData.incomeRange {
+            switch incomeRange {
+            case .low: score += 0
+            case .lowMiddle: score += 1
+            case .middle: score += 2
+            case .highMiddle: score += 3
+            case .high: score += 4
+            case .veryHigh: score += 5
+            }
         }
 
         // Cash and liquid assets
-        switch self.signUpData.cashAndLiquidAssets {
-        case .lessThan10k: score += 0
-        case .tenKToFiftyK: score += 1
-        case .fiftyKToTwoHundredK: score += 2
-        case .twoHundredKToFiveHundredK: score += 3
-        case .fiveHundredKToOneMillion: score += 4
-        case .oneMillionPlus: score += 5
+        if let cashAndLiquidAssets = self.signUpData.cashAndLiquidAssets {
+            switch cashAndLiquidAssets {
+            case .lessThan10k: score += 0
+            case .tenKToFiftyK: score += 1
+            case .fiftyKToTwoHundredK: score += 2
+            case .twoHundredKToFiveHundredK: score += 3
+            case .fiveHundredKToOneMillion: score += 4
+            case .oneMillionPlus: score += 5
+            }
         }
 
         // Income sources
@@ -33,59 +38,79 @@ final class RiskClassTestViewModel: ObservableObject {
         if self.signUpData.incomeSources["Settlement"] == true { score += 1 }
 
         // Investment experience
-        switch self.signUpData.stocksTransactionsCount {
-        case .none: score += 0
-        case .oneToTen: score += 1
-        case .tenToFifty: score += 2
-        case .fiftyPlus: score += 3
+        if let stocksTransactionsCount = self.signUpData.stocksTransactionsCount {
+            switch stocksTransactionsCount {
+            case .none: score += 0
+            case .oneToTen: score += 1
+            case .tenToFifty: score += 2
+            case .fiftyPlus: score += 3
+            }
         }
 
-        switch self.signUpData.etfsTransactionsCount {
-        case .none: score += 0
-        case .oneToTen: score += 1
-        case .tenToTwenty: score += 2
-        case .moreThanTwenty: score += 3
+        if let etfsTransactionsCount = self.signUpData.etfsTransactionsCount {
+            switch etfsTransactionsCount {
+            case .none: score += 0
+            case .oneToTen: score += 1
+            case .tenToTwenty: score += 2
+            case .moreThanTwenty: score += 3
+            }
         }
 
-        switch self.signUpData.derivativesTransactionsCount {
-        case .none: score += 0
-        case .oneToTen: score += 3
-        case .tenToFifty: score += 6
-        case .fiftyPlus: score += 8
+        if let derivativesTransactionsCount = self.signUpData.derivativesTransactionsCount {
+            switch derivativesTransactionsCount {
+            case .none: score += 0
+            case .oneToTen: score += 3
+            case .tenToFifty: score += 6
+            case .fiftyPlus: score += 8
+            }
         }
 
         // Investment amounts (max of all types)
         let stocksAmountScore: Int
-        switch self.signUpData.stocksInvestmentAmount {
-        case .hundredToTenThousand: stocksAmountScore = 0
-        case .tenThousandToHundredThousand: stocksAmountScore = 1
-        case .hundredThousandToMillion: stocksAmountScore = 2
-        case .moreThanMillion: stocksAmountScore = 4
+        if let stocksInvestmentAmount = self.signUpData.stocksInvestmentAmount {
+            switch stocksInvestmentAmount {
+            case .hundredToTenThousand: stocksAmountScore = 0
+            case .tenThousandToHundredThousand: stocksAmountScore = 1
+            case .hundredThousandToMillion: stocksAmountScore = 2
+            case .moreThanMillion: stocksAmountScore = 4
+            }
+        } else {
+            stocksAmountScore = 0
         }
 
         let etfsAmountScore: Int
-        switch self.signUpData.etfsInvestmentAmount {
-        case .hundredToTenThousand: etfsAmountScore = 0
-        case .tenThousandToHundredThousand: etfsAmountScore = 1
-        case .hundredThousandToMillion: etfsAmountScore = 2
-        case .moreThanMillion: etfsAmountScore = 4
+        if let etfsInvestmentAmount = self.signUpData.etfsInvestmentAmount {
+            switch etfsInvestmentAmount {
+            case .hundredToTenThousand: etfsAmountScore = 0
+            case .tenThousandToHundredThousand: etfsAmountScore = 1
+            case .hundredThousandToMillion: etfsAmountScore = 2
+            case .moreThanMillion: etfsAmountScore = 4
+            }
+        } else {
+            etfsAmountScore = 0
         }
 
         let derivativesAmountScore: Int
-        switch self.signUpData.derivativesInvestmentAmount {
-        case .zeroToThousand: derivativesAmountScore = 0
-        case .thousandToTenThousand: derivativesAmountScore = 2
-        case .tenThousandToHundredThousand: derivativesAmountScore = 4
-        case .moreThanHundredThousand: derivativesAmountScore = 6
+        if let derivativesInvestmentAmount = self.signUpData.derivativesInvestmentAmount {
+            switch derivativesInvestmentAmount {
+            case .zeroToThousand: derivativesAmountScore = 0
+            case .thousandToTenThousand: derivativesAmountScore = 2
+            case .tenThousandToHundredThousand: derivativesAmountScore = 4
+            case .moreThanHundredThousand: derivativesAmountScore = 6
+            }
+        } else {
+            derivativesAmountScore = 0
         }
 
         score += max(stocksAmountScore, etfsAmountScore, derivativesAmountScore)
 
         // Derivatives holding period
-        switch self.signUpData.derivativesHoldingPeriod {
-        case .monthsToYears: score += 1
-        case .daysToWeeks: score += 2
-        case .minutesToHours: score += 4
+        if let derivativesHoldingPeriod = self.signUpData.derivativesHoldingPeriod {
+            switch derivativesHoldingPeriod {
+            case .monthsToYears: score += 1
+            case .daysToWeeks: score += 2
+            case .minutesToHours: score += 4
+            }
         }
 
         // Desired return
@@ -103,8 +128,9 @@ final class RiskClassTestViewModel: ObservableObject {
     }
 
     func resetToDefaults() {
-        self.signUpData.incomeRange = .middle
-        self.signUpData.cashAndLiquidAssets = .lessThan10k
+        self.signUpData.employmentStatus = nil
+        self.signUpData.incomeRange = nil
+        self.signUpData.cashAndLiquidAssets = nil
         self.signUpData.incomeSources = [
             "Settlement": false,
             "Inheritance": false,
@@ -115,13 +141,13 @@ final class RiskClassTestViewModel: ObservableObject {
             "Assets": false,
             "Other (please specify)": false
         ]
-        self.signUpData.stocksTransactionsCount = .none
-        self.signUpData.etfsTransactionsCount = .none
-        self.signUpData.derivativesTransactionsCount = .none
-        self.signUpData.stocksInvestmentAmount = .hundredToTenThousand
-        self.signUpData.etfsInvestmentAmount = .hundredToTenThousand
-        self.signUpData.derivativesInvestmentAmount = .zeroToThousand
-        self.signUpData.derivativesHoldingPeriod = .monthsToYears
+        self.signUpData.stocksTransactionsCount = nil
+        self.signUpData.etfsTransactionsCount = nil
+        self.signUpData.derivativesTransactionsCount = nil
+        self.signUpData.stocksInvestmentAmount = nil
+        self.signUpData.etfsInvestmentAmount = nil
+        self.signUpData.derivativesInvestmentAmount = nil
+        self.signUpData.derivativesHoldingPeriod = nil
         self.signUpData.otherAssets = ["Real estate": false, "Gold, silver": false, "No": false]
         self.signUpData.desiredReturn = .atLeastTenPercent
     }
@@ -129,7 +155,7 @@ final class RiskClassTestViewModel: ObservableObject {
     func testDerivativesExperience() {
         self.signUpData.derivativesTransactionsCount = .fiftyPlus
         self.signUpData.derivativesInvestmentAmount = .tenThousandToHundredThousand
-        self.signUpData.derivativesHoldingPeriod = .daysToWeeks
+        self.signUpData.derivativesHoldingPeriod = .minutesToHours
     }
 
     func testHighRiskProfile() {

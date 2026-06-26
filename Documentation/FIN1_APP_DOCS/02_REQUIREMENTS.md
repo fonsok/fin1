@@ -70,7 +70,7 @@ Wenn es nicht nur um “was soll das Produkt”, sondern um “was darf nicht ka
       - Pflicht bei Abschluss: `leveragedProductsTotalLossRiskAcknowledged` (boolean), `leveragedProductsKnowledgeTestAnswers` (alle Fragen der aktuellen Version beantwortet, Optionen A–D).
       - Optional: `leveragedProductsKnowledgeTestVersion`, `leveragedProductsKnowledgeTestPassed`, `desiredReturn`, berechnete/finale Risikoklasse.
       - Server prüft **Vollständigkeit** der Antworten (Joi + `leveragedProductsKnowledgeTest.js`), **nicht** ob Antworten inhaltlich korrekt sind — Korrektheit ist Client-Produktlogik.
-      - **Fachregel RK1:** Wenn Totalverlust mit **Nein** beantwortet oder Wissenstest beantwortet aber nicht bestanden → finale Risikoklasse **1** in der Zusammenfassung (iOS: `requiresConservativeRiskClassFromOnboarding`).
+      - **Fachregel RK1:** Wenn Totalverlust mit **Nein** beantwortet oder Wissenstest beantwortet aber nicht bestanden → finale Risikoklasse **1** (`requiresConservativeRiskClassFromOnboarding`). iOS synchronisiert `userSelectedRiskClass` **reaktiv** bei Ja/Nein- und Quiz-Antworten (`updateLeveragedProductsTotalLossRiskAcknowledged`, `updateLeveragedProductsKnowledgeTestAnswer` → `syncOnboardingRiskClassSelection`).
       - Falsche Quiz-Antwort: Lernhinweis in der App, **kein** Blocker für „Weiter“.
     - **Schritt 22 (Hinweis Risikoklassifizierung, iOS):** RK 1–4 → Abbruch zur Landing; RK 5–6 → Landing nur ohne manuelle RK-Erhöhung; RK 7 → Schritt 23 → 24 (Role Agreement) → Finalize.
     - Audit: Beim Abschluss von `risk` schreibt `OnboardingAudit` u. a. Totalverlust-Bestätigung, Wissenstest-Version/-Antworten/-bestanden, `finalRiskClass` (`onboarding.js` → `buildAuditAnswers`).
@@ -139,6 +139,7 @@ Wenn es nicht nur um “was soll das Produkt”, sondern um “was darf nicht ka
   Als Trader möchte ich mein Depot sehen, um Bestände zu überwachen.
   - **Akzeptanzkriterien**
     - `getHoldings` liefert aktive Holdings (class `Holding`, status `active`).
+    - Nach abgeschlossener Kauforder zeigt die Positions-Kachel optional **Investment-Pool** (`active` / `-`) — Admin → Anzeige → `showTraderDashboardInvestmentActiveStatus` (4-Augen; Standard: an). Semantik: `DepotPositionPoolStatusResolver` (nur Mirror-Leg / dokumentierte Teilnahme = `active`; reserviert ohne Paired Buy = `-`). Siehe `03_TECHNISCHE_SPEZIFIKATION.md` §6.5a.
 
 - **US-C5 Profitverteilung**
   Als Investor möchte ich bei Trade-Abschluss meinen Gewinnanteil erhalten, damit Performance fair verteilt wird.

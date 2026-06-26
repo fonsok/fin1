@@ -7,6 +7,8 @@ final class SignUpCoordinator: ObservableObject {
     @Published var showAlert: Bool = false
     @Published var alertMessage: String = ""
     @Published var shouldDismiss = false // New property to signal dismissal
+    /// Set when `finalizeRegistration` succeeds — suppresses false drop-off telemetry on cover dismiss.
+    var registrationFinalizedSuccessfully = false
 
     var validation: StepValidation
     // Changed from private to internal to allow access from extensions
@@ -16,6 +18,7 @@ final class SignUpCoordinator: ObservableObject {
     // Backend integration for early account creation and step persistence (internal for extensions)
     var onboardingAPIService: OnboardingAPIServiceProtocol?
     var userService: (any UserServiceProtocol)?
+    var termsContentService: (any TermsContentServiceProtocol)?
     var telemetryService: TelemetryServiceProtocol?
     var sessionStartDate: Date?
     @Published var accountCreationError: String?
@@ -46,6 +49,11 @@ final class SignUpCoordinator: ObservableObject {
     var warningTimer: Timer?
     var countdownTimer: Timer?
 
+    /// Coalesces rapid step transitions into fewer backend saves (signup load).
+    var onboardingPersistDebounceGeneration: UInt = 0
+    static let onboardingPersistDebounceNanoseconds: UInt64 = 400_000_000
+    private var didEmitOnboardingStartedTelemetry = false
+
     init(validation: StepValidation? = nil) {
         self.validation = validation ?? DefaultStepValidation()
     }
@@ -57,13 +65,21 @@ final class SignUpCoordinator: ObservableObject {
     func configureServices(
         onboardingAPIService: OnboardingAPIServiceProtocol?,
         userService: any UserServiceProtocol,
+        termsContentService: (any TermsContentServiceProtocol)? = nil,
         telemetryService: TelemetryServiceProtocol? = nil
     ) {
         self.onboardingAPIService = onboardingAPIService
         self.userService = userService
+        self.termsContentService = termsContentService
         self.telemetryService = telemetryService
         self.sessionStartDate = Date()
-        telemetryService?.trackEvent(name: "onboarding_started", properties: [
+    }
+
+    /// Emits once per coordinator; uses `userRole` (default `.investor` until Welcome changes it).
+    func trackOnboardingStartedIfNeeded() {
+        guard !self.didEmitOnboardingStartedTelemetry else { return }
+        self.didEmitOnboardingStartedTelemetry = true
+        self.telemetryService?.trackEvent(name: "onboarding_started", properties: [
             "role": self.userRole.rawValue
         ])
     }
@@ -171,6 +187,7 @@ final class SignUpCoordinator: ObservableObject {
 
     /// Dismisses signup and returns to the landing page.
     func requestReturnToLanding() {
+        SignUpFlowSession.markUserLeftOnboarding()
         self.requestDismissal()
     }
 
@@ -180,6 +197,25 @@ final class SignUpCoordinator: ObservableObject {
     /// enabling session-based persistence for all subsequent steps.
     func createAccountIfNeeded(with data: SignUpData) async {
         guard self.currentStep == .contact else { return }
+
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--ui-test-signup-skip-network") {
+            self.isLoading = false
+            self.advanceFromContact()
+            return
+        }
+        #endif
+
+        if self.userService?.isAuthenticated == true {
+            self.advanceFromContact()
+            return
+        }
+
+        guard data.hasRequiredLegalConsents else {
+            self.showError("Bitte akzeptieren Sie Nutzungsbedingungen und Datenschutzrichtlinie.")
+            return
+        }
+
         guard let userService = userService else {
             self.advanceFromContact()
             return
@@ -192,12 +228,19 @@ final class SignUpCoordinator: ObservableObject {
             let user = try data.createEarlyAccountUser()
             try await userService.signUp(userData: user, isEarlyAccount: true)
 
+            if let currentUser = userService.currentUser {
+                await self.mirrorSignupLegalGateToDeviceStore(
+                    user: currentUser,
+                    termsContentService: self.termsContentService
+                )
+            }
+
             self.isLoading = false
             self.advanceFromContact()
         } catch let error as UserCreationError {
             self.isLoading = false
             self.accountCreationError = error.localizedDescription
-            self.showError("Account creation failed: \(error.localizedDescription ?? "Validation error")")
+            self.showError("Account creation failed: \(error.localizedDescription)")
         } catch {
             self.isLoading = false
             self.accountCreationError = error.localizedDescription

@@ -33,6 +33,7 @@ struct LandingOriginalStyleBody: View {
                                     .background(AppTheme.accentLightBlue)
                                     .cornerRadius(ResponsiveDesign.spacing(12))
                             })
+                            .accessibilityIdentifier("SignUpGetStartedButton")
 
                             Button(action: { self.showLogin = true }, label: {
                                 Text(LandingConstants.signInButtonText)

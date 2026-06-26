@@ -1,19 +1,18 @@
 import SwiftUI
 
 struct DesiredReturnStep: View {
-    @Binding var desiredReturn: DesiredReturn
-    @Binding var leveragedProductsKnowledgeTestAnswers: [String: String]
-    @Binding var leveragedProductsTotalLossRiskAcknowledged: Bool?
+    @ObservedObject var signUpData: SignUpData
     @State private var showLearningPage = false
 
     var body: some View {
         SignUpStepList {
-            self.knowledgeTestSection
-
             self.desiredReturnSection
-                .signUpListSection(stripeIndex: 1)
+                .signUpListSection(stripeIndex: 0)
 
             self.lossToleranceSection
+                .signUpListSection(stripeIndex: 1)
+
+            self.knowledgeTestSection
                 .signUpListSection(stripeIndex: 2)
         }
         .sheet(isPresented: self.$showLearningPage) {
@@ -43,14 +42,14 @@ struct DesiredReturnStep: View {
 
                 Menu {
                     ForEach(DesiredReturn.allCases, id: \.self) { option in
-                        Button(action: { self.desiredReturn = option }, label: {
+                        Button(action: { self.signUpData.desiredReturn = option }, label: {
                             Text(option.displayName)
                                 .foregroundColor(AppTheme.inputFieldText)
                         })
                     }
                 } label: {
                     HStack {
-                        Text(self.desiredReturn.displayName)
+                        Text(self.signUpData.desiredReturn.displayName)
                             .foregroundColor(AppTheme.inputFieldText)
                         Spacer()
                         Image(systemName: "chevron.up.chevron.down")
@@ -81,17 +80,17 @@ struct DesiredReturnStep: View {
             VStack(spacing: ResponsiveDesign.spacing(8)) {
                 self.confirmationOption(
                     label: "Ja",
-                    isSelected: self.leveragedProductsTotalLossRiskAcknowledged == true,
-                    action: { self.leveragedProductsTotalLossRiskAcknowledged = true }
+                    isSelected: self.signUpData.leveragedProductsTotalLossRiskAcknowledged == true,
+                    action: { self.signUpData.updateLeveragedProductsTotalLossRiskAcknowledged(true) }
                 )
                 self.confirmationOption(
                     label: "Nein",
-                    isSelected: self.leveragedProductsTotalLossRiskAcknowledged == false,
-                    action: { self.leveragedProductsTotalLossRiskAcknowledged = false }
+                    isSelected: self.signUpData.leveragedProductsTotalLossRiskAcknowledged == false,
+                    action: { self.signUpData.updateLeveragedProductsTotalLossRiskAcknowledged(false) }
                 )
             }
 
-            if self.leveragedProductsTotalLossRiskAcknowledged == nil {
+            if self.signUpData.leveragedProductsTotalLossRiskAcknowledged == nil {
                 Text("Bitte wählen Sie „Ja“ oder „Nein“.")
                     .font(ResponsiveDesign.captionFont())
                     .foregroundColor(AppTheme.fontColor.opacity(0.6))
@@ -118,7 +117,6 @@ struct DesiredReturnStep: View {
                 self.knowledgeTestQuestion(question)
             }
         }
-        .signUpListSection(stripeIndex: 0)
     }
 
     private func knowledgeTestQuestion(_ question: LeveragedProductsKnowledgeQuestion) -> some View {
@@ -134,7 +132,7 @@ struct DesiredReturnStep: View {
                     self.knowledgeTestOption(
                         questionId: question.id,
                         option: option,
-                        isSelected: self.leveragedProductsKnowledgeTestAnswers[question.id] == option.id
+                        isSelected: self.signUpData.leveragedProductsKnowledgeTestAnswers[question.id] == option.id
                     )
                 }
             }
@@ -148,7 +146,7 @@ struct DesiredReturnStep: View {
 
     /// Learning CTA only after the user selected a wrong answer (hidden when unanswered or correct).
     private func shouldShowKnowledgeTestLearningHint(for question: LeveragedProductsKnowledgeQuestion) -> Bool {
-        guard let selected = self.leveragedProductsKnowledgeTestAnswers[question.id] else {
+        guard let selected = self.signUpData.leveragedProductsKnowledgeTestAnswers[question.id] else {
             return false
         }
         return selected != question.correctOptionId
@@ -212,9 +210,10 @@ struct DesiredReturnStep: View {
         isSelected: Bool
     ) -> some View {
         Button {
-            var answers = self.leveragedProductsKnowledgeTestAnswers
-            answers[questionId] = option.id
-            self.leveragedProductsKnowledgeTestAnswers = answers
+            self.signUpData.updateLeveragedProductsKnowledgeTestAnswer(
+                questionId: questionId,
+                optionId: option.id
+            )
         } label: {
             self.radioOptionRow(label: option.label, isSelected: isSelected)
         }
@@ -241,10 +240,6 @@ struct DesiredReturnStep: View {
 }
 
 #Preview {
-    DesiredReturnStep(
-        desiredReturn: .constant(.atLeastTenPercent),
-        leveragedProductsKnowledgeTestAnswers: .constant([:]),
-        leveragedProductsTotalLossRiskAcknowledged: .constant(nil)
-    )
-    .background(AppTheme.screenBackground)
+    DesiredReturnStep(signUpData: SignUpData())
+        .background(AppTheme.screenBackground)
 }

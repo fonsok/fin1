@@ -11,6 +11,7 @@ final class SLAMonitoringService: SLAMonitoringServiceProtocol {
     // MARK: - Dependencies
 
     private weak var supportService: CustomerSupportServiceProtocol?
+    private weak var userService: (any UserServiceProtocol)?
     private let auditService: AuditLoggingServiceProtocol
     private let notificationService: any NotificationServiceProtocol
     private let configurationService: any ConfigurationServiceProtocol
@@ -28,11 +29,13 @@ final class SLAMonitoringService: SLAMonitoringServiceProtocol {
 
     init(
         supportService: CustomerSupportServiceProtocol?,
+        userService: any UserServiceProtocol,
         auditService: AuditLoggingServiceProtocol,
         notificationService: any NotificationServiceProtocol,
         configurationService: any ConfigurationServiceProtocol
     ) {
         self.supportService = supportService
+        self.userService = userService
         self.auditService = auditService
         self.notificationService = notificationService
         self.configurationService = configurationService
@@ -54,8 +57,9 @@ final class SLAMonitoringService: SLAMonitoringServiceProtocol {
             .sink { [weak self] (newInterval: TimeInterval) in
                 Task { @MainActor [weak self] in
                     guard let self = self else { return }
-                    self.logger.info("🔄 SLA monitoring interval changed to \(newInterval)s, restarting...")
                     self.stopMonitoring()
+                    guard self.canRunMonitoring else { return }
+                    self.logger.info("🔄 SLA monitoring interval changed to \(newInterval)s, restarting...")
                     await self.startMonitoring(interval: newInterval)
                 }
             }
@@ -63,8 +67,15 @@ final class SLAMonitoringService: SLAMonitoringServiceProtocol {
 
     // MARK: - Monitoring Control
 
+    /// CSR/admin only — retail and logged-out sessions must not poll or escalate tickets.
+    private var canRunMonitoring: Bool {
+        guard let role = self.userService?.currentUser?.role else { return false }
+        return role == .admin || role == .customerService
+    }
+
     func startMonitoring(interval: TimeInterval? = nil) async {
         self.stopMonitoring()
+        guard self.canRunMonitoring else { return }
 
         // Use provided interval or read from configuration
         let monitoringInterval = interval ?? self.configurationService.slaMonitoringInterval
@@ -93,6 +104,7 @@ final class SLAMonitoringService: SLAMonitoringServiceProtocol {
     // MARK: - Violation Checking
 
     func checkAndEscalateViolations() async throws {
+        guard self.canRunMonitoring else { return }
         guard let supportService = supportService else {
             self.logger.warning("⚠️ Support service not available for SLA monitoring")
             return

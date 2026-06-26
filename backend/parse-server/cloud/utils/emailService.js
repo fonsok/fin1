@@ -69,7 +69,7 @@ function initTransporter() {
  * @param {string} options.html - HTML body (optional)
  * @returns {Promise<boolean>} - Success status
  */
-async function sendEmail({ to, subject, text, html }) {
+async function sendEmail({ to, subject, text, html, attachments }) {
   const transport = initTransporter();
 
   if (!transport) {
@@ -80,19 +80,31 @@ async function sendEmail({ to, subject, text, html }) {
   const from = process.env.SMTP_FROM || process.env.SMTP_USER;
 
   try {
-    const result = await transport.sendMail({
+    const mailOptions = {
       from: `FIN1 <${from}>`,
       to,
       subject,
       text,
       html: html || text,
-    });
+    };
+    if (Array.isArray(attachments) && attachments.length > 0) {
+      mailOptions.attachments = attachments;
+    }
+
+    const result = await transport.sendMail(mailOptions);
     console.log(`Email sent to ${to}: ${subject} (${result.messageId})`);
     return true;
   } catch (error) {
     console.error(`Failed to send email to ${to}:`, error.message);
     return false;
   }
+}
+
+/**
+ * Send email with optional attachments (e.g. role agreement PDF).
+ */
+async function sendEmailWithAttachments({ to, subject, text, html, attachments = [] }) {
+  return sendEmail({ to, subject, text, html, attachments });
 }
 
 // ============================================================================
@@ -293,6 +305,7 @@ async function testEmailConfig() {
 
 module.exports = {
   sendEmail,
+  sendEmailWithAttachments,
   sendTicketNotification,
   sendApprovalNotification,
   sendSecurityAlert,

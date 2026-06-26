@@ -44,6 +44,47 @@ Dieses Dokument definiert Teststrategie, Testarten, Kern-Szenarien und Qualität
   - Schritte: call `completeOnboardingStep` mit ungültigem `step`
   - Erwartet: Fehler `INVALID_VALUE`
 
+- **TC-A3 RC-5-Gate Step 16c (Investor vs. Trader)**
+  - Schritte: `completeOnboardingStep` mit `step: risk`, RK 5 im Payload, aber Derivatives-Profil ohne Gate
+  - Erwartet: Server kappt `finalRiskClass`/`calculatedRiskClass` auf max. 4 (`riskClass5DerivativesGate.js`)
+
+- **TC-A4 Signup-Last: ein Progress-Dokument pro Nutzer**
+  - Schritte: mehrere `saveOnboardingProgress` mit unterschiedlichen `step` für denselben Session-User
+  - Erwartet: ein `OnboardingProgress` pro `userId` (Upsert); `_User.save` nur bei Schrittwechsel
+
+- **TC-A5 Position-only Save**
+  - Schritte: Partial Save mit Daten, danach `saveOnboardingProgress` mit `data: { _positionOnly: true }`
+  - Erwartet: `step` aktualisiert, gespeicherter Blob unverändert
+
+### Automatisierte Tests (Signup / Onboarding, Referenz)
+
+**Backend (Jest, `backend/parse-server`):**
+
+| Datei | Abdeckung |
+|-------|-----------|
+| `cloud/functions/user/__tests__/onboarding.saveProgress.test.js` | Upsert, conditional User-save, Position-only, Role-Immutability-Reject |
+| `cloud/functions/user/__tests__/onboarding.riskTolerance.test.js` | RK-Persistenz inkl. RC-5-Gate |
+| `cloud/utils/__tests__/onboardingProgressRateLimit.test.js` | Rate-Limit ~40/min |
+| `cloud/utils/__tests__/riskClass5DerivativesGate.test.js` | Gate-Logik Investor/Trader |
+| `cloud/utils/__tests__/onboardingLegacyPickerDefaults.test.js` | Legacy-Picker-Sanitizing |
+| `cloud/utils/__tests__/profileDisplayName.test.js` | `displayName` ohne `lastName`; `discoverTraders` robust |
+
+Ausführung: `cd backend/parse-server && npm test -- --testPathPattern='onboarding|riskClass5|profileDisplayName'`
+
+**Ops (E2E auf iobox, optional nach Deploy):**
+
+| Skript | Abdeckung |
+|--------|-----------|
+| `scripts/run-smoke-signup-role-immutability.sh` | Retail-Rolle nach `POST /users` nicht änderbar (Progress-Blob + `PUT /users`) |
+
+**iOS (`FIN1Tests/`):**
+
+| Datei | Abdeckung |
+|-------|-----------|
+| `SignUpRiskClass5DerivativesGateTests.swift` | Step-16c-Gate, RK-5-Kappung (Client) |
+| `SignUpFlowSessionTests.swift`, `SignUpLegalConsentGateTests.swift` | Flow-/Consent-Gates |
+| `SignUpRoleImmutabilityTests.swift` | Resume ignoriert Blob-`userRole` bei `lockAccountRole` |
+
 ### B) Investor Investments
 
 - **TC-B1 Investment Mindestbetrag**
@@ -83,6 +124,21 @@ Dieses Dokument definiert Teststrategie, Testarten, Kern-Szenarien und Qualität
 - **TC-E2 No Delete for audit classes**
   - Schritte: delete TermsContent / LegalConsent / ComplianceEvent
   - Erwartet: Trigger blockt
+
+- **TC-E3 Device-Gate: nur TOS accept → Modal bleibt**
+  - Voraussetzungen: frischer Login, kein lokales Device-Ack für Privacy
+  - Schritte: im `TermsAcceptanceModalView` nur Terms „Accept“
+  - Erwartet: Modal bleibt offen; Privacy-Karte weiter sichtbar; Dashboard nicht nutzbar
+
+- **TC-E4 Onboarding-Consent zählt nicht als Device-Ack**
+  - Voraussetzungen: Nutzer mit `LegalConsent` nur `source: onboarding` für beide Dokumente auf `deviceInstallId`
+  - Schritte: `getDeviceLegalConsentAcknowledgements` aufrufen
+  - Erwartet: leere `acknowledgements` oder nur `source: app`-Zeilen; iOS zeigt Modal bis zwei explizite In-App-Accepts
+
+- **TC-E5 Frische Registrierung ohne redundantes Modal**
+  - Voraussetzungen: Sign-up mit Legal Gate 1 auf Contact, `finalizeRegistration` auf demselben Install
+  - Schritte: nach Welcome/Landing → Dashboard
+  - Erwartet: kein `TermsAcceptanceModalView` (Device-Ack via `mirrorSignupLegalGateToDeviceStore`)
 
 ### F) Support/SLA
 

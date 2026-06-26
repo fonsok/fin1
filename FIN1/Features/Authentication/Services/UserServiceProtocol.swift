@@ -20,6 +20,13 @@ protocol UserServiceProtocol: ObservableObject, Sendable {
     // MARK: - User Management
     func updateProfile(_ user: User) async throws
     func refreshUserData() async throws
+    func applyRiskTolerance(_ riskTolerance: Int) async
+
+    /// Marks onboarding complete on the local session user (after server verification step).
+    func applyOnboardingCompletion(onboardingStep: String) async
+
+    /// Ensures Gate 2 role agreement flags remain on the session user when getUserMe lags.
+    func applyRoleAgreementAcceptanceIfNeeded(role: UserRole, version: String?, accepted: Bool) async
 
     // MARK: - Backend Synchronization
     func syncToBackend() async

@@ -48,10 +48,6 @@ struct TermsAcceptanceModalView: View {
                 termsContentService: self.appServices.termsContentService
             )
         }
-        .onChange(of: self.viewModel.canProceed) { _, canProceed in
-            guard canProceed else { return }
-            NotificationCenter.default.post(name: .legalConsentAcceptanceCompleted, object: nil)
-        }
     }
 
     // MARK: - Content Views

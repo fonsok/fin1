@@ -2,6 +2,7 @@
 
 const { putParseSchemaFields } = require('./putParseSchemaFields');
 const { createAdminListSearchIndexes } = require('./createAdminListSearchIndexes');
+const { createOnboardingIndexes } = require('./createOnboardingIndexes');
 const { backfillInvestmentTraderUsername } = require('./backfillInvestmentTraderUsername');
 
 /**
@@ -220,6 +221,11 @@ const SCHEMA_MIGRATIONS = [
         await client.close();
       }
     },
+  },
+  {
+    migrationId: 'onboarding_signup_indexes_v1',
+    title: 'OnboardingProgress/Audit/VerificationCode indexes (signup load)',
+    apply: () => createOnboardingIndexes(),
   },
 ];
 

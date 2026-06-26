@@ -15,8 +15,10 @@ extension SignUpCoordinator {
 
     /// Call when the signup view disappears without the user having completed onboarding.
     func trackDropOffIfNeeded() {
-        guard currentStep != .welcome else { return }
-        let isComplete = (currentStep == .summary || currentStep == .riskClass7Confirmation) && shouldDismiss
+        guard !self.registrationFinalizedSuccessfully else { return }
+        guard self.currentStep != .welcome else { return }
+        let completionStep = SignUpStep.registrationCompletionStep(for: self.userRole)
+        let isComplete = self.currentStep == completionStep && self.shouldDismiss
         guard !isComplete else { return }
         let elapsed = sessionStartDate.map { Int(Date().timeIntervalSince($0)) }
         telemetryService?.trackEvent(name: "onboarding_drop_off", properties: [

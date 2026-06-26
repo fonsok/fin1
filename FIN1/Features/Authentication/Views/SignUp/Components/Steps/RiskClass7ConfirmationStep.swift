@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct RiskClass7ConfirmationStep: View {
-    let signUpData: SignUpData
+    @ObservedObject var signUpData: SignUpData
     let coordinator: SignUpCoordinator
     @Environment(\.appServices) private var services
     @State private var maxLossWarningText: String = ""
@@ -13,6 +13,10 @@ struct RiskClass7ConfirmationStep: View {
 
     private var defaultExperiencedOnlyText: String {
         "Diese Risikoklasse ist nur für erfahrene Investoren geeignet."
+    }
+
+    private var canCompleteRegistration: Bool {
+        self.signUpData.hasRequiredLegalConsents
     }
 
     private var combinedWarningText: String {
@@ -111,12 +115,25 @@ struct RiskClass7ConfirmationStep: View {
                 }
             }
 
+            self.legalConsentStatusSection
+                .signUpListSection(stripeIndex: 1)
+
             Spacer()
 
-            // Complete Registration button
+            // Complete Registration button — continues to role-specific agreement (Gate 2)
             VStack(spacing: ResponsiveDesign.spacing(16)) {
-                Button("Complete Registration") {
-                    self.coordinator.presentWelcomePage()
+                if !self.canCompleteRegistration {
+                    Text(
+                        "Bitte akzeptieren Sie Nutzungsbedingungen und Datenschutzrichtlinie "
+                            + "im Schritt „Contact Information“."
+                    )
+                    .font(ResponsiveDesign.captionFont())
+                    .foregroundColor(AppTheme.accentOrange)
+                    .multilineTextAlignment(.center)
+                }
+
+                Button("Weiter zur Vereinbarung") {
+                    self.coordinator.goToStep(.roleAgreement)
                 }
                 .font(ResponsiveDesign.headlineFont())
                 .foregroundColor(AppTheme.fontColor)
@@ -124,6 +141,8 @@ struct RiskClass7ConfirmationStep: View {
                 .padding()
                 .background(AppTheme.buttonColor)
                 .cornerRadius(ResponsiveDesign.spacing(12))
+                .disabled(!self.canCompleteRegistration || self.coordinator.isLoading)
+                .accessibilityIdentifier("RiskClass7ContinueToRoleAgreementButton")
             }
         }
         .padding(.horizontal, ResponsiveDesign.lightBlueAreaHorizontalPadding())
@@ -147,6 +166,34 @@ struct RiskClass7ConfirmationStep: View {
             let (maxLoss, experienced) = await (maxLossTask, experiencedTask)
             self.maxLossWarningText = maxLoss
             self.experiencedOnlyText = experienced
+        }
+    }
+
+    private var legalConsentStatusSection: some View {
+        VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
+            Text("Rechtliche Einwilligungen")
+                .font(ResponsiveDesign.headlineFont())
+                .foregroundColor(AppTheme.fontColor)
+
+            self.legalConsentStatusRow(
+                title: "Nutzungsbedingungen",
+                accepted: self.signUpData.acceptedTerms
+            )
+            self.legalConsentStatusRow(
+                title: "Datenschutzrichtlinie",
+                accepted: self.signUpData.acceptedPrivacyPolicy
+            )
+        }
+    }
+
+    private func legalConsentStatusRow(title: String, accepted: Bool) -> some View {
+        HStack(spacing: ResponsiveDesign.spacing(8)) {
+            Image(systemName: accepted ? "checkmark.circle.fill" : "xmark.circle.fill")
+                .foregroundColor(accepted ? AppTheme.accentGreen : AppTheme.accentOrange)
+            Text(title)
+                .font(ResponsiveDesign.bodyFont())
+                .foregroundColor(AppTheme.fontColor)
+            Spacer()
         }
     }
 }

@@ -56,7 +56,8 @@ struct UserFactory {
             user.email = e
         }
         if let ob = me.onboardingCompleted {
-            user.onboardingCompleted = ob
+            // Never downgrade a locally completed session when getUserMe lags behind completeOnboardingStep.
+            user.onboardingCompleted = user.onboardingCompleted || ob
         }
         if let at = me.accountType, let accountType = AccountType(rawValue: at) {
             user.accountType = accountType
@@ -67,6 +68,9 @@ struct UserFactory {
         user.companyKybStep = me.companyKybStep
         user.companyKybStatus = me.companyKybStatus
         user.onboardingStep = me.onboardingStep
+        if let riskTolerance = me.riskTolerance {
+            user.riskTolerance = riskTolerance
+        }
         if let acceptedTerms = me.acceptedTerms {
             user.acceptedTerms = acceptedTerms
         }
@@ -84,6 +88,34 @@ struct UserFactory {
         }
         if let dateStr = me.acceptedPrivacyPolicyDate {
             user.acceptedPrivacyPolicyDate = Self.parseISO8601Date(dateStr) ?? user.acceptedPrivacyPolicyDate
+        }
+        if let acceptedTraderAgreement = me.acceptedTraderAgreement {
+            user.acceptedTraderAgreement = user.acceptedTraderAgreement || acceptedTraderAgreement
+        }
+        if let version = me.acceptedTraderAgreementVersion, !version.isEmpty {
+            user.acceptedTraderAgreementVersion = version
+        }
+        if let dateStr = me.acceptedTraderAgreementDate {
+            user.acceptedTraderAgreementDate = Self.parseISO8601Date(dateStr) ?? user.acceptedTraderAgreementDate
+        }
+        if let acceptedInvestorAgreement = me.acceptedInvestorAgreement {
+            user.acceptedInvestorAgreement = user.acceptedInvestorAgreement || acceptedInvestorAgreement
+        }
+        if let version = me.acceptedInvestorAgreementVersion, !version.isEmpty {
+            user.acceptedInvestorAgreementVersion = version
+        }
+        if let dateStr = me.acceptedInvestorAgreementDate {
+            user.acceptedInvestorAgreementDate = Self.parseISO8601Date(dateStr) ?? user.acceptedInvestorAgreementDate
+        }
+        if me.roleAgreementAccepted == true {
+            switch user.role {
+            case .trader:
+                user.acceptedTraderAgreement = true
+            case .investor:
+                user.acceptedInvestorAgreement = true
+            default:
+                break
+            }
         }
     }
 

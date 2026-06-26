@@ -21,7 +21,7 @@ struct RiskClassificationNoteStep: View {
     }
 
     private var canOfferManualRiskClassUpgrade: Bool {
-        [.riskClass5, .riskClass6].contains(self.currentRiskClass) && !self.shouldReturnToLanding
+        self.signUpData.canOfferManualRiskClassUpgradeAtRiskNote
     }
 
     var body: some View {
@@ -36,11 +36,11 @@ struct RiskClassificationNoteStep: View {
             if self.canProceedWithRegistration {
                 self.approvedRiskClassContent
                     .signUpListSection(stripeIndex: 1, bandTint: AppTheme.accentGreen)
-            } else if self.shouldReturnToLanding {
-                self.rejectedRiskClassContent(showUpgradeOption: false)
+            } else if self.canOfferManualRiskClassUpgrade {
+                self.rejectedRiskClassContent(showUpgradeOption: true)
                     .signUpListSection(stripeIndex: 1, bandTint: AppTheme.accentOrange)
             } else {
-                self.rejectedRiskClassContent(showUpgradeOption: true)
+                self.rejectedRiskClassContent(showUpgradeOption: false)
                     .signUpListSection(stripeIndex: 1, bandTint: AppTheme.accentOrange)
             }
 
@@ -100,7 +100,11 @@ struct RiskClassificationNoteStep: View {
 
                     Text(
                         showUpgradeOption
-                            ? "Für unseren risikoreichen Vermögensaufbau (Verlustrisiko bis zu 100 %) benötigen Sie Risikoklasse 7."
+                            ? (
+                                self.signUpData.hasUserManuallyIncreasedRiskClass
+                                    ? "Für unseren risikoreichen Vermögensaufbau (Verlustrisiko bis zu 100 %) benötigen Sie Risikoklasse 7."
+                                    : "Wenn Sie sich trotzdem für unseren risikoreichen Vermögensaufbau entscheiden (Verlustrisiko bis zu 100 %), brauchen Sie Risikoklasse 7."
+                            )
                             : "Für Ihr Risikoprofil empfehlen wir Ihnen eine klassische Vermögensverwaltung oder Investmentfonds/Vermögensverwaltung."
                     )
                     .font(ResponsiveDesign.bodyFont())
@@ -113,17 +117,19 @@ struct RiskClassificationNoteStep: View {
 
             if showUpgradeOption {
                 VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
-                    HStack(alignment: .top, spacing: ResponsiveDesign.spacing(12)) {
-                        Image(systemName: "info.circle.fill")
-                            .foregroundColor(AppTheme.accentLightBlue)
-                            .font(ResponsiveDesign.headlineFont())
+                    if self.signUpData.hasUserManuallyIncreasedRiskClass {
+                        HStack(alignment: .top, spacing: ResponsiveDesign.spacing(12)) {
+                            Image(systemName: "info.circle.fill")
+                                .foregroundColor(AppTheme.accentLightBlue)
+                                .font(ResponsiveDesign.headlineFont())
 
-                        Text(
-                            "Sie haben Ihre Risikoklasse selbst erhöht. Bitte wählen Sie Risikoklasse 7, um fortzufahren."
-                        )
-                        .font(ResponsiveDesign.bodyFont())
-                        .foregroundColor(AppTheme.fontColor.opacity(0.8))
-                        .multilineTextAlignment(.leading)
+                            Text(
+                                "Sie haben Ihre Risikoklasse selbst erhöht. Bitte wählen Sie Risikoklasse 7, um fortzufahren."
+                            )
+                            .font(ResponsiveDesign.bodyFont())
+                            .foregroundColor(AppTheme.fontColor.opacity(0.8))
+                            .multilineTextAlignment(.leading)
+                        }
                     }
 
                     Button("Hier können Sie Ihre Risikoklasse ändern.") {
@@ -161,6 +167,24 @@ struct RiskClassificationNoteStep: View {
     @ViewBuilder
     private var actionButtons: some View {
         VStack(spacing: ResponsiveDesign.spacing(16)) {
+            if self.coordinator.canGoBack {
+                Button(action: self.coordinator.previousStep) {
+                    HStack {
+                        Image(systemName: "chevron.left")
+                        Text("Back")
+                    }
+                    .font(ResponsiveDesign.headlineFont())
+                    .foregroundColor(AppTheme.accentLightBlue)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .overlay(
+                        RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(12))
+                            .stroke(AppTheme.accentLightBlue, lineWidth: 2)
+                    )
+                }
+                .accessibilityIdentifier("RiskClassificationNoteBackButton")
+            }
+
             if self.canProceedWithRegistration {
                 Button("Complete Registration") {
                     self.coordinator.goToStep(.riskClass7Confirmation)
@@ -171,26 +195,30 @@ struct RiskClassificationNoteStep: View {
                 .padding()
                 .background(AppTheme.buttonColor)
                 .cornerRadius(ResponsiveDesign.spacing(12))
-            } else if self.shouldReturnToLanding {
-                Button("Zur Startseite") {
-                    self.coordinator.requestReturnToLanding()
+            } else {
+                if self.canOfferManualRiskClassUpgrade {
+                    Button("Risikoklasse ändern") {
+                        self.showRiskClassSelection = true
+                    }
+                    .font(ResponsiveDesign.headlineFont())
+                    .foregroundColor(AppTheme.fontColor)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(AppTheme.accentLightBlue)
+                    .cornerRadius(ResponsiveDesign.spacing(12))
                 }
-                .font(ResponsiveDesign.headlineFont())
-                .foregroundColor(AppTheme.fontColor)
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(AppTheme.accentOrange)
-                .cornerRadius(ResponsiveDesign.spacing(12))
-            } else if self.canOfferManualRiskClassUpgrade {
-                Button("Risikoklasse ändern") {
-                    self.showRiskClassSelection = true
+
+                if self.shouldReturnToLanding {
+                    Button("Zur Startseite") {
+                        self.coordinator.requestReturnToLanding()
+                    }
+                    .font(ResponsiveDesign.headlineFont())
+                    .foregroundColor(AppTheme.fontColor)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(AppTheme.accentOrange)
+                    .cornerRadius(ResponsiveDesign.spacing(12))
                 }
-                .font(ResponsiveDesign.headlineFont())
-                .foregroundColor(AppTheme.fontColor)
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(AppTheme.accentLightBlue)
-                .cornerRadius(ResponsiveDesign.spacing(12))
             }
         }
     }

@@ -30,5 +30,16 @@ enum LegalDocumentType: String, Codable, CaseIterable {
     case terms = "terms"
     case privacy = "privacy"
     case imprint = "imprint"
+    case traderAgreement = "trader_agreement"
+    case investorAgreement = "investor_agreement"
+
+    /// Retail role-specific agreement document for onboarding Gate 2.
+    static func roleAgreement(for role: UserRole) -> LegalDocumentType? {
+        switch role {
+        case .trader: return .traderAgreement
+        case .investor: return .investorAgreement
+        default: return nil
+        }
+    }
 }
 

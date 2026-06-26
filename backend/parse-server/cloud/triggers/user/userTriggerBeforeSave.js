@@ -31,6 +31,16 @@ async function userBeforeSave(request) {
     if (user.get('onboardingCompleted') === undefined) user.set('onboardingCompleted', false);
     user.set('loginCount', user.get('loginCount') || 0);
     user.set('failedLoginCount', user.get('failedLoginCount') || 0);
+
+    const hasEmail = Boolean(String(user.get('email') || '').trim());
+    if (hasEmail && user.get('onboardingCompleted') !== true) {
+      if (user.get('acceptedTerms') !== true || user.get('acceptedPrivacyPolicy') !== true) {
+        throw new Parse.Error(
+          Parse.Error.INVALID_VALUE,
+          'acceptedTerms and acceptedPrivacyPolicy must be true before account registration',
+        );
+      }
+    }
   }
 
   const email = user.get('email');
@@ -57,6 +67,24 @@ async function userBeforeSave(request) {
   const status = user.get('status');
   if (status && !VALID_USER_STATUSES.includes(status)) {
     throw new Parse.Error(Parse.Error.INVALID_VALUE, `Invalid status: ${status}`);
+  }
+
+  if (!isNew && request.original) {
+    const priorRole = request.original.get('role');
+    const nextRole = user.get('role');
+    const retailRoles = ['investor', 'trader'];
+    if (
+      priorRole
+      && nextRole
+      && priorRole !== nextRole
+      && retailRoles.includes(priorRole)
+      && retailRoles.includes(nextRole)
+    ) {
+      throw new Parse.Error(
+        Parse.Error.OPERATION_FORBIDDEN,
+        'Investor/Trader role cannot be changed after account creation',
+      );
+    }
   }
 
   normalizeUserCustomerNumber(user);

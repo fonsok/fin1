@@ -113,7 +113,7 @@ struct SummaryStep: View {
             .signUpListSection(stripeIndex: 6, bandTint: AppTheme.accentGreen)
         }
         .onAppear {
-            self.signUpData.applyConservativeRiskClassIfNeeded()
+            self.signUpData.syncOnboardingRiskClassSelection()
         }
     }
 

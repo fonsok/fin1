@@ -25,6 +25,7 @@ This rule file enforces compliance and regulatory requirements specific to FIN1'
 ### Risk Class Integration
 
 - **REQUIRED**: Risk class calculations MUST use `RiskClassCalculationService` (located in `Features/Authentication/Services/`)
+- **FORBIDDEN**: Duplicating score/ranking logic in `SignUpData` or Views — gate helpers (`syncOnboardingRiskClassSelection`, RC5 derivatives gate) may live in `SignUpDataRiskCalculation.swift` only
 - **REQUIRED**: Risk class changes MUST trigger compliance review
 - **FORBIDDEN**: Hardcoding risk class logic - use service layer
 - **REQUIRED**: Pre-trade risk scoring MUST consider:
@@ -178,12 +179,57 @@ When implementing compliance features, reference:
 - `Documentation/PRODUCTION_ROADMAP_ANALYSIS.md` - Compliance requirements overview
 - `Documentation/BAAS_EVALUATION.md` - BaaS integration for KYC/AML
 - `Documentation/FREE_IMPLEMENTATION_ROADMAP.md` - Compliance implementation details
+- `Documentation/LEGAL_DOCS_AUDIT_TRAIL.md` - Legal consent audit trail and device gate
 - `FIN1/Features/CustomerSupport/Services/AuditLoggingService.swift` - Existing audit logging implementation
+
+## Legal Consent (Terms / Privacy)
+
+**CRITICAL**: Legal acceptance has two layers — account-level consent and per-install device acknowledgement. Do not collapse or bypass either.
+
+### Legal Gate 1 (Sign-up Contact)
+
+- **REQUIRED**: TOS **and** Privacy must be explicitly accepted on Contact (Step 2) before `POST /users` / early account creation (`hasRequiredLegalConsents`, `SignUpLegalConsentSection`).
+- **REQUIRED**: UI copy uses **„Konto anlegen“** (Contact button) and **„Konto angelegt“** (Step 3 title) — not „Konto eröffnet“ while onboarding is still in progress.
+- **FORBIDDEN**: Auto-accepting legal toggles in production prefill; DEBUG `prefillTestData` may set both for fast click-through only.
+
+### Device install gate (post-login)
+
+- **REQUIRED**: `TermsAcceptanceService` / `DeviceLegalConsentStore` gate app usage per **active document version** on this install.
+- **REQUIRED**: `TermsAcceptanceModalView` stays open until **both** TOS and Privacy are accepted — one Accept must not dismiss the modal.
+- **FORBIDDEN**: Importing `LegalConsent` rows with `source: onboarding` into the device store (`getDeviceLegalConsentAcknowledgements` and `syncAcknowledgementsFromServer` must only honour `source: app`).
+- **REQUIRED**: After Contact account creation and `finalizeRegistration`, mirror Gate 1 into `DeviceLegalConsentStore` (`mirrorSignupLegalGateToDeviceStore`) so fresh sign-up on the same install does not show a redundant modal.
+
+### Backend
+
+- **REQUIRED**: `persistOnboardingLegalConsents` writes `source: onboarding`; `recordLegalConsent` writes `source: app`.
+- **REQUIRED**: `assertProductAccessEligible` (`productAccessGate.js`) on regulated product Cloud Functions — requires `onboardingCompleted`, both account legal flags, role agreement (retail), and **`companyKybStatus === approved`** for `accountType === company`.
+- **REQUIRED**: New users without both consents rejected in `userBeforeSave`.
+
+### Retail role (Investor / Trader)
+
+- **REQUIRED**: Role chosen on Welcome (Step 1) **before** account creation only; persisted on Contact via `POST /users` (`_User.role`).
+- **FORBIDDEN**: Changing `investor` ↔ `trader` after account exists — UI (`WelcomeStep`), `saveOnboardingProgress` blob (`assertImmutableOnboardingRole`), or `_User.save` (`userTriggerBeforeSave`).
+- **REQUIRED**: On resume, iOS aligns with server role (`lockAccountRole`, `applyServerRoleToSignUpData`); progress blob must not override `_User.role`.
+- **REQUIRED (Gate 2)**: Separate **Trader** (`trader_agreement`) / **Investor** (`investor_agreement`) onboarding step (`SignUpStep.roleAgreement`) after RC7 confirmation — scroll-to-end + explicit checkbox + `recordRoleAgreementConsent` audit (`LegalConsent`, IP, version, PDF e-mail). `assertProductAccessEligible` blocks product use until role agreement is on the user profile.
+- **REQUIRED**: After onboarding finalize, iOS MUST NOT show `regulatedProductAccessBlockReason` for missing role agreement when consent was given in-session — use `applyRoleAgreementAcceptanceIfNeeded`, monotonic merge in `UserFactory.applyUserMeResponse`, and server `resolveUserRoleAgreementState` / `persistOnboardingRoleAgreementConsent` on `consents`.
+
+### Onboarding shell & SLA (retail)
+
+- **REQUIRED**: `MainTabView` only when `user.onboardingCompleted == true`; authenticated users mid-onboarding see placeholder behind SignUp cover.
+- **FORBIDDEN**: SLA ticket polling / escalation for retail (`investor`/`trader`) — `SLAMonitoringService.canRunMonitoring` is staff-only (`admin`, `customerService`).
+- **REQUIRED**: Retail background sync (`AppRootContent.refreshUserScopedData`, dashboard stats) deferred until `onboardingCompleted`.
+
+**Canonical docs**: `Documentation/LEGAL_DOCS_AUDIT_TRAIL.md`, `Documentation/FIN1_APP_DOCS/02A_FEATURE_KATALOG_GUARDRAILS.md` §3.2, §3.3 and §3.10.
 
 ## Guardrails (fail PRs if violated)
 
 - **No new validators**: Must extend `BuyOrderValidator`, not create new ones
 - **No bypassing audit logging**: All trades/orders must log via `AuditLoggingService`
-- **No hardcoded risk logic**: Must use `RiskClassCalculationService`
+- **No hardcoded risk logic**: Must use `RiskClassCalculationService` (no legacy duplicate in `SignUpData`)
 - **No missing compliance checks**: All financial transactions must have pre-trade validation
 - **No unlogged trades**: All order placements and executions must be logged
+- **No legal bypass**: Do not skip Legal Gate 1, device install gate, or `productAccessGate` on product-critical flows
+- **No single-click legal dismiss**: Post-login modal requires both TOS and Privacy device acks
+- **No retail role change after signup**: Do not allow investor↔trader changes after `POST /users` (UI, progress blob, or `_User.save`)
+- **No MainTabView during onboarding**: Do not mount dashboard/tabs until `onboardingCompleted`
+- **No SLA monitoring for retail**: Staff-only (`admin`, `customerService`)

@@ -9,6 +9,8 @@ struct ContactStep: View {
     @Binding var username: String
     @Binding var password: String
     @Binding var confirmPassword: String
+    @Binding var acceptedTerms: Bool
+    @Binding var acceptedPrivacyPolicy: Bool
 
     var body: some View {
         SignUpFormStepList {
@@ -107,6 +109,11 @@ struct ContactStep: View {
                 }
             }
 
+            SignUpLegalConsentSection(
+                acceptedTerms: self.$acceptedTerms,
+                acceptedPrivacyPolicy: self.$acceptedPrivacyPolicy
+            )
+
             Text("Your phone number will be used for SMS verification and two-factor authentication to secure your account.")
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(AppTheme.fontColor.opacity(0.7))
@@ -122,7 +129,9 @@ struct ContactStep: View {
         phoneNumber: .constant("+49123456789"),
         username: .constant("testuser"),
         password: .constant(TestConstants.password),
-        confirmPassword: .constant(TestConstants.password)
+        confirmPassword: .constant(TestConstants.password),
+        acceptedTerms: .constant(true),
+        acceptedPrivacyPolicy: .constant(true)
     )
     .background(AppTheme.screenBackground)
 }

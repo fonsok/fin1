@@ -13,7 +13,7 @@ extension UserFactory {
             "accountType": user.accountType.rawValue,
             "status": "active",
             "onboardingCompleted": false,
-            "onboardingStep": SignUpStep.contact.backendKey,
+            "onboardingStep": SignUpStep.accountCreated.backendKey,
             "kycStatus": "pending",
             "isEmailVerified": false,
             "isPhoneVerified": false
@@ -33,8 +33,7 @@ extension UserFactory {
         if !user.taxNumber.isEmpty { body["taxNumber"] = user.taxNumber }
 
         body["salutation"] = user.salutation.rawValue
-        body["employmentStatus"] = user.employmentStatus.rawValue
-        body["incomeRange"] = user.incomeRange.rawValue
+        // Step-15 fields are persisted via onboarding progress, not early account creation.
         body["isNotUSCitizen"] = user.isNotUSCitizen
         if let identificationType = user.identificationType {
             body["identificationType"] = identificationType.rawValue
@@ -43,6 +42,15 @@ extension UserFactory {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withFullDate]
         body["dateOfBirth"] = formatter.string(from: user.dateOfBirth)
+
+        if user.acceptedTerms {
+            body["acceptedTerms"] = true
+            body["acceptedTermsVersion"] = TermsVersionConstants.currentTermsVersion
+        }
+        if user.acceptedPrivacyPolicy {
+            body["acceptedPrivacyPolicy"] = true
+            body["acceptedPrivacyPolicyVersion"] = TermsVersionConstants.currentPrivacyPolicyVersion
+        }
 
         return body
     }
