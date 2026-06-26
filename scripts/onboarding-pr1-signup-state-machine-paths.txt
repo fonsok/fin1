@@ -26,6 +26,7 @@ FIN1/Features/Authentication/Models/UserEnums.swift
 FIN1/Features/Authentication/Models/UserExtensions.swift
 FIN1/Features/Authentication/Services/InvestmentExperienceCalculationServiceProtocol.swift
 FIN1/Features/Authentication/Services/OnboardingAPIService.swift
+FIN1/Shared/Services/ParseAPIClientProtocol.swift
 FIN1/Features/Authentication/Services/RiskClassCalculationServiceProtocol.swift
 FIN1/Features/Authentication/Services/UserFactory+ParseSignUp.swift
 FIN1/Features/Authentication/Services/UserFactory+TestUsers.swift
