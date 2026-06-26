@@ -126,6 +126,7 @@ struct ParseUserMeResponse: Decodable {
     let acceptedInvestorAgreementVersion: String?
     let acceptedInvestorAgreementDate: String?
     let roleAgreementAccepted: Bool?
+    let requiredReConsents: [RequiredReConsent]?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -154,6 +155,7 @@ struct ParseUserMeResponse: Decodable {
         case acceptedInvestorAgreementVersion
         case acceptedInvestorAgreementDate
         case roleAgreementAccepted
+        case requiredReConsents
     }
 
     init(from decoder: Decoder) throws {
@@ -182,6 +184,7 @@ struct ParseUserMeResponse: Decodable {
         self.acceptedInvestorAgreementVersion = try c.decodeIfPresent(String.self, forKey: .acceptedInvestorAgreementVersion)
         self.acceptedInvestorAgreementDate = try c.decodeIfPresent(String.self, forKey: .acceptedInvestorAgreementDate)
         self.roleAgreementAccepted = try c.decodeIfPresent(Bool.self, forKey: .roleAgreementAccepted)
+        self.requiredReConsents = try c.decodeIfPresent([RequiredReConsent].self, forKey: .requiredReConsents)
         if let n = try c.decodeIfPresent(String.self, forKey: .customerNumber), !n.isEmpty {
             self.customerNumber = n
         } else if let legacy = try c.decodeIfPresent(String.self, forKey: .legacyCustomerNumber), !legacy.isEmpty {

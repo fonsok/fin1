@@ -9,6 +9,7 @@ extension Notification.Name {
     static let registrationDidFinalize = Notification.Name("registrationDidFinalize")
     /// Posted when blocking legal consent modal completed (AGB + DSE on this device).
     static let legalConsentAcceptanceCompleted = Notification.Name("legalConsentAcceptanceCompleted")
+    static let reConsentCompleted = Notification.Name("reConsentCompleted")
     /// Posted when BackendHealthMonitor transitions from unhealthy → healthy.
     static let backendBecameHealthy = Notification.Name("backendBecameHealthy")
 }

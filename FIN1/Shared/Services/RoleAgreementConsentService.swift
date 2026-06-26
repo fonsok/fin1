@@ -5,7 +5,9 @@ protocol RoleAgreementConsentServiceProtocol: Sendable {
     func recordConsent(
         role: UserRole,
         version: String,
-        documentHash: String?
+        documentHash: String?,
+        source: String,
+        sendConfirmationEmail: Bool
     ) async throws
 }
 
@@ -24,7 +26,9 @@ final class RoleAgreementConsentService: RoleAgreementConsentServiceProtocol, @u
     func recordConsent(
         role: UserRole,
         version: String,
-        documentHash: String?
+        documentHash: String?,
+        source: String = "onboarding",
+        sendConfirmationEmail: Bool = true
     ) async throws {
         guard let parseAPIClient else {
             throw AppError.serviceError(.serviceUnavailable)
@@ -37,8 +41,8 @@ final class RoleAgreementConsentService: RoleAgreementConsentServiceProtocol, @u
             "appVersion": AppBuildInfo.appVersion,
             "buildNumber": AppBuildInfo.buildNumber,
             "deviceInstallId": DeviceInstallIdProvider.getOrCreate(),
-            "source": "onboarding",
-            "sendConfirmationEmail": true,
+            "source": source,
+            "sendConfirmationEmail": sendConfirmationEmail,
         ]
         if let documentHash, !documentHash.isEmpty {
             parameters["documentHash"] = documentHash

@@ -96,7 +96,9 @@ final class RoleAgreementStepViewModel: ObservableObject {
             try await roleAgreementConsentService.recordConsent(
                 role: self.role,
                 version: self.documentVersion,
-                documentHash: self.documentHash
+                documentHash: self.documentHash,
+                source: "onboarding",
+                sendConfirmationEmail: true
             )
         } catch {
             self.submitError = error.localizedDescription

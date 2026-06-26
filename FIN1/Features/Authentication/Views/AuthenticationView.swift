@@ -6,6 +6,7 @@ struct AuthenticationView: View {
     @Environment(\.appServices) private var services
     @StateObject private var session = UserSessionObserver()
     @State private var showTermsAcceptance = false
+    @State private var showReConsent = false
     @State private var isResolvingLegalConsentGate = false
     @State private var isSignUpPresented = false
     @State private var showCompanyKybResume = false
@@ -83,6 +84,7 @@ struct AuthenticationView: View {
         .onReceive(NotificationCenter.default.publisher(for: .userDidSignOut)) { _ in
             self.isResolvingLegalConsentGate = false
             self.showTermsAcceptance = false
+            self.showReConsent = false
             self.isSignUpPresented = false
             self.onboardingRePresentTask?.cancel()
             self.onboardingRePresentTask = nil
@@ -108,6 +110,11 @@ struct AuthenticationView: View {
         .onReceive(NotificationCenter.default.publisher(for: .legalConsentAcceptanceCompleted)) { _ in
             Task {
                 await self.evaluateLegalConsentRequirement(showOnlyIfNeeded: false)
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .reConsentCompleted)) { _ in
+            Task {
+                await self.evaluateReConsentRequirement(showOnlyIfNeeded: true)
             }
         }
     }
@@ -223,6 +230,18 @@ struct AuthenticationView: View {
                 )
                 .zIndex(1_000)
             }
+
+            if self.showReConsent {
+                ReConsentModalView(
+                    userService: self.services.userService,
+                    termsAcceptanceService: self.services.termsAcceptanceService,
+                    roleAgreementConsentService: RoleAgreementConsentService(
+                        parseAPIClient: self.services.parseAPIClient
+                    ),
+                    parseAPIClient: self.services.parseAPIClient
+                )
+                .zIndex(1_001)
+            }
         }
     }
 
@@ -248,6 +267,7 @@ struct AuthenticationView: View {
     private func showTermsAcceptanceModalIfStillRequired() {
         Task {
             await self.evaluateLegalConsentRequirement(showOnlyIfNeeded: true)
+            await self.evaluateReConsentRequirement(showOnlyIfNeeded: true)
         }
     }
 
@@ -287,12 +307,38 @@ struct AuthenticationView: View {
             user: user,
             currentServerVersion: privacyVersion
         )
-        await MainActor.run {
-            if needsTerms || needsPrivacy {
+        if needsTerms || needsPrivacy {
+            await MainActor.run {
                 self.showTermsAcceptance = true
-            } else {
-                self.showTermsAcceptance = false
+                self.showReConsent = false
+                self.isResolvingLegalConsentGate = false
             }
+            return
+        }
+
+        await MainActor.run {
+            self.showTermsAcceptance = false
+        }
+
+        await self.evaluateReConsentRequirement(showOnlyIfNeeded: showOnlyIfNeeded)
+    }
+
+    private func evaluateReConsentRequirement(showOnlyIfNeeded: Bool) async {
+        guard self.services.userService.currentUser != nil else {
+            await MainActor.run {
+                self.showReConsent = false
+                self.isResolvingLegalConsentGate = false
+            }
+            return
+        }
+
+        if !showOnlyIfNeeded {
+            try? await self.services.userService.refreshUserData()
+        }
+
+        let blocking = self.services.userService.currentUser?.requiredReConsents?.filter(\.blocking) ?? []
+        await MainActor.run {
+            self.showReConsent = !blocking.isEmpty
             self.isResolvingLegalConsentGate = false
         }
     }

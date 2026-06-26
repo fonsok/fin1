@@ -1,0 +1,15 @@
+Documentation/FIN1_APP_DOCS/EPIC_POST_ONBOARDING_RE_CONSENT.md
+Documentation/RELEASE_ABNAHME_RE_CONSENT.md
+FIN1/Features/Authentication/Models/User.swift
+FIN1/Features/Authentication/Models/UserExtensions.swift
+FIN1/Features/Authentication/Services/UserFactory.swift
+FIN1/Features/Authentication/ViewModels/AuthenticationNotifications.swift
+FIN1/Features/Authentication/Views/AuthenticationView.swift
+FIN1/Shared/Components/Legal/ReConsentModalView.swift
+FIN1/Shared/Components/Legal/RoleAgreementReConsentView.swift
+FIN1/Shared/Models/RequiredReConsent.swift
+FIN1/Shared/Services/ParseAPIClientProtocol.swift
+FIN1/Shared/Services/RoleAgreementConsentService.swift
+FIN1/Shared/ViewModels/ReConsentViewModel.swift
+FIN1Tests/ReConsentViewModelTests.swift
+scripts/onboarding-pr4a-re-consent-ios-paths.txt
