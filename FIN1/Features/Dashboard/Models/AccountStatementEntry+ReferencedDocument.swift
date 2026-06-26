@@ -1,5 +1,20 @@
 import Foundation
 
+extension Document {
+    /// Ensures a cached inbox row matches the statement line's Beleg reference (id + number).
+    func matchesBelegReference(for entry: AccountStatementEntry) -> Bool {
+        let expectedId = entry.referenceDocumentId ?? entry.metadata["referenceDocumentId"]
+        if let expectedId, !expectedId.isEmpty, self.id != expectedId {
+            return false
+        }
+        let expectedNumber = entry.referenceDocumentNumber ?? entry.metadata["referenceDocumentNumber"]
+        if let expectedNumber, !expectedNumber.isEmpty {
+            return self.accountingDocumentNumber == expectedNumber
+        }
+        return true
+    }
+}
+
 extension AccountStatementEntry {
     /// Resolves the `Document` row for a statement line that carries a Beleg reference.
     /// 1. Direct id (`referenceDocumentId`) – matches Document.objectId.
@@ -32,6 +47,7 @@ extension AccountStatementEntry {
         }
 
         if category == .tradeSettlement,
+           !self.hasExplicitBelegReference,
            let tradeId = metadata["tradeId"], !tradeId.isEmpty,
            let txType = metadata["transactionType"], !txType.isEmpty {
             let candidates = documentService.documents
@@ -51,15 +67,19 @@ extension AccountStatementEntry {
     /// handler so Belegnr.-Links don't silently fail when the data exists server-side.
     @MainActor
     func resolveReferencedDocument(documentService: any DocumentServiceProtocol) async -> Document? {
-        if let cached = referencedDocument(documentService: documentService) {
-            return cached
+        if let cached = referencedDocument(documentService: documentService),
+           cached.matchesBelegReference(for: self) {
+            if !cached.needsTraderBelegSnapshotRefresh {
+                return cached
+            }
         }
 
         let docId = referenceDocumentId ?? metadata["referenceDocumentId"]
         if let docId, !docId.isEmpty {
             do {
                 let fetched = try await documentService.resolveDocumentForDeepLink(objectId: docId)
-                if fetched.type == .investorCollectionBill || !self.prefersInvestorCollectionBill {
+                if fetched.matchesBelegReference(for: self),
+                   fetched.type == .investorCollectionBill || !self.prefersInvestorCollectionBill {
                     return fetched
                 }
             } catch {
@@ -68,6 +88,14 @@ extension AccountStatementEntry {
         }
 
         return self.investorCollectionBillFallback(documentService: documentService)
+    }
+
+    private var hasExplicitBelegReference: Bool {
+        let docNumber = referenceDocumentNumber ?? metadata["referenceDocumentNumber"]
+        if let docNumber, !docNumber.isEmpty { return true }
+        let docId = referenceDocumentId ?? metadata["referenceDocumentId"]
+        if let docId, !docId.isEmpty { return true }
+        return false
     }
 
     private var prefersInvestorCollectionBill: Bool {

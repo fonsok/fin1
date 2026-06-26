@@ -10,14 +10,7 @@ extension CollectionBillDocumentViewModel {
     }
 
     static func isUsableTraderBelegSnapshot(_ text: String?) -> Bool {
-        let trimmed = text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        guard !trimmed.isEmpty else { return false }
-        return trimmed.contains("Belegnummer")
-            || trimmed.contains("Ordervolumen")
-            || trimmed.contains("Σ KAUF")
-            || trimmed.contains("Σ VERKAUF")
-            || trimmed.contains("Kaufabrechnung")
-            || trimmed.contains("Verkaufsabrechnung")
+        Document.isUsableTraderBelegSnapshotText(text)
     }
 
     func refreshTraderBelegSnapshotFromServer() async {

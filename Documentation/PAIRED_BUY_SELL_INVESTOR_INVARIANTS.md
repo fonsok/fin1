@@ -50,6 +50,8 @@ stateDiagram-v2
 | **A4** | Pool aktiviert | `PoolTradeParticipation` count ≥ 1 auf **Mirror-Trade** | blocking |
 | **A5** | Participations nur am Mirror | keine Participations auf TRADER-Trade | blocking |
 
+**iOS (Trader-Depot):** Nach Phase A zeigt die Positions-Kachel optional **Investment-Pool: active** (`DepotPositionPoolStatusResolver`); Admin-Toggle `display.showTraderDashboardInvestmentActiveStatus` (Standard: an). Reserviertes Kapital ohne Mirror-Leg erscheint als **-**.
+
 **Implementierung:** `verifyPairedBuySettlement` (`pairedBuyOrchestration.js`), `getPairedBuyPoolIntegrityStatus`
 
 ---

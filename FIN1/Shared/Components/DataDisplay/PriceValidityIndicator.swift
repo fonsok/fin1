@@ -1,23 +1,20 @@
 import SwiftUI
 
-/// A reusable component that displays price validity using smooth color transitions
-/// Shows green when price is fresh, orange when getting stale, red when expired
+/// Staleness indicator for the displayed Brief-Kurs: green = likely current, red = likely outdated.
+/// Advisory only — does not block order entry.
 struct PriceValidityIndicator: View {
     let priceValidityProgress: Double
 
     var body: some View {
-        if self.priceValidityProgress > 0 {
-            Rectangle()
-                .frame(height: 8)
-                .foregroundColor(self.progressColor)
-                .cornerRadius(ResponsiveDesign.spacing(4))
-                .animation(.easeInOut(duration: 0.3), value: self.priceValidityProgress)
-        }
+        Rectangle()
+            .frame(height: 8)
+            .foregroundColor(self.progressColor)
+            .cornerRadius(ResponsiveDesign.spacing(4))
+            .animation(.easeInOut(duration: 0.3), value: self.priceValidityProgress)
     }
 
     private var progressColor: Color {
-        // Create truly smooth color interpolation from green to red
-        // priceValidityProgress: 1.0 (green) -> 0.0 (red)
+        // Smooth interpolation: priceValidityProgress 1.0 (fresh/green) → 0.0 (likely stale/red)
 
         let clampedProgress = max(0, min(1, priceValidityProgress))
 

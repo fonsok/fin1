@@ -32,7 +32,25 @@ extension Document {
         return "Gutschrift Provision"
     }
 
-    static func parseTradeNumberFromCreditNoteName(_ name: String) -> Int? {
+    /// Net commission from embedded invoice or Parse `metadata.commissionAmount` (CN has no `invoiceData` on server).
+    var resolvedTraderCreditNoteCommissionAmount: Double? {
+        if let invoice = invoiceData {
+            let netCommission = invoice.items
+                .filter { $0.itemType == .commission }
+                .reduce(0.0) { $0 + abs($1.totalAmount) }
+            let vat = invoice.items
+                .filter { $0.itemType == .vat }
+                .reduce(0.0) { $0 + abs($1.totalAmount) }
+            let gross = netCommission + vat
+            if gross > 0 { return gross }
+        }
+        if let amount = traderCollectionBillMetadata?.commissionAmount, amount > 0 {
+            return amount
+        }
+        return nil
+    }
+
+    private static func parseTradeNumberFromCreditNoteName(_ name: String) -> Int? {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
 

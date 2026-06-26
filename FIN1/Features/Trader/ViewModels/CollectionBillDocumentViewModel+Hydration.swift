@@ -9,7 +9,10 @@ extension CollectionBillDocumentViewModel {
 
     /// Align notification/deep-link payloads with the same enrichment path as account-statement `referencedDocument` (id, then Belegnummer in local store).
     func mergeCanonicalCollectionBillPayload(_ payload: Document) -> Document {
-        let byId = documentService.getDocument(by: payload.id) ?? payload
+        let cachedById = documentService.getDocument(by: payload.id)
+        let byId = cachedById.map {
+            Document.mergedPreservingTraderBelegSSOT(existing: payload, incoming: $0)
+        } ?? payload
         if self.documentHasResolvableIds(byId) { return byId }
 
         let acc = (byId.accountingDocumentNumber ?? payload.accountingDocumentNumber)?
@@ -19,7 +22,7 @@ extension CollectionBillDocumentViewModel {
                (row.accountingDocumentNumber ?? "").trimmingCharacters(in: .whitespacesAndNewlines) == acc
                    && documentHasResolvableIds(row)
            }) {
-            return richer
+            return Document.mergedPreservingTraderBelegSSOT(existing: payload, incoming: richer)
         }
         return byId
     }
@@ -87,6 +90,7 @@ extension CollectionBillDocumentViewModel {
     }
 
     func loadTargetFromDocument() async {
+        isLoading = true
         resolvedFullTrade = nil
         canonicalDocument = self.mergeCanonicalCollectionBillPayload(document)
         self.logCollectionBillHydration(label: "after mergeCanonical", payload: document, merged: self.routingDocument)
@@ -124,8 +128,8 @@ extension CollectionBillDocumentViewModel {
             print("❌ CollectionBillDocumentViewModel: Failed to resolve document target for '\(self.routingDocument.name)'")
             errorMessage = "Could not extract trade or investment information from document metadata"
             fallbackToDocumentViewer = true
-            isLoading = false
         }
+        isLoading = false
     }
 
     func generateInvestorPreviewFallback() async {

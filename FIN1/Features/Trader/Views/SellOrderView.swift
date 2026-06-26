@@ -6,14 +6,26 @@ struct SellOrderViewWrapper: View {
     let holding: DepotHolding
     let traderService: any TraderServiceProtocol
     let userService: (any UserServiceProtocol)?
+    let maxPartialSells: Int
     @StateObject private var viewModel: SellOrderViewModel
 
-    init(holding: DepotHolding, traderService: any TraderServiceProtocol, userService: (any UserServiceProtocol)? = nil) {
+    init(
+        holding: DepotHolding,
+        traderService: any TraderServiceProtocol,
+        userService: (any UserServiceProtocol)? = nil,
+        maxPartialSells: Int = 3
+    ) {
         self.holding = holding
         self.traderService = traderService
         self.userService = userService
+        self.maxPartialSells = maxPartialSells
         self._viewModel = StateObject(
-            wrappedValue: SellOrderViewModel(holding: holding, traderService: traderService, userService: userService)
+            wrappedValue: SellOrderViewModel(
+                holding: holding,
+                traderService: traderService,
+                userService: userService,
+                maxPartialSells: maxPartialSells
+            )
         )
     }
 
@@ -83,6 +95,11 @@ struct SellOrderView: View {
         .onChange(of: self.viewModel.limit) { _, _ in
             // Handle limit price changes
             self.viewModel.onLimitPriceChanged()
+        }
+        .onChange(of: self.viewModel.quantityText) { _, _ in
+            if self.viewModel.quantityInputLocked {
+                self.viewModel.validateAndCorrectQuantity()
+            }
         }
         .dismissKeyboardOnTap()
         .task {
@@ -171,15 +188,33 @@ struct SellOrderView: View {
 
     private var orderDetailsSection: some View {
         OrderDetailsSection {
+            if let info = self.viewModel.partialSellLimitInfoMessage {
+                HStack(alignment: .top, spacing: ResponsiveDesign.spacing(8)) {
+                    Image(systemName: "info.circle.fill")
+                        .foregroundColor(AppTheme.accentLightBlue)
+                    Text(info)
+                        .font(ResponsiveDesign.captionFont())
+                        .foregroundColor(AppTheme.fontColor.opacity(0.85))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(ResponsiveDesign.spacing(10))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(AppTheme.accentLightBlue.opacity(0.12))
+                .cornerRadius(ResponsiveDesign.spacing(8))
+            }
+
             QuantityInputField(
                 text: self.$viewModel.quantityText,
                 placeholder: "max. \(self.viewModel.holding.remainingQuantity.formattedAsLocalizedNumber()) Stück",
                 accessibilityLabel: "Number of shares to sell",
-                accessibilityHint: "Enter the quantity of shares you want to sell",
+                accessibilityHint: self.viewModel.quantityInputLocked
+                    ? "Quantity fixed — last allowed partial sell must clear the depot"
+                    : "Enter the quantity of shares you want to sell",
                 onSubmit: {
                     self.viewModel.validateAndCorrectQuantity()
                 },
-                errorMessage: self.viewModel.quantityErrorMessage
+                errorMessage: self.viewModel.quantityErrorMessage,
+                isEditable: !self.viewModel.quantityInputLocked
             )
 
             OrderTypeSelection(

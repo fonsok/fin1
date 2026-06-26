@@ -37,7 +37,11 @@ class MockDocumentService: DocumentServiceProtocol, @unchecked Sendable {
     func mergeDocuments(_ documents: [Document]) {
         var merged = Dictionary(uniqueKeysWithValues: self.documents.map { ($0.id, $0) })
         for doc in documents {
-            merged[doc.id] = doc
+            if let existing = merged[doc.id] {
+                merged[doc.id] = Document.mergedPreservingTraderBelegSSOT(existing: existing, incoming: doc)
+            } else {
+                merged[doc.id] = doc
+            }
         }
         self.documents = Array(merged.values)
     }

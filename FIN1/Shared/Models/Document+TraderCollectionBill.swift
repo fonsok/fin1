@@ -54,6 +54,26 @@ extension Document {
         self.traderBelegExecutionSide?.navigationTitle ?? "Abrechnung"
     }
 
+    /// True when Parse `accountingSummaryText` is sufficient for Phase-1 Beleg snapshot display.
+    static func isUsableTraderBelegSnapshotText(_ text: String?) -> Bool {
+        let trimmed = text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !trimmed.isEmpty else { return false }
+        return trimmed.contains("Belegnummer")
+            || trimmed.contains("Ordervolumen")
+            || trimmed.contains("Σ KAUF")
+            || trimmed.contains("Σ VERKAUF")
+            || trimmed.contains("Kaufabrechnung")
+            || trimmed.contains("Verkaufsabrechnung")
+    }
+
+    /// Trader TSC/TBC rows in the local cache need a Parse refetch when SSOT text/metadata is missing.
+    var needsTraderBelegSnapshotRefresh: Bool {
+        guard self.type == .traderCollectionBill else { return false }
+        if Self.isUsableTraderBelegSnapshotText(self.accountingSummaryText) { return false }
+        if self.traderCollectionBillMetadata?.isUsableForDisplay == true { return false }
+        return true
+    }
+
     /// Parses `Ordervolumen: 400 St.` from backend `accountingSummaryText`, or structured metadata.
     var traderBelegOrderQuantityFromSnapshot: Int? {
         if let qty = traderCollectionBillMetadata?.quantity, qty > 0 {

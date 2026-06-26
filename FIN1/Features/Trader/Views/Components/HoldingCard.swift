@@ -60,13 +60,17 @@ struct HoldingCard: View {
             SellOrderViewWrapper(
                 holding: self.holding,
                 traderService: self.services.traderService,
-                userService: self.services.userService
+                userService: self.services.userService,
+                maxPartialSells: self.services.configurationService.effectiveMaxTraderPartialSells
             )
         }
     }
 
-    private var poolStatusDisplay: String {
-        DepotPositionPoolStatusResolver.displayValue(
+    private var poolStatusDisplay: String? {
+        guard self.services.configurationService.showTraderDashboardInvestmentActiveStatus else {
+            return nil
+        }
+        return DepotPositionPoolStatusResolver.displayValue(
             for: self.holding,
             completedTrades: self.services.traderService.completedTrades,
             participations: self.services.poolTradeParticipationService.participations

@@ -569,6 +569,30 @@ async def create_account_statement_pdf(request: AccountStatementRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+class LegalAgreementPdfRequest(BaseModel):
+    html: str
+
+
+@app.post("/api/pdf/legal-agreement")
+async def create_legal_agreement_pdf(request: LegalAgreementPdfRequest):
+    """Generate a legal agreement PDF from pre-rendered HTML."""
+    try:
+        html = HTML(string=request.html)
+        pdf_bytes = html.write_pdf()
+
+        logger.info(f"Legal agreement PDF generated: {len(pdf_bytes)} bytes")
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": 'attachment; filename="FIN1_Role_Agreement.pdf"'
+            },
+        )
+    except Exception as e:
+        logger.error(f"Error generating legal agreement PDF: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/api/pdf/templates")
 async def list_templates():
     """List available PDF templates"""

@@ -76,7 +76,7 @@ final class HoldingsConversionService: HoldingsConversionServiceProtocol, @unche
             holding = holding.withPartialSale(soldQuantity: executedQuantity)
         }
 
-        return holding
+        return self.applyPartialSellCount(from: trade, to: holding)
     }
 
     func createHoldings(from trades: [Trade], ongoingOrders: [Order] = []) -> [DepotHolding] {
@@ -89,6 +89,32 @@ final class HoldingsConversionService: HoldingsConversionServiceProtocol, @unche
 
         // Filter to only holdings with remaining quantity
         return allHoldings.filter { $0.remainingQuantity > 0 }
+    }
+
+    private func applyPartialSellCount(from trade: Trade, to holding: DepotHolding) -> DepotHolding {
+        let count = trade.authoritativePartialSellEventCount
+        return DepotHolding(
+            orderId: holding.orderId,
+            tradeId: holding.tradeId,
+            pairExecutionId: holding.pairExecutionId,
+            position: holding.position,
+            valuationDate: holding.valuationDate,
+            wkn: holding.wkn,
+            strike: holding.strike,
+            designation: holding.designation,
+            direction: holding.direction,
+            underlyingAsset: holding.underlyingAsset,
+            purchasePrice: holding.purchasePrice,
+            currentPrice: holding.currentPrice,
+            quantity: holding.quantity,
+            originalQuantity: holding.originalQuantity,
+            soldQuantity: holding.soldQuantity,
+            remainingQuantity: holding.remainingQuantity,
+            totalValue: holding.totalValue,
+            denomination: holding.denomination,
+            subscriptionRatio: holding.subscriptionRatio,
+            traderPartialSellEventCount: count
+        )
     }
 
     // MARK: - Private Methods

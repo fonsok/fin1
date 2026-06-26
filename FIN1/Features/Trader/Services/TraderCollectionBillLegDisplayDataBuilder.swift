@@ -35,13 +35,6 @@ enum TraderCollectionBillLegDisplayDataBuilder {
             ? (metadata.traderDisplayName ?? "Max Mustermann")
             : "Max Mustermann"
 
-        let emptyBreakdown = CalculationBreakdownData(
-            sellAmounts: [],
-            totalSellAmount: "0,00 EUR",
-            buyAmount: "0,00 EUR",
-            resultBeforeTaxes: "0,00 EUR",
-            resultBeforeTaxesColor: "fin1FontColor"
-        )
         let emptyTax = TaxSummaryData(
             assessmentBasis: "0,00 EUR",
             totalTax: "0,00 EUR",
