@@ -346,6 +346,13 @@ final class InvestmentSheetViewModel: ObservableObject {
             return false
         }
 
+        if !currentUser.canCreatePlatformInvestments {
+            self.showInvestmentError(
+                "Mit \(currentUser.riskClass.displayName) ist eine neue Investition über FIN1 nicht möglich."
+            )
+            return false
+        }
+
         return true
     }
 

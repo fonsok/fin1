@@ -30,6 +30,18 @@ jest.mock('../../utils/poolMirrorBuyCap', () => ({
   validatePoolMirrorReservationCapacity: jest.fn(async () => ({ valid: true })),
 }));
 
+jest.mock('../../functions/legal/legalConsentUserSync', () => ({
+  resolveUserLegalAcceptanceState: jest.fn(async () => ({
+    acceptedTerms: true,
+    acceptedPrivacyPolicy: true,
+  })),
+  resolveUserRoleAgreementState: jest.fn(async () => ({
+    required: true,
+    accepted: true,
+    role: 'investor',
+  })),
+}));
+
 const { resolveCanonicalUserId } = require('../../utils/canonicalUserId');
 const { handleCreateInvestmentSplits } = require('../investmentCreateSplits');
 
@@ -214,6 +226,16 @@ function makeRequest(user, params) {
   return { user, params };
 }
 
+function makeSessionUser(id) {
+  return {
+    id,
+    get(key) {
+      if (key === 'onboardingCompleted') return true;
+      return null;
+    },
+  };
+}
+
 describe('createInvestmentSplits (integration)', () => {
   let harness;
 
@@ -231,8 +253,8 @@ describe('createInvestmentSplits (integration)', () => {
   test('two investors can both receive the same INV sequence number (compound unique)', async () => {
     const investorA = 'investor-smuller';
     const investorB = 'investor-dbraun';
-    const userA = { id: 'session-a' };
-    const userB = { id: 'session-b' };
+    const userA = makeSessionUser('session-a');
+    const userB = makeSessionUser('session-b');
 
     resolveCanonicalUserId.mockImplementation(async (id) => {
       if (id === 'session-a') return investorA;
@@ -279,7 +301,7 @@ describe('createInvestmentSplits (integration)', () => {
 
   test('retrying the same batch returns idempotentReplay without extra rows', async () => {
     const investorId = 'investor-retry';
-    const user = { id: 'session-retry' };
+    const user = makeSessionUser('session-retry');
     resolveCanonicalUserId.mockImplementation(async (id) => (
       id === 'session-retry' ? investorId : String(id || '').trim()
     ));
@@ -310,7 +332,7 @@ describe('createInvestmentSplits (integration)', () => {
 
   test('duplicate save race replays existing split when amounts match', async () => {
     const investorId = 'investor-race';
-    const user = { id: 'session-race' };
+    const user = makeSessionUser('session-race');
     resolveCanonicalUserId.mockImplementation(async (id) => (
       id === 'session-race' ? investorId : String(id || '').trim()
     ));
@@ -356,7 +378,7 @@ describe('createInvestmentSplits (integration)', () => {
 
   test('rolls back earlier splits when a later split save fails (atomic batch)', async () => {
     const investorId = 'investor-atomic';
-    const user = { id: 'session-atomic' };
+    const user = makeSessionUser('session-atomic');
     resolveCanonicalUserId.mockImplementation(async (id) => (
       id === 'session-atomic' ? investorId : String(id || '').trim()
     ));

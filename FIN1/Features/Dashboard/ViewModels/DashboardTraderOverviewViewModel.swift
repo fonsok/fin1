@@ -16,6 +16,7 @@ final class DashboardTraderOverviewViewModel: ObservableObject {
 
     // MARK: - Callbacks
     var onTraderTap: ((String) -> Void)?
+    private var allowTraderTap = true
 
     // MARK: - Init
     init(
@@ -28,7 +29,8 @@ final class DashboardTraderOverviewViewModel: ObservableObject {
     }
 
     // MARK: - Public API
-    func updateCachedData() {
+    func updateCachedData(allowTraderTap: Bool = true) {
+        self.allowTraderTap = allowTraderTap
         let traders = self.traderDataService.dashboardTraders
             .sorted { $0.performance > $1.performance }
 
@@ -54,13 +56,14 @@ final class DashboardTraderOverviewViewModel: ObservableObject {
                 if let trader = self.traderDataService.dashboardTraders.first(where: { $0.username == username }) {
                     Task { @MainActor in
                         self.busyUsernames.insert(username)
-                        self.updateCachedData()
+                        self.updateCachedData(allowTraderTap: self.allowTraderTap)
                     }
                     self.handleWatchlistToggle(traderID: trader.backendTraderId, isWatched: isWatched, username: username)
                 }
             },
             watchlistStatus: watchlistStatus,
-            busyStatus: Dictionary(uniqueKeysWithValues: self.busyUsernames.map { ($0, true) })
+            busyStatus: Dictionary(uniqueKeysWithValues: self.busyUsernames.map { ($0, true) }),
+            allowTraderTap: allowTraderTap
         )
     }
 
@@ -95,7 +98,7 @@ final class DashboardTraderOverviewViewModel: ObservableObject {
         // Set busy state immediately
         Task { @MainActor in
             self.busyUsernames.insert(username)
-            self.updateCachedData()
+            self.updateCachedData(allowTraderTap: self.allowTraderTap)
         }
 
         // Use shared helper for core toggle logic, but wrap with error handling
@@ -121,7 +124,7 @@ final class DashboardTraderOverviewViewModel: ObservableObject {
 
             await MainActor.run {
                 self.busyUsernames.remove(username)
-                self.updateCachedData()
+                self.updateCachedData(allowTraderTap: self.allowTraderTap)
             }
         }
     }

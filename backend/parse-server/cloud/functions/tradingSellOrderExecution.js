@@ -3,6 +3,7 @@
 const { getUserStableId } = require('./tradingIdentity');
 const { calculateOrderFees } = require('../utils/helpers');
 const { resolveOrderExecutionPrice } = require('../utils/executionPriceResolver');
+const { assertProductAccessEligible } = require('../utils/productAccessGate');
 
 function formatSellOrderResponse(order, idempotentReplay) {
   return {
@@ -28,6 +29,7 @@ async function handleExecuteSellOrder(request) {
   if (user.get('role') !== 'trader') {
     throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Trader role required');
   }
+  await assertProductAccessEligible(user);
 
   const {
     symbol,

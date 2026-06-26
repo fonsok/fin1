@@ -40,12 +40,12 @@ final class ConfigurationService: ConfigurationServiceProtocol, ServiceLifecycle
     /// Disables all client monetary fallbacks when true (production kill-switch).
     @Published var frontendReadonlyMode: Bool = false
     @Published var showInvestorPartialSellRealizations: Bool = false
+    @Published var showTraderDashboardInvestmentActiveStatus: Bool = true
     @Published var minimumInvestmentAmount: Double = CalculationConstants.Investment.fallbackMinimumInvestmentAmount
     @Published var maximumInvestmentAmount: Double = CalculationConstants.Investment.fallbackMaximumInvestmentAmount
     @Published var maxTraderPartialSells: Int = 3
     @Published var taxCollectionMode: TaxCollectionMode = .customerSelfReports
     @Published var slaMonitoringInterval: TimeInterval = 300.0 // 5 minutes default, internal(set) for extension access
-    @Published var isAdminMode: Bool = false
 
     // MARK: - Parse Server Configuration
     var parseServerURL: String? {
@@ -112,11 +112,10 @@ final class ConfigurationService: ConfigurationServiceProtocol, ServiceLifecycle
     init(userService: any UserServiceProtocol) {
         self.userService = userService
         loadConfiguration()
-        setupUserRoleObservation()
         self.setupRemoteConfigRefreshOnSignIn()
     }
 
-    /// Injects Parse API client for fetching/saving config from Parse (getConfig / updateConfig).
+    /// Injects Parse API client for fetching remote config from Parse (`getConfig`).
     func configureParseAPIClient(_ client: (any ParseAPIClientProtocol)?) {
         self.queue.sync(flags: .barrier) { [weak self] in
             self?.parseAPIClient = client

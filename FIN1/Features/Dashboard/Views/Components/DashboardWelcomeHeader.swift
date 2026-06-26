@@ -103,6 +103,7 @@ struct DashboardWelcomeHeader: View {
             self.currentUser = self.appServices.userService.currentUser
         }
         .onReceive(Timer.publish(every: 1.0, on: .main, in: .common).autoconnect()) { _ in
+            guard self.shouldRunSessionLogoutCountdown else { return }
             guard self.logoutTimeRemaining > 0 else { return }
             self.logoutTimeRemaining -= 1
             if self.logoutTimeRemaining == 120 && !self.showLogoutWarning {
@@ -153,6 +154,13 @@ struct DashboardWelcomeHeader: View {
     }
 
     // MARK: - Timer Functions
+
+    /// Dashboard auto-logout must not run during incomplete onboarding (timer ticks were
+    /// re-rendering MainTabView every second behind the signup fullScreenCover).
+    private var shouldRunSessionLogoutCountdown: Bool {
+        guard let user = self.currentUser else { return false }
+        return user.onboardingCompleted
+    }
 
     private func addFifteenMinutes() {
         self.logoutTimeRemaining += 15 * 60 // Add 15 minutes

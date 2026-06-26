@@ -21,6 +21,7 @@ final class DashboardStatsViewModel: ObservableObject {
     private let investmentService: any InvestmentServiceProtocol
     private let investorCashBalanceService: any InvestorCashBalanceServiceProtocol
     private let traderService: any TraderServiceProtocol
+    private let traderDataService: any TraderDataServiceProtocol
     private let invoiceService: any InvoiceServiceProtocol
     private let configurationService: any ConfigurationServiceProtocol
     private let holdingsConversionService: any HoldingsConversionServiceProtocol
@@ -50,6 +51,7 @@ final class DashboardStatsViewModel: ObservableObject {
         investmentService: any InvestmentServiceProtocol,
         investorCashBalanceService: any InvestorCashBalanceServiceProtocol,
         traderService: any TraderServiceProtocol,
+        traderDataService: any TraderDataServiceProtocol,
         invoiceService: any InvoiceServiceProtocol,
         configurationService: any ConfigurationServiceProtocol,
         holdingsConversionService: any HoldingsConversionServiceProtocol,
@@ -60,6 +62,7 @@ final class DashboardStatsViewModel: ObservableObject {
         self.investmentService = investmentService
         self.investorCashBalanceService = investorCashBalanceService
         self.traderService = traderService
+        self.traderDataService = traderDataService
         self.invoiceService = invoiceService
         self.configurationService = configurationService
         self.holdingsConversionService = holdingsConversionService
@@ -76,6 +79,7 @@ final class DashboardStatsViewModel: ObservableObject {
             investmentService: appServices.investmentService,
             investorCashBalanceService: appServices.investorCashBalanceService,
             traderService: appServices.traderService,
+            traderDataService: appServices.traderDataService,
             invoiceService: appServices.invoiceService,
             configurationService: appServices.configurationService,
             holdingsConversionService: appServices.holdingsConversionService,
@@ -176,6 +180,7 @@ final class DashboardStatsViewModel: ObservableObject {
 
     /// Called when view appears or needs refresh
     func refreshAllData() {
+        guard self.userService.currentUser?.onboardingCompleted == true else { return }
         if self.isInvestor {
             self.updateInvestorBalance()
             self.updateActiveInvestmentsCount()
@@ -193,6 +198,7 @@ final class DashboardStatsViewModel: ObservableObject {
 
     /// Called when investments count changes
     func onInvestmentsCountChange() {
+        guard self.isInvestor else { return }
         self.updateInvestorBalance()
         self.updateActiveInvestmentsCount()
     }

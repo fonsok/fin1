@@ -30,7 +30,7 @@ struct CommissionConfirmationView: View {
                 .buttonStyle(PlainButtonStyle())
 
                 // Commission text
-                Text("Trader \(self.traderUsername) receives a \(self.commissionPercentage) commission on the profit.")
+                Text("Trader \(self.traderUsername) and the App receive a combined \(self.commissionPercentage) commission on the profit.")
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor)
                     .fixedSize(horizontal: false, vertical: true)

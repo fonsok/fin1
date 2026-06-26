@@ -190,9 +190,15 @@ final class InvestmentsViewModel: ObservableObject {
         self.userService.currentUser
     }
 
+    var canCreateNewInvestment: Bool {
+        guard let currentUser else { return false }
+        return !currentUser.isExcludedFromPlatformTradingDueToRiskClass
+    }
+
     // MARK: - Investment Management
 
     func showNewInvestmentSheet() {
+        guard self.canCreateNewInvestment else { return }
         self.showNewInvestment = true
     }
 

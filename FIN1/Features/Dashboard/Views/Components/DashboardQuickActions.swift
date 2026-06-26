@@ -7,13 +7,19 @@ struct DashboardQuickActionsSection: View {
     @Binding var navigateToDiscovery: String?
     @EnvironmentObject var tabRouter: TabRouter
     @State private var showOrderBuy = false
+    @State private var syncedUser: User?
     @Environment(\.themeManager) private var themeManager
 
     // MARK: - Computed Properties
 
     /// Current user's role for explicit role-based rendering
     private var currentUserRole: UserRole? {
-        self.appServices.userService.currentUser?.role
+        self.syncedUser?.role
+    }
+
+    private var isTradingAllowed: Bool {
+        guard let syncedUser else { return false }
+        return !syncedUser.isExcludedFromPlatformTradingDueToRiskClass
     }
 
     var body: some View {
@@ -21,6 +27,7 @@ struct DashboardQuickActionsSection: View {
             // Role-specific content based on user type
             self.roleSpecificContent
         }
+        .dashboardTradingUserSync(self.$syncedUser)
         .sheet(isPresented: self.$showOrderBuy) {
             SecuritiesSearchView(services: self.appServices)
         }
@@ -61,6 +68,7 @@ struct DashboardQuickActionsSection: View {
     private var traderQuickActions: some View {
         VStack(spacing: ResponsiveDesign.spacing(12)) {
             Button(action: {
+                guard self.isTradingAllowed else { return }
                 self.showOrderBuy = true
             }) {
                 HStack(spacing: ResponsiveDesign.spacing(12)) {
@@ -75,12 +83,21 @@ struct DashboardQuickActionsSection: View {
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: ResponsiveDesign.spacing(56))
-                .background(AppTheme.buttonColor)
+                .background(self.isTradingAllowed ? AppTheme.buttonColor : AppTheme.fontColor.opacity(0.3))
                 .cornerRadius(ResponsiveDesign.spacing(12))
             }
+            .disabled(!self.isTradingAllowed)
             .accessibilityIdentifier("HandelnButton")
             .accessibilityLabel("Handeln")
-            .accessibilityHint("Tap to open securities search")
+            .accessibilityHint(
+                self.isTradingAllowed
+                    ? "Tap to open securities search"
+                    : "Trading is not available for your risk class"
+            )
+
+            if let syncedUser, !self.isTradingAllowed {
+                DashboardTradingAccessNotice(riskClass: syncedUser.riskClass, roleContext: .trader)
+            }
 
             // Price Alerts button - users can access via tab bar
             // Quick action removed to keep UI clean - Price Alerts is accessible via "Alerts" tab

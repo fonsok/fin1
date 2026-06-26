@@ -349,6 +349,15 @@ export const PARAMETER_DEFINITIONS: Record<string, Omit<ConfigurationParameter, 
     category: 'display',
     isCritical: false,
   },
+  showTraderDashboardInvestmentActiveStatus: {
+    key: 'showTraderDashboardInvestmentActiveStatus',
+    displayName: 'Trader-Depot: Investment-Pool Status anzeigen',
+    description:
+      'Steuert in der Trader-App im Depot bei den Positions-Kacheln, ob die Zeile „Investment-Pool“ (active / -) nach abgeschlossener Kauforder angezeigt wird (`display.showTraderDashboardInvestmentActiveStatus`). Standard: an. Änderung erfordert 4-Augen-Freigabe.',
+    type: 'boolean',
+    category: 'display',
+    isCritical: true,
+  },
   collectionBillServerLegs: {
     key: 'collectionBillServerLegs',
     displayName: 'Collection Bill: Server buyLeg/sellLeg (ADR-009)',

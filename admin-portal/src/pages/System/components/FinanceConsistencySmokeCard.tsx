@@ -4,12 +4,35 @@ import { Badge, Card } from '../../../components/ui';
 import { formatDateTime } from '../../../utils/format';
 
 import { adminLabel, adminMonoHint, adminMuted, adminPrimary, adminSurfaceMetricTile } from '../../../utils/adminThemeClasses';
+import {
+  classifyFinanceSmokeIssues,
+  FINANCE_SNAPSHOT_CATCHUP_COMMAND,
+  formatSnapshotCheckMetrics,
+  snapshotCheckLabel,
+} from '../utils/financeConsistencySmokeIssues';
+
 type HealthStatus = 'healthy' | 'degraded' | 'down' | 'unknown';
 
 export type FinanceConsistencySmokeStatus = {
   overall: HealthStatus;
   checkedAt: string;
   issues: string[];
+  financeIntegrity?: {
+    overall?: HealthStatus;
+    issues?: string[];
+    checks?: Array<{
+      id: string;
+      label?: string;
+      overall?: HealthStatus;
+      reason?: string | null;
+      runAt?: string | null;
+      ageSeconds?: number | null;
+      hasSnapshot?: boolean;
+      driftedDocuments?: number;
+      checkedDocuments?: number;
+      violationCount?: number;
+    }>;
+  };
   mirrorBasis?: {
     overall?: HealthStatus;
     hasSnapshot?: boolean;
@@ -19,6 +42,7 @@ export type FinanceConsistencySmokeStatus = {
     checkedDocuments?: number;
     driftedDocuments?: number;
     nullDerivedCount?: number;
+    violationCount?: number;
     driftSamples?: Array<{
       docId?: string;
       investmentId?: string;
@@ -27,6 +51,15 @@ export type FinanceConsistencySmokeStatus = {
       derivedReturnPercentage?: number;
       deltaPp?: number;
     }>;
+  };
+  traderCashDuplicates?: {
+    overall?: HealthStatus;
+    hasSnapshot?: boolean;
+    reason?: string | null;
+    runAt?: string | null;
+    ageSeconds?: number | null;
+    violationCount?: number;
+    violationSamples?: Array<Record<string, unknown>>;
   };
   settlementConsistency?: { overall?: HealthStatus; checkedTrades?: number; checkedInvestments?: number; mismatchCount?: number };
   traderBelegDrift?: {
@@ -53,16 +86,31 @@ type Props = {
   renderStatusBadge: (status: HealthStatus) => ReactNode;
 };
 
+function issueBorderClass(isDark: boolean, variant: 'maintenance' | 'data' | 'healthy') {
+  if (variant === 'healthy') {
+    return isDark ? 'border-emerald-700 bg-emerald-950/20' : 'border-green-200 bg-green-50';
+  }
+  if (variant === 'maintenance') {
+    return isDark ? 'border-sky-700 bg-sky-950/20' : 'border-sky-200 bg-sky-50';
+  }
+  return isDark ? 'border-amber-700 bg-amber-950/20' : 'border-yellow-200 bg-yellow-50';
+}
+
 export function FinanceConsistencySmokeCard({
   isDark,
   financeSmoke,
   financeSmokeLoading,
   renderStatusBadge,
 }: Props) {
+  const classification = classifyFinanceSmokeIssues(financeSmoke);
+  const cardVariant = financeSmoke.overall === 'healthy'
+    ? 'healthy'
+    : classification.staleOnly
+      ? 'maintenance'
+      : 'data';
+
   return (
-    <Card className={clsx('border', financeSmoke.overall === 'healthy'
-      ? (isDark ? 'border-emerald-700 bg-emerald-950/20' : 'border-green-200 bg-green-50')
-      : (isDark ? 'border-amber-700 bg-amber-950/20' : 'border-yellow-200 bg-yellow-50'))}>
+    <Card className={clsx('border', issueBorderClass(isDark, cardVariant))}>
       <div className="flex items-start justify-between gap-4 flex-col md:flex-row">
         <div>
           <h3 className={clsx('text-md font-semibold', adminPrimary(isDark))}>
@@ -74,19 +122,29 @@ export function FinanceConsistencySmokeCard({
           <p className={clsx('text-xs mt-1', adminMonoHint(isDark))}>
             Letzte Pruefung: {formatDateTime(financeSmoke.checkedAt)}
           </p>
+          {classification.staleOnly && (
+            <p className={clsx('text-xs mt-2', isDark ? 'text-sky-300' : 'text-sky-700')}>
+              Veraltete Wochen-Snapshots — Finanzdaten laut letzter Pruefung konsistent. Cron auf iobox nachholen.
+            </p>
+          )}
         </div>
-        <div className="flex items-center gap-3">
-          {financeSmokeLoading ? <Badge variant="neutral">Laedt…</Badge> : renderStatusBadge(financeSmoke.overall)}
+        <div className="flex items-center gap-3 flex-wrap">
+          {financeSmokeLoading ? <Badge variant="neutral">Laedt…</Badge> : (
+            <>
+              {renderStatusBadge(financeSmoke.overall)}
+              {classification.staleOnly && <Badge variant="info">Nur Wartung</Badge>}
+            </>
+          )}
         </div>
       </div>
 
       <div className="mt-4 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <div className={clsx('rounded-md border p-3', adminSurfaceMetricTile(isDark))}>
-          <p className={clsx('text-xs', adminMuted(isDark))}>Issues</p>
+          <p className={clsx('text-xs', adminMuted(isDark))}>Daten-Issues</p>
           <p
             className={clsx(
               'text-lg font-semibold',
-              (financeSmoke.issues?.length || 0) === 0
+              classification.dataIssues.length === 0
                 ? isDark
                   ? 'text-emerald-400'
                   : 'text-green-500'
@@ -95,7 +153,22 @@ export function FinanceConsistencySmokeCard({
                   : 'text-yellow-500',
             )}
           >
-            {financeSmoke.issues?.length || 0}
+            {classification.dataIssues.length}
+          </p>
+        </div>
+        <div className={clsx('rounded-md border p-3', adminSurfaceMetricTile(isDark))}>
+          <p className={clsx('text-xs', adminMuted(isDark))}>Wartung (Snapshots)</p>
+          <p
+            className={clsx(
+              'text-lg font-semibold',
+              classification.maintenanceChecks.length === 0
+                ? adminPrimary(isDark)
+                : isDark
+                  ? 'text-sky-300'
+                  : 'text-sky-600',
+            )}
+          >
+            {classification.maintenanceChecks.length}
           </p>
         </div>
         <div className={clsx('rounded-md border p-3', adminSurfaceMetricTile(isDark))}>
@@ -143,12 +216,37 @@ export function FinanceConsistencySmokeCard({
         </div>
       </div>
 
-      {(financeSmoke.issues?.length || 0) > 0 && (
+      {classification.hasMaintenance && (
+        <div className={clsx(
+          'mt-3 rounded-md border px-3 py-2 text-sm space-y-2',
+          isDark ? 'border-sky-700 bg-sky-950/30 text-sky-100' : 'border-sky-300 bg-sky-50 text-sky-900',
+        )}>
+          <p className="font-medium">Wartung: veraltete OpsHealth-Snapshots (kein Datenproblem)</p>
+          <ul className="text-xs space-y-2 list-disc pl-4">
+            {classification.maintenanceChecks.map((check) => (
+              <li key={check.id}>
+                <span className="font-medium">{snapshotCheckLabel(check.id)}:</span>{' '}
+                {check.reason}
+                {check.runAt ? ` (Snapshot ${formatDateTime(check.runAt)})` : ''}
+                {formatSnapshotCheckMetrics(check) ? ` — ${formatSnapshotCheckMetrics(check)}` : ''}
+              </li>
+            ))}
+          </ul>
+          <p className={clsx('text-xs font-mono break-all', adminMonoHint(isDark))}>
+            Nachholen: {FINANCE_SNAPSHOT_CATCHUP_COMMAND}
+          </p>
+          <p className={clsx('text-xs', adminMuted(isDark))}>
+            Regulaerer Cron: Montag 06:00 auf iobox (`run-finance-integrity-snapshots.sh`).
+          </p>
+        </div>
+      )}
+
+      {classification.hasDataIssues && (
         <div className={clsx('mt-3 rounded-md border px-3 py-2 text-sm space-y-2', isDark ? 'border-amber-700 bg-amber-950/30 text-amber-200' : 'border-yellow-300 bg-yellow-50 text-yellow-800')}>
           <p>
-            <span className="font-medium">Issues:</span> {financeSmoke.issues.join(', ')}
+            <span className="font-medium">Daten-Inkonsistenzen:</span> {classification.dataIssues.join(', ')}
           </p>
-          {financeSmoke.mirrorBasis?.reason && (
+          {financeSmoke.mirrorBasis?.reason && !classification.maintenanceChecks.some((c) => c.id === 'mirror_basis_drift') && (
             <p className={clsx('text-xs', adminMonoHint(isDark))}>
               Mirror-Basis: {financeSmoke.mirrorBasis.reason}
               {financeSmoke.mirrorBasis.runAt

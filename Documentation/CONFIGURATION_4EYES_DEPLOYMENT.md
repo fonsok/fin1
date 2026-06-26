@@ -36,18 +36,16 @@ Hinweis: Externe Aufrufer bleiben kompatibel, da die bisherigen Entry-Dateien (`
 
 | Datei | Beschreibung |
 |-------|-------------|
-| `Admin/ViewModels/PendingConfigurationChangesViewModel.swift` | ViewModel für 4-Augen UI |
-| `Admin/Views/PendingConfigurationChangesView.swift` | View für Genehmigungen |
+| ~~`Admin/ViewModels/PendingConfigurationChangesViewModel.swift`~~ | **Entfernt** — 4-Augen nur noch im Web-Portal |
+| ~~`Admin/Views/PendingConfigurationChangesView.swift`~~ | **Entfernt** |
+| ~~`ConfigurationSettingsView.swift`~~ | **Entfernt** — iOS schreibt keine Remote-Config mehr |
 
 ### Geänderte App-Dateien
 
 | Datei | Änderung |
 |-------|----------|
-| `ConfigurationService.swift` | Neue Response-Modelle |
-| `ConfigurationService+Updates.swift` | 4-Augen für kritische Parameter |
-| `ConfigurationServiceProtocol.swift` | Neue Error-Cases |
-| `ConfigurationSettings/ConfigurationInputSections.swift` | PendingApprovalsSection |
-| `ConfigurationSettingsView.swift` | Integration der PendingApprovalsSection |
+| `ConfigurationService.swift` | Liest Remote-Config via `getConfig`; Writes werfen `ConfigurationError.serverManagedConfiguration` |
+| `AdminDashboardView.swift` | Read-only Ops/Diagnose; Role Testing nur `#if DEBUG` |
 
 ---
 
@@ -157,8 +155,12 @@ Die folgenden Parameter erfordern 4-Augen-Genehmigung:
 | `orderFeeMin` | Ordergebühr Min | €5.00 |
 | `orderFeeMax` | Ordergebühr Max | €50.00 |
 | `showDocumentReferenceLinksInAccountStatement` | Kontoauszug: tappbare Links zu Buchungsbelegen (App) | `true` |
+| `showCommissionBreakdownInCreditNote` | Trader-Gutschrift: Commission-Breakdown-Tabelle (Dev/QA) | `false` |
+| `showTraderDashboardInvestmentActiveStatus` | Trader-Depot: Kachel-Zeile „Investment-Pool“ (active / -) nach abgeschlossener Kauforder (iOS `HoldingCard`) | `true` |
 
-**Provisions-Bundle (Admin-Portal):** Die drei Provisions-Parameter werden im Admin-Portal als **eine Karte** „Erfolgsprovision App + Trader“ bearbeitet (Gesamtprovision + Aufteilungs-Dropdown). Technisch bleiben drei DB-Felder; Änderungen laufen als **ein** 4-Augen-Antrag über `requestCommissionRateBundleChange` (Metadaten-Key `commissionRateBundle`). Validierung: `traderCommissionRate + appCommissionRate` muss **exakt** `investorCommissionRateTotal` entsprechen.
+**Hinweis:** Der technische Schlüssel `showTraderDashboardInvestmentActiveStatus` ist historisch benannt; die Option steuert **nur** die Depot-Positionskachel, nicht Quick Stats im Dashboard.
+
+**Anzeige-Parameter (Kategorie `display`):** Werden im Admin-Portal unter **Konfiguration → Anzeige** gepflegt; iOS liest über `getConfig.display.*` (`ConfigurationService.fetchRemoteDisplayConfig()`). Nach Freigabe: App-Neustart oder erneuter Config-Fetch. Die drei Provisions-Parameter werden im Admin-Portal als **eine Karte** „Erfolgsprovision App + Trader“ bearbeitet (Gesamtprovision + Aufteilungs-Dropdown). Technisch bleiben drei DB-Felder; Änderungen laufen als **ein** 4-Augen-Antrag über `requestCommissionRateBundleChange` (Metadaten-Key `commissionRateBundle`). Validierung: `traderCommissionRate + appCommissionRate` muss **exakt** `investorCommissionRateTotal` entsprechen.
 
 ---
 
@@ -166,9 +168,9 @@ Die folgenden Parameter erfordern 4-Augen-Genehmigung:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  1. Admin A ändert Parameter in der App                                     │
+│  1. Admin A ändert Parameter im **Admin Web Portal** (Konfiguration)      │
 │       ↓                                                                     │
-│  2. App ruft requestConfigurationChange auf                                 │
+│  2. Portal ruft requestConfigurationChange auf                              │
 │       ↓                                                                     │
 │  3. Backend erstellt FourEyesRequest (Status: pending)                      │
 │       ↓                                                                     │

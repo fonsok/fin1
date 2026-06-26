@@ -27,6 +27,12 @@ final class DashboardDataLoader: DashboardDataLoaderProtocol, @unchecked Sendabl
 
     func loadDashboardData() async throws {
         do {
+            try await self.userService.refreshUserData()
+        } catch {
+            print("⚠️ DashboardDataLoader: user refresh before dashboard load failed (\(error.localizedDescription))")
+        }
+
+        do {
             try await self.dashboardService.loadDashboardData()
         } catch let error as AppError {
             await trackError(error, context: "dashboard_data_loading")

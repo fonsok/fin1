@@ -17,6 +17,15 @@ struct InvestorDiscoveryView: View {
     @State private var showCreateCombination = false
     @State private var activeFilters: [IndividualFilterCriteria] = []
 
+    private var showsTradingAccessNotice: Bool {
+        guard let currentUser = self.appServices.userService.currentUser else { return false }
+        return !currentUser.canCreatePlatformInvestments
+    }
+
+    private var listStripeOffset: Int {
+        self.showsTradingAccessNotice ? 1 : 0
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -86,6 +95,12 @@ struct InvestorDiscoveryView: View {
                 )
                 .stripedListSection(stripeIndex: 0)
 
+                if let currentUser = self.appServices.userService.currentUser,
+                   !currentUser.canCreatePlatformInvestments {
+                    DashboardTradingAccessNotice(riskClass: currentUser.riskClass, roleContext: .investor)
+                        .stripedListSection(stripeIndex: 1, bandTint: AppTheme.accentOrange)
+                }
+
                 SavedFiltersSection(
                     savedFilters: self.savedFiltersManager.savedFilters,
                     activeFilters: self.activeFilters,
@@ -99,7 +114,7 @@ struct InvestorDiscoveryView: View {
                     },
                     currentlyAppliedFilterID: self.viewModel.getAppliedFilterID()
                 )
-                .stripedListSection(stripeIndex: 1)
+                .stripedListSection(stripeIndex: 1 + self.listStripeOffset)
 
                 if !self.activeFilters.isEmpty {
                     ActiveFiltersSection(
@@ -113,7 +128,7 @@ struct InvestorDiscoveryView: View {
                             self.viewModel.handleRemoveFilter(filterType, from: &self.activeFilters)
                         }
                     )
-                    .stripedListSection(stripeIndex: 2)
+                    .stripedListSection(stripeIndex: 2 + self.listStripeOffset)
                 }
 
                 IndividualFiltersSection(
@@ -128,7 +143,7 @@ struct InvestorDiscoveryView: View {
                         self.showMoreFilters = true
                     }
                 )
-                .stripedListSection(stripeIndex: self.activeFilters.isEmpty ? 2 : 3)
+                .stripedListSection(stripeIndex: (self.activeFilters.isEmpty ? 2 : 3) + self.listStripeOffset)
 
                 if !self.activeFilters.isEmpty || !self.viewModel.searchQuery.isEmpty {
                     HitlistTableSection(
@@ -139,7 +154,8 @@ struct InvestorDiscoveryView: View {
                         activeFilters: self.activeFilters,
                         appServices: self.appServices,
                         viewModel: self.viewModel,
-                        startStripeIndex: self.activeFilters.isEmpty ? 3 : 4
+                        allowTraderTap: !self.showsTradingAccessNotice,
+                        startStripeIndex: (self.activeFilters.isEmpty ? 3 : 4) + self.listStripeOffset
                     )
                 }
             }
@@ -165,6 +181,7 @@ struct HitlistTableSection: View {
     let traders: [InvestorTrader]
     let appServices: AppServices
     let viewModel: InvestorDiscoveryViewModel
+    let allowTraderTap: Bool
     let startStripeIndex: Int
     @State private var selectedTraderID: TraderIDItem?
     @State private var watchlistTick: Int = 0
@@ -180,11 +197,13 @@ struct HitlistTableSection: View {
         activeFilters: [IndividualFilterCriteria],
         appServices: AppServices,
         viewModel: InvestorDiscoveryViewModel,
+        allowTraderTap: Bool = true,
         startStripeIndex: Int
     ) {
         self.traders = traders
         self.appServices = appServices
         self.viewModel = viewModel
+        self.allowTraderTap = allowTraderTap
         self.startStripeIndex = startStripeIndex
         // Note: activeFilters parameter kept for API consistency but not used
     }
@@ -214,6 +233,7 @@ struct HitlistTableSection: View {
                             from: self.viewModel.createTraderPerformanceData(from: self.traders),
                             onTraderTap: { username in
                                 print("📌 [Hitlist] onTraderTap username=\(username)")
+                                guard self.allowTraderTap else { return }
                                 if let traderID = viewModel.getTraderID(for: username, traderDataService: appServices.traderDataService) {
                                     self.selectedTraderID = TraderIDItem(id: traderID)
                                 }
@@ -229,7 +249,8 @@ struct HitlistTableSection: View {
                                 watchlistService: self.appServices.watchlistService,
                                 traderDataService: self.appServices.traderDataService
                             ),
-                            busyStatus: self.viewModel.getBusyStatus(from: self.busyUsernames)
+                            busyStatus: self.viewModel.getBusyStatus(from: self.busyUsernames),
+                            allowTraderTap: self.allowTraderTap
                         ),
                         showTraderColumn: true,
                         isInteractive: false,

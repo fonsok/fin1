@@ -2,11 +2,11 @@ import Foundation
 
 extension ConfigurationServiceProtocol {
     func approveConfigurationChange(requestId: String, notes: String?) async throws {
-        throw ConfigurationError.noBackendConnection
+        throw ConfigurationError.serverManagedConfiguration
     }
 
     func rejectConfigurationChange(requestId: String, reason: String) async throws {
-        throw ConfigurationError.noBackendConnection
+        throw ConfigurationError.serverManagedConfiguration
     }
 
     func refreshConfigurationFromServerIfAvailable() async {
@@ -61,6 +61,7 @@ extension ConfigurationServiceProtocol {
     var effectiveMaxTraderPartialSells: Int { min(3, max(0, self.maxTraderPartialSells)) }
     var taxCollectionMode: TaxCollectionMode { .customerSelfReports }
     var showInvestorPartialSellRealizations: Bool { false }
+    var showTraderDashboardInvestmentActiveStatus: Bool { true }
     var serviceChargeInvoiceFromBackend: Bool { true }
     var serviceChargeLegacyClientFallbackEnabled: Bool { false }
     var investorMonetaryServerOnly: Bool { true }
@@ -70,6 +71,6 @@ extension ConfigurationServiceProtocol {
     var showDocumentReferenceLinksInAccountStatement: Bool { true }
 
     func updateShowDocumentReferenceLinksInAccountStatement(_ value: Bool) async throws {
-        // Optional for mock/test conformers.
+        throw ConfigurationError.serverManagedConfiguration
     }
 }

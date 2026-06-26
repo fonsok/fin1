@@ -80,6 +80,7 @@ const PARAM_DISPLAY_NAMES: Record<string, string> = {
   walletActionModeCompany: 'Konto-Aktionsmodus (Company)',
   walletActionModeOverride: 'Nutzer-Konto-Aktionsmodus',
   serviceChargeInvoiceFromBackend: 'Servicegebühr-Rechnung über Server',
+  showTraderDashboardInvestmentActiveStatus: 'Trader-Depot: Investment-Pool Status anzeigen',
 };
 
 function formatConfigValue(paramName: string, value: unknown): string {

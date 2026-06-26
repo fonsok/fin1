@@ -2,9 +2,14 @@ import SwiftUI
 
 struct ModularTraderDetailView: View {
     let trader: InvestorTrader
+    @Environment(\.appServices) private var appServices
     @Environment(\.dismiss) private var dismiss
     @State private var showInvestmentSheet = false
     @State private var selectedTab = 0
+
+    private var canCreatePlatformInvestments: Bool {
+        self.appServices.userService.currentUser?.canCreatePlatformInvestments ?? false
+    }
 
     var body: some View {
         NavigationStack {
@@ -44,13 +49,19 @@ struct ModularTraderDetailView: View {
 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Invest") {
+                        guard self.canCreatePlatformInvestments else { return }
                         self.showInvestmentSheet = true
                     }
                     .foregroundColor(AppTheme.screenBackground)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
-                    .background(AppTheme.accentLightBlue)
+                    .background(
+                        self.canCreatePlatformInvestments
+                            ? AppTheme.accentLightBlue
+                            : AppTheme.fontColor.opacity(0.35)
+                    )
                     .cornerRadius(ResponsiveDesign.spacing(8))
+                    .disabled(!self.canCreatePlatformInvestments)
                     .accessibilityIdentifier("InvestButton")
                 }
             }

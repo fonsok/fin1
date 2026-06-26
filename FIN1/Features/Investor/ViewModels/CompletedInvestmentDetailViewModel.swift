@@ -9,7 +9,6 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
     private var poolTradeParticipationService: (any PoolTradeParticipationServiceProtocol)?
     private var tradeLifecycleService: (any TradeLifecycleServiceProtocol)?
     private var invoiceService: (any InvoiceServiceProtocol)?
-    private var investmentService: (any InvestmentServiceProtocol)?
     private var calculationService: (any InvestorCollectionBillCalculationServiceProtocol)?
     private var commissionCalculationService: (any CommissionCalculationServiceProtocol)?
     private var configurationService: (any ConfigurationServiceProtocol)?
@@ -37,7 +36,6 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
         self.poolTradeParticipationService = services.poolTradeParticipationService
         self.tradeLifecycleService = services.tradeLifecycleService
         self.invoiceService = services.invoiceService
-        self.investmentService = services.investmentService
         self.calculationService = InvestorCollectionBillCalculationService()
         self.commissionCalculationService = services.commissionCalculationService
         self.configurationService = services.configurationService
@@ -51,7 +49,6 @@ final class CompletedInvestmentDetailViewModel: ObservableObject {
         guard let poolTradeParticipationService,
               let tradeLifecycleService,
               let invoiceService,
-              let investmentService,
               let calculationService,
               let commissionCalculationService,
               let configurationService else {

@@ -229,6 +229,7 @@ describe('getTradeSettlementConsistencyStatus (admin observability)', () => {
     db.investments = [
       { id: 'inv-1', investorId: 'investor-1' },
     ];
+    // Commission clears via GL only — no commission_debit on customer AccountStatement.
     db.accountStatements = [
       { id: 's1', userId: 'investor-1', tradeId: 'trade-1', investmentId: 'inv-1', entryType: 'investment_return', amount: 1120, source: 'backend' },
       { id: 's3', userId: 'investor-1', tradeId: 'trade-1', investmentId: 'inv-1', entryType: 'withholding_tax_debit', amount: -3, source: 'backend' },

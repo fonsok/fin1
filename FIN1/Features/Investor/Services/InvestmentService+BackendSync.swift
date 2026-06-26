@@ -160,7 +160,7 @@ extension InvestmentService {
                 var updatedCount = 0
 
                 for remote in remoteInvestments {
-                    var stored = self.enrichTraderUsernameFromCatalogIfNeeded(remote)
+                    let stored = self.enrichTraderUsernameFromCatalogIfNeeded(remote)
                     if let local = localById[stored.id] {
                         let needsUpdate = local.status != stored.status
                             || local.reservationStatus != stored.reservationStatus
