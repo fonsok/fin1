@@ -212,6 +212,16 @@ extension AppError {
 
     /// Message for investor investment alerts without English „Validation Error:“ prefixes.
     var userFacingInvestmentMessage: String {
+        self.userFacingFormMessage
+    }
+
+    /// Message for buy-order sheet alerts without English technical prefixes (e.g. „Network Error:“).
+    var userFacingBuyOrderMessage: String {
+        self.userFacingFormMessage
+    }
+
+    /// Shared trader/investor form copy — validation and network messages without `errorDescription` prefixes.
+    private var userFacingFormMessage: String {
         switch self {
         case .validation(let message):
             return message

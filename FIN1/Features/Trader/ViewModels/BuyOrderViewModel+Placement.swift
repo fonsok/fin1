@@ -46,16 +46,7 @@ extension BuyOrderViewModel {
 
     var orderFailureMessage: String? {
         guard case .failed(let error) = self.placementSession.phase else { return nil }
-        switch error {
-        case .validation(let message):
-            return message
-        case .network(let networkError):
-            return networkError.localizedDescription
-        default:
-            return error.errorDescription?
-                .replacingOccurrences(of: "Validation Error: ", with: "")
-                .replacingOccurrences(of: "Network Error: ", with: "")
-        }
+        return error.userFacingBuyOrderMessage
     }
 
     func acknowledgeOrderFailure() {
