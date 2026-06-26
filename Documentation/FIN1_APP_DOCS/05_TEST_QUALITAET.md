@@ -140,6 +140,21 @@ Ausführung: `cd backend/parse-server && npm test -- --testPathPattern='onboardi
   - Schritte: nach Welcome/Landing → Dashboard
   - Erwartet: kein `TermsAcceptanceModalView` (Device-Ack via `mirrorSignupLegalGateToDeviceStore`)
 
+- **TC-E6 Re-Consent: `getRequiredReConsents` nach Version-Bump**
+  - Voraussetzungen: Seed-User mit `acceptedTermsVersion=1.0`, Admin aktiviert TOS `2.0`
+  - Schritte: `getUserMe` oder `getRequiredReConsents` mit Session-Token
+  - Erwartet: `requiredReConsents` / `required[]` mit `blocking: true`, `userVersion` < `activeVersion`
+
+- **TC-E7 Re-Consent: API block ohne Accept**
+  - Voraussetzungen: wie TC-E6, noch kein In-App-Accept
+  - Schritte: `createInvestmentSplits` mit leerem Body
+  - Erwartet: `OPERATION_FORBIDDEN` (Re-Consent-Meldung vor Parameter-Validierung)
+
+- **TC-E8 Re-Consent Role Agreement (Scroll)**
+  - Voraussetzungen: nur `investor_agreement` auf höhere Version gesetzt, TOS unverändert
+  - Schritte: App-Login
+  - Erwartet: `ReConsentModalView` mit Scroll + Checkbox; nach Accept leeres `requiredReConsents`
+
 ### F) Support/SLA
 
 - **TC-F1 Ticket Number Generation**

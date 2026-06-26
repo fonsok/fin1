@@ -322,6 +322,43 @@ Onboarding legt beim Schritt `consents` zwei `LegalConsent`-Zeilen mit `source: 
 4. Deploy auf Server: `python3 deploy_updated_legal_docs.py --input-dir /tmp/legal-sections --reason "..." --deployed-by "..."`
 5. Verifizieren: `getCurrentTerms` aufrufen und Inhalt prüfen
 
+## Post-Onboarding Re-Consent (Version-Drift, seit 2026-06)
+
+**Zweck:** Bestehende Konten mit **gespeicherter Dokumentversion** auf `_User` müssen nach Aktivierung einer **neueren** `TermsContent`-Version erneut zustimmen, bevor regulierte Produktfunktionen (Trading/Investing) weiter nutzbar sind — unabhängig vom einmaligen Onboarding-Gate 2.
+
+### Wann greift es?
+
+| Bedingung | Re-Consent |
+|-----------|------------|
+| `_User.acceptedTermsVersion` (o. ä.) **gesetzt** und **numerisch älter** als aktive `TermsContent.version` | ✅ blocking |
+| Nutzer hat Flag `acceptedTerms=true`, aber **kein** Versionsfeld (Legacy) | ❌ Grandfather |
+| Frisch registriert auf **aktueller** aktiver Version | ❌ kein Drift |
+
+Vergleich: `legalVersionCompare.js` (`isLegalVersionOutdated`). Betroffene Typen: TOS, Privacy, passende Role Agreement (`trader_agreement` / `investor_agreement`).
+
+### Backend
+
+- **`getRequiredReConsents`** / **`getUserMe.requiredReConsents`** — SSOT `resolveRequiredReConsents` (`legalConsentUserSync.js`)
+- **`assertProductAccessEligible`** — nach bestehenden Checks: blockierender `required[]`-Eintrag → `OPERATION_FORBIDDEN`
+- **Accept:** `recordLegalConsent` (TOS/Privacy, `source: app`) bzw. `recordRoleAgreementConsent` (`source: app`, optional E-Mail)
+
+### iOS (Reihenfolge nach Login)
+
+1. **Device-Gate** (`TermsAcceptanceModalView`) — pro Install, aktive TOS/Privacy-Version
+2. **Re-Consent** (`ReConsentModalView` / `ReConsentViewModel`) — wenn `getUserMe.requiredReConsents` blocking Einträge hat; Role Agreement mit Scroll-to-Accept
+
+Bei reinem AGB-Bump kann das Device-Gate den Versions-Drift bereits auflösen; gezielter Test der Re-Consent-UI: nur `investor_agreement` / `trader_agreement` bumpen.
+
+### Admin
+
+- Neue Version: Admin-Portal **AGB & Rechtstexte** (`/admin/terms`) → Klonen → höhere Versionsnummer → **Als aktiv setzen**
+- Rollenvereinbarungen: Filter „Alle Typen“, Zeile `investor_agreement` / `trader_agreement` klonen
+
+### Abnahme
+
+- Checkliste + Staging-Klick-Anleitung: [`RELEASE_ABNAHME_RE_CONSENT.md`](RELEASE_ABNAHME_RE_CONSENT.md)
+- Epic: [`FIN1_APP_DOCS/EPIC_POST_ONBOARDING_RE_CONSENT.md`](FIN1_APP_DOCS/EPIC_POST_ONBOARDING_RE_CONSENT.md)
+
 ## GoB-Compliance (Grundsätze ordnungsmäßiger Buchführung)
 
 ### Automatische Audit-Mechanismen

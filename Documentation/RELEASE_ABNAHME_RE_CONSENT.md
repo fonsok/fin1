@@ -1,9 +1,9 @@
 # Release-Abnahme — Post-Onboarding Re-Consent (FIN1-LEGAL-RECONSENT)
 
-**Epic:** [`FIN1_APP_DOCS/EPIC_POST_ONBOARDING_RE_CONSENT.md`](FIN1_APP_DOCS/EPIC_POST_ONBOARDING_RE_CONSENT.md)  
-**Datum:** ___________  
-**Tester:** ___________  
-**Umgebung:** ☐ Staging ☐ Production  
+**Epic:** [`FIN1_APP_DOCS/EPIC_POST_ONBOARDING_RE_CONSENT.md`](FIN1_APP_DOCS/EPIC_POST_ONBOARDING_RE_CONSENT.md)
+**Datum:** ___________
+**Tester:** ___________
+**Umgebung:** ☐ Staging ☐ Production
 
 ---
 
@@ -158,7 +158,7 @@ curl -sk -X POST "$HOST/parse/functions/createInvestmentSplits" \
   -d '{}'
 ```
 
-**Erwartung:** HTTP 400, Parse-Code `119` (`OPERATION_FORBIDDEN`), Message z. B.  
+**Erwartung:** HTTP 400, Parse-Code `119` (`OPERATION_FORBIDDEN`), Message z. B.
 `Terms of Service must be re-accepted (version 2.0 required).`
 
 (`assertProductAccessEligible` läuft **vor** Parameter-Validierung.)
@@ -182,9 +182,9 @@ curl -sk -X POST "$HOST/parse/functions/createInvestmentSplits" \
 
 ## Voraussetzungen
 
-- [ ] Epic vollständig deployed (`getRequiredReConsents`, erweitertes `productAccessGate`, iOS Re-Consent UI)
-- [ ] Staging-User mit abgeschlossenem Onboarding + Role Agreement
-- [ ] Admin: neue `TermsContent`-Version vorbereitet (zunächst inaktiv)
+- [x] Epic vollständig deployed (`getRequiredReConsents`, erweitertes `productAccessGate`, iOS Re-Consent UI) — PR #11, #12
+- [x] Staging-User mit abgeschlossenem Onboarding + Role Agreement (`investor1@test.com`)
+- [x] Admin: neue `TermsContent`-Version vorbereitet und aktiviert (Klonen → höhere Version → „Als aktiv setzen“)
 
 ---
 
@@ -192,14 +192,14 @@ curl -sk -X POST "$HOST/parse/functions/createInvestmentSplits" \
 
 | # | Schritt | Erwartung | OK |
 |---|---------|-----------|-----|
-| 1 | User auf TOS v1.0, Admin aktiviert v2.0 | `getRequiredReConsents` listet TOS mit `blocking: true` | ☐ |
-| 2 | App start / Login | Blocking Re-Consent Modal (TOS) | ☐ |
-| 3 | Accept TOS v2.0 | `recordLegalConsent`, `_User.acceptedTermsVersion=2.0` | ☐ |
-| 4 | `createInvestmentSplits` | Erfolg (sofern sonstige Gates passieren) | ☐ |
-| 5 | Investor: neue `investor_agreement`-Version | Scroll-to-Accept + Checkbox, dann frei | ☐ |
+| 1 | User auf TOS v1.0, Admin aktiviert v2.0 | `getRequiredReConsents` listet TOS mit `blocking: true` | ☑ |
+| 2 | App start / Login | Blocking Modal (Device-Gate und/oder Re-Consent) | ☑ |
+| 3 | Accept TOS v2.0 | `recordLegalConsent`, `_User.acceptedTermsVersion=2.0` | ☑ |
+| 4 | `createInvestmentSplits` | Erfolg (sofern sonstige Gates passieren) | ☑ |
+| 5 | Investor: neue `investor_agreement`-Version | Scroll-to-Accept + Checkbox, dann frei | ☑ |
 | 6 | Frisch registrierter User (gleiche Version) | Kein redundantes Modal nach Gate 1 Mirror | ☐ |
-| 7 | API ohne Accept | `productAccessGate` → `OPERATION_FORBIDDEN` | ☐ |
-| 8 | `LegalConsent` Audit | Zeile mit `source: app`, Version, IP, deviceInstallId | ☐ |
+| 7 | API ohne Accept | `productAccessGate` → `OPERATION_FORBIDDEN` | ☑ |
+| 8 | `LegalConsent` Audit | Zeile mit `source: app`, Version, IP, deviceInstallId | ☑ |
 
 **Hinweis zu #2:** Bei reinem AGB-Bump erscheint oft das **Device Gate** statt `ReConsentModalView` — beides blockiert korrekt. Für gezielten Test der neuen UI → Checkliste #5 (nur `investor_agreement` bumpen).
 
@@ -209,5 +209,7 @@ curl -sk -X POST "$HOST/parse/functions/createInvestmentSplits" \
 
 | | |
 |---|---|
-| **Go / No-Go** | ☐ Go ☐ No-Go |
-| **Bemerkungen** | |
+| **Go / No-Go** | ☑ Go ☐ No-Go |
+| **Datum** | 2026-06-26 |
+| **Umgebung** | Staging (`192.168.178.24`) |
+| **Bemerkungen** | Manuelle Abnahme bestätigt; PR #11 Backend, #12 iOS, #13 Runbook |

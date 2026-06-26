@@ -1,7 +1,7 @@
 ---
 title: "FIN1 – Fachliche Spezifikation (Requirements)"
 audience: ["Produkt", "BA", "QA", "Compliance", "Support"]
-lastUpdated: "2026-06-23"
+lastUpdated: "2026-06-26"
 ---
 
 ## Zweck
@@ -51,6 +51,34 @@ Wenn es nicht nur um “was soll das Produkt”, sondern um “was darf nicht ka
     - Nach Kontoanlage: Welcome-Picker für Investor/Trader deaktiviert; kein Client-Sync der Rolle an den Server.
     - Resume: gespeicherte `userRole` im Onboarding-Blob überschreibt `_User.role` nicht (`lockAccountRole`); UI zeigt Server-Rolle.
     - Server: `saveOnboardingProgress` lehnt abweichende `userRole` ab; `userBeforeSave` lehnt Investor↔Trader-Wechsel auf bestehenden Konten ab.
+
+- **US-RC1 Re-Consent TOS/Privacy (Post-Onboarding)**
+  Als bestehender Nutzer möchte ich nach Aktivierung einer neuen AGB- oder Datenschutz-Version diese erneut bestätigen, bevor ich Trading/Investing weiter nutze.
+  - **Akzeptanzkriterien**
+    - Admin aktiviert höhere `TermsContent`-Version (`setActiveTermsContent`).
+    - `getRequiredReConsents` / `getUserMe.requiredReConsents` listet Eintrag mit `blocking: true`, wenn `_User.accepted*Version` gesetzt und älter als aktiv.
+    - iOS: nach Login zuerst ggf. Device-Gate, dann `ReConsentModalView` oder Device-Gate allein bei TOS/Privacy-Bump (beides blockiert korrekt).
+    - Accept: `recordLegalConsent` mit `source: app`; `_User.accepted*Version` aktualisiert; `LegalConsent` append-only.
+
+- **US-RC2 Re-Consent Role Agreement**
+  Als Investor/Trader möchte ich nach Aktivierung einer neuen Rollenvereinbarungs-Version den Text scrollen und ausdrücklich zustimmen.
+  - **Akzeptanzkriterien**
+    - `investor_agreement` / `trader_agreement` Version-Drift in `requiredReConsents` mit `requiresScrollToAccept: true`.
+    - iOS: `RoleAgreementReConsentView` (Scroll + Checkbox) → `recordRoleAgreementConsent` mit `source: app`.
+    - Nach Accept: `requiredReConsents` leer; Investment/Trading wieder frei (sofern sonstige Gates passieren).
+
+- **US-RC3 Server erzwingt Re-Consent**
+  Als Plattform möchte ich regulierte Cloud Functions ohne aktuelle Legal-Versionen ablehnen.
+  - **Akzeptanzkriterien**
+    - `assertProductAccessEligible` prüft `resolveRequiredReConsents` vor Trading/Investment (`createInvestmentSplits`, `placeOrder`, …).
+    - Fehler: `OPERATION_FORBIDDEN` mit spezifischer Meldung (z. B. *Terms of Service must be re-accepted (version X required).*).
+    - Legacy-Nutzer ohne Versionsfelder: kein erzwungenes Re-Consent (Grandfather).
+
+- **US-RC4 Compliance-Audit Re-Consent**
+  Als Compliance möchte ich jede Post-Onboarding-Zustimmung nachvollziehen.
+  - **Akzeptanzkriterien**
+    - `LegalConsent` mit `source: app`, Version, IP, User-Agent, `deviceInstallId`, `appVersion`.
+    - Abnahmeprotokoll: [`RELEASE_ABNAHME_RE_CONSENT.md`](../RELEASE_ABNAHME_RE_CONSENT.md).
 
 - **US-A2 Onboarding schrittweise abschließen**
   Als Nutzer möchte ich Onboarding-Schritte einzeln speichern, damit ich später fortsetzen kann.
