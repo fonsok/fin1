@@ -103,6 +103,7 @@ extension AppServicesBuilder {
             ctx.slaMonitoringService = MainActor.assumeIsolated {
                 SLAMonitoringService(
                     supportService: customerSupportService,
+                    userService: userService,
                     auditService: auditLoggingService,
                     notificationService: notificationService,
                     configurationService: configurationService

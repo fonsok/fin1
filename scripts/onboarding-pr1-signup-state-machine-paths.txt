@@ -81,6 +81,7 @@ FIN1/Features/Authentication/Views/SignUp/SignUpFlowSession.swift
 FIN1/Features/Authentication/Views/SignUp/SignUpView.swift
 FIN1/Features/Authentication/Views/UserSessionObserver.swift
 FIN1/Features/CustomerSupport/Services/SLAMonitoringService.swift
+FIN1/Shared/Services/AppServicesBuilder+Remaining.swift
 FIN1/Shared/Components/Legal/ScrollToAcceptReader.swift
 FIN1/Shared/Components/Legal/TermsAcceptanceModalView.swift
 FIN1/Shared/Constants/TestUserConstants.swift
