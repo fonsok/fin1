@@ -1,7 +1,7 @@
 ---
 title: "FIN1 – Feature-Katalog & Guardrails (Schutz funktionierender Implementationen)"
 audience: ["Entwicklung", "QA", "Produkt", "Support", "Compliance"]
-lastUpdated: "2026-06-23"
+lastUpdated: "2026-06-26"
 ---
 
 ## Zweck
@@ -238,12 +238,15 @@ Diese Regeln schützen **bereits korrekte Finanzwerte** vor “Formel-Drift” (
 
 - **Entry Points**
   - Orders: `FIN1/Features/Trader/Views/BuyOrderView.swift`, `SellOrderView.swift`
-  - ViewModels: `FIN1/Features/Trader/ViewModels/*Order*ViewModel.swift`
-  - Placement/Validation: `FIN1/Features/Trader/Services/BuyOrderPlacementService.swift` + Validator Pattern
+  - **Buy-Order SSOT (iOS):** `BuyOrderViewModel` (+ Extensions `+Bindings`, `+Investment`, `+Placement`, `+Types`) — **kein** paralleles `NewBuyOrderViewModel` / `SimplifiedBuyOrderViewModel` (entfernt 2026-06).
+  - **Buy-Sheet:** `.sheet(item:)` → `BuyOrderViewWrapper` (`@StateObject`); Erfolg über `onOrderPlaced:` — nicht `NotificationCenter.orderPlacedSuccessfully` (deprecated).
+  - Placement/Validation: `FIN1/Features/Trader/Services/BuyOrderPlacementService.swift` + `BuyOrderValidator`
 - **Protected Behaviors**
   - **Pre-trade Checks** werden nicht umgangen:
     - Extend/verwende `BuyOrderValidator` Pattern (Compliance Rule).
   - **Paired-Buy-Schutz:** Kein Trader-only-Buy, wenn reserviertes Pool-Kapital serverseitig/lokal existiert (`TraderPairedBuyPlacementGuard`; Backend-Refresh vor Kauf in `BuyOrderPlacementService` / `BuyOrderViewModel`).
+  - **Pool-Split-Recalc (Performance):** `calculateInvestmentOrder` nur nach `didLoadPoolInvestments` und bei stabilen Inputs (debounced Quantity, relevante Security-Felder, Pool-Snapshot-Änderung) — nicht bei jedem `searchResult`-Tick oder jedem `investmentsPublisher`-Emit (`scheduleInvestmentOrderRecalc`).
+  - **Fehler-UX Kauf-Sheet:** Anzeige über `AppError.userFacingBuyOrderMessage` (deutsch, ohne `Validation Error:` / `Network Error:`-Prefixe) — analog Investment-Sheet.
   - **Pool-UX (Investor-Schutz):** Kein globales „Pool active“ im Dashboard. Für **Trader** optional die Kachel-Zeile „Investment-Pool“ (active / -) **pro Depot-Position** nach abgeschlossener Kauforder (`HoldingCard` / `DepotPositionPoolStatusResolver`), gesteuert über Admin → Anzeige → `display.showTraderDashboardInvestmentActiveStatus` (4-Augen; Standard: **an**). Reserviertes Kapital ohne Mirror-Leg erscheint nicht als „active“.
   - **Audit Logging** bei Trading-Aktionen darf nicht “aus Versehen” entfernt werden (MiFID/Compliance).
   - Status-/Lifecycle Logik bleibt konsistent (Orders/Trades/Invoices/Notifications).
@@ -252,9 +255,11 @@ Diese Regeln schützen **bereits korrekte Finanzwerte** vor “Formel-Drift” (
     - Tax-Breakdown nutzt `InvoiceTaxCalculator`.
     - Fee-Breakdown nutzt `FeeCalculationService` + `CalculationConstants`.
 - **Backend Contracts**
-  - Cloud Functions `placeOrder`, `calculateOrderPreview`, `getOpenTrades` sind stabile Contracts.
+  - Cloud Functions `executePairedBuy`, `commitPairedBuyExecution`, `placeOrder`, `calculateOrderPreview`, `getOpenTrades` sind stabile Contracts.
+  - **Multi-Leg Order-Persistenz:** gekoppelte `Order`-Beine mit sequentieller `orderNumber` **sequentiell** speichern — kein paralleles `Parse.Object.saveAll` (`.cursor/rules/parse-cloud.md`, `tradingPairedBuyExecution.js`).
 - **Minimal-Checks**
   - Buy/Sell Order UI: placeOrder triggert erwartete UI-Updates (Loading, Validation, Error).
+  - **Buy-Sheet Regression:** UITest `testBuyOrderSheet_OpensWithContent_OnFirstTap` (Titel „Kauf-Order“, Quantity-Feld, kein leeres Modal).
   - Depot/Trades Overview: Live Updates (LiveQuery) degrade gracefully, wenn Server nicht erreichbar.
   - Trades Overview vs Detail vs Steuer/Breakdown: identische Zahlen (keine Abweichung zwischen Screens).
 

@@ -22,6 +22,25 @@ Ein fehlender Mirror-Sell-**Order** ist **kein** Defekt. Ein fehlender Mirror-Se
 
 ---
 
+## Idempotenz `executePairedBuy` (`clientOrderIntentId`)
+
+**SSOT:** `backend/parse-server/cloud/functions/tradingPairedBuyExecution.js`  
+**Unique-Index:** `PairedExecution` auf `(traderId, clientOrderIntentId)`  
+**Characterization-Tests:** `backend/parse-server/cloud/functions/__tests__/tradingPairedBuyExecution.test.js`
+
+| Replay-Szenario | Server-Verhalten | iOS |
+|-----------------|------------------|-----|
+| Neuer `clientOrderIntentId` | Legs anlegen → `COMMITTED` | `BuyOrderPlacementService` → `executePairedBuy` |
+| Gleicher Intent, Status **COMMITTED** | `idempotentReplay: true`, bestehende Orders | Erfolg / Depot prüfen |
+| Gleicher Intent, Status **ABORTED** | `idempotentReplay: true`, `status: ABORTED` (keine neuen Legs) | Fehlermeldung; `acknowledgeFailure()` → neuer Intent |
+| Gleicher Intent, Status **CANCELLED** | `OPERATION_FORBIDDEN` | Fehler anzeigen |
+
+**Persistenz-Regel:** Order-Beine **sequentiell** `save()` — kein paralleles `saveAll` (Race bei `orderNumber` in `beforeSave`). Bei Teilerfolg: `destroyAll` + `PairedExecution` → `ABORTED`. Siehe `.cursor/rules/parse-cloud.md` § Multi-Leg Orders.
+
+**iOS Intent-Lifecycle:** `BuyOrderPlacementSession.ensureClientOrderIntentId()` während Placement; nach Fehler `acknowledgeFailure()` löscht Intent für erneuten Versuch.
+
+---
+
 ## Zustandsautomat (vereinfacht)
 
 ```mermaid
@@ -146,6 +165,7 @@ Siehe auch [BOOKING_AND_BELEG_SSOT.md](./BOOKING_AND_BELEG_SSOT.md) (`transferAm
 - `settlementTraderLifecycleBooks.test.js` (trading_fees / Import-Pfad)
 - `settlementRetryRepair.test.js` (Orphan-/Recoverable-Erkennung)
 - `pairedSellInvestorChainIntegrity.test.js` (Exit-Erkennung)
+- `tradingPairedBuyExecution.test.js` (Idempotenz / ABORTED-COMMITTED-Replay)
 - E2E: `node scripts/e2e-paired-sell-integrity-smoke.js` (seed + assert) oder CI `paired-sell-integrity-smoke.yml`
 - E2E assert-only: `E2E_SKIP_SEED=1 node scripts/e2e-paired-sell-integrity-smoke.js`
 - **Monitoring (iobox SSOT):** alle Parse-Cloud-Monitore via `scripts/install-iobox-monitors-cron.sh` (u. a. `run-finance-integrity-monitor.sh`, `run-paired-order-status-monitor.sh`, `run-mirror-basis-drift-monitor.sh`); GitHub-Workflows nur `workflow_dispatch`
@@ -156,6 +176,7 @@ Siehe auch [BOOKING_AND_BELEG_SSOT.md](./BOOKING_AND_BELEG_SSOT.md) (`transferAm
 
 | Modul | Pfad |
 |-------|------|
+| Paired Buy Execution | `backend/parse-server/cloud/functions/tradingPairedBuyExecution.js` |
 | Chain-Scanner | `backend/parse-server/cloud/utils/pairedSellInvestorChainIntegrity.js` |
 | Ops-Handler | `backend/parse-server/cloud/functions/admin/opsHealthPairedSellInvestorChain.js` |
 | Mirror-Sync | `backend/parse-server/cloud/utils/pairedTradeMirrorSync.js` |

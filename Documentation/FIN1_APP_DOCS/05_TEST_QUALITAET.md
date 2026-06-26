@@ -1,7 +1,7 @@
 ---
 title: "FIN1 – Test- und Qualitätsdokumentation"
 audience: ["QA", "Entwicklung", "Compliance"]
-lastUpdated: "2026-03-28"
+lastUpdated: "2026-06-26"
 ---
 
 ## Zweck
@@ -114,6 +114,36 @@ Ausführung: `cd backend/parse-server && npm test -- --testPathPattern='onboardi
 - **TC-D2 Order Executed erzeugt Trade/Invoice/Notification**
   - Schritte: setze Order status auf `executed`
   - Erwartet: Trade/Invoice/Notification erzeugt, Order verlinkt (buy flow)
+
+- **TC-D3 Buy-Sheet Regression (iOS UITest)**
+  - Schritte: `--ui-test-entry-buy-order-sheet` → KAUFEN tippen
+  - Erwartet: Navigation „Kauf-Order“, `QuantityInputField` und `PlaceOrderButton` sichtbar (kein leeres Sheet)
+
+### Automatisierte Tests (Trader Buy / Paired Buy, Referenz)
+
+**Backend (Jest, `backend/parse-server/cloud`):**
+
+| Datei | Abdeckung |
+|-------|-----------|
+| `functions/__tests__/tradingPairedBuyExecution.test.js` | `executePairedBuy` Idempotenz: COMMITTED/ABORTED Replay, CANCELLED forbidden |
+| `functions/__tests__/tradingSellOrderExecution.test.js` | Sell Idempotenz (`clientOrderIntentId`) |
+
+Ausführung: `cd backend/parse-server/cloud && npx jest functions/__tests__/tradingPairedBuyExecution.test.js`
+
+**iOS (`FIN1Tests/`):**
+
+| Datei | Abdeckung |
+|-------|-----------|
+| `AppErrorUserFacingMessageTests.swift` | `userFacingBuyOrderMessage` ohne englische Error-Prefixe |
+| `BuyOrderPoolRecalcTriggerTests.swift` | Security-Input-Fingerprint für Pool-Recalc (kein Recalc bei unrelated `SearchResult`-Feldern) |
+| `BuyOrderQuantityPipelineTests.swift` | `executePairedBuy`-Payload Quantity |
+| `TraderPairedBuyPlacementGuardTests.swift` | Trader-only-Block bei reserviertem Pool |
+
+**iOS (`FIN1UITests/`):**
+
+| Datei | Abdeckung |
+|-------|-----------|
+| `InvestmentTradingUITests.swift` | `testBuyOrderSheet_OpensWithContent_OnFirstTap` |
 
 ### E) Legal (Audit)
 
