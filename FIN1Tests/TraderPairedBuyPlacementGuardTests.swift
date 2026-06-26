@@ -3,7 +3,14 @@ import XCTest
 
 final class TraderPairedBuyPlacementGuardTests: XCTestCase {
 
+    private func resetBackendHealthForTest() async {
+        await MainActor.run {
+            BackendHealthMonitor.shared.resetToHealthyForUnitTests()
+        }
+    }
+
     func testAllowsTraderOnlyWhenNoPoolCapitalAndBackendHealthy() async {
+        await self.resetBackendHealthForTest()
         let reason = await TraderPairedBuyPlacementGuard.blockReason(
             mirrorPoolQuantity: 0,
             localReservedPoolCapital: 0,
@@ -17,6 +24,7 @@ final class TraderPairedBuyPlacementGuardTests: XCTestCase {
     }
 
     func testBlocksTraderOnlyWhenLocalPoolCapitalPresent() async {
+        await self.resetBackendHealthForTest()
         let reason = await TraderPairedBuyPlacementGuard.blockReason(
             mirrorPoolQuantity: 0,
             localReservedPoolCapital: 1_000,
@@ -30,6 +38,7 @@ final class TraderPairedBuyPlacementGuardTests: XCTestCase {
     }
 
     func testBlocksTraderOnlyWhenServerReportsReservedPoolCapital() async {
+        await self.resetBackendHealthForTest()
         let reason = await TraderPairedBuyPlacementGuard.blockReason(
             mirrorPoolQuantity: 0,
             localReservedPoolCapital: 0,
@@ -43,6 +52,7 @@ final class TraderPairedBuyPlacementGuardTests: XCTestCase {
     }
 
     func testSkipsGuardWhenMirrorPoolQuantityPositive() async {
+        await self.resetBackendHealthForTest()
         let reason = await TraderPairedBuyPlacementGuard.blockReason(
             mirrorPoolQuantity: 500,
             localReservedPoolCapital: 1_000,
