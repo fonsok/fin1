@@ -22,12 +22,14 @@ const { registerLegalAdminTermsFunctions } = require('./legal/adminTerms');
 const { registerLegalImportExportFunctions } = require('./legal/importExport');
 const { registerLegalBrandingFunctions } = require('./legal/branding');
 const { registerLegalDevMaintenanceFunctions } = require('./legal/devMaintenance');
+const { registerRoleAgreementConsentFunctions } = require('./legal/roleAgreementConsent');
 
 registerLegalPublicAuditFunctions();
 registerLegalAdminTermsFunctions();
 registerLegalImportExportFunctions();
 registerLegalBrandingFunctions();
 registerLegalDevMaintenanceFunctions();
+registerRoleAgreementConsentFunctions();
 
 console.log('Legal cloud functions loaded');
 
