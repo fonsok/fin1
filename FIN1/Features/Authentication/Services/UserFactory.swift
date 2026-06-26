@@ -117,6 +117,7 @@ struct UserFactory {
                 break
             }
         }
+        user.requiredReConsents = me.requiredReConsents
     }
 
     private static func parseISO8601Date(_ value: String) -> Date? {

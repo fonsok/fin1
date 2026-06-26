@@ -150,8 +150,13 @@ extension User {
         self.onboardingCompleted
             && self.hasAcceptedAllLegalDocuments
             && self.hasAcceptedRoleAgreementForCurrentRole
+            && !self.hasBlockingRequiredReConsents
             && self.isCompanyKybApproved
             && !self.isExcludedFromPlatformTradingDueToRiskClass
+    }
+
+    var hasBlockingRequiredReConsents: Bool {
+        self.requiredReConsents?.contains(where: \.blocking) == true
     }
 
     /// Role agreement required for retail investor/trader (Gate 2).
@@ -178,6 +183,9 @@ extension User {
             return self.role == .trader
                 ? "Bitte akzeptieren Sie die Signalgeber-Vereinbarung."
                 : "Bitte akzeptieren Sie die Investor-Vereinbarung."
+        }
+        if self.hasBlockingRequiredReConsents {
+            return "Bitte bestätigen Sie die aktualisierte Vertragsversion in der App."
         }
         if self.accountType == .company {
             switch self.companyKybStatus {

@@ -98,6 +98,9 @@ struct User: Identifiable, Codable, Sendable {
     var companyKybStep: String?
     var companyKybStatus: String?
 
+    /// Post-onboarding version drift from `getUserMe` / `getRequiredReConsents` (session-only).
+    var requiredReConsents: [RequiredReConsent]? = nil
+
     var lastLoginDate: Date?
     var createdAt: Date
     var updatedAt: Date
@@ -197,6 +200,7 @@ extension User {
             companyKybCompleted: self.companyKybCompleted,
             companyKybStep: self.companyKybStep,
             companyKybStatus: self.companyKybStatus,
+            requiredReConsents: self.requiredReConsents,
             lastLoginDate: self.lastLoginDate,
             createdAt: self.createdAt,
             updatedAt: self.updatedAt
