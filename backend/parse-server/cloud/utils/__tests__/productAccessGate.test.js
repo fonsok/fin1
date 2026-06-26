@@ -3,12 +3,14 @@
 jest.mock('../../functions/legal/legalConsentUserSync', () => ({
   resolveUserLegalAcceptanceState: jest.fn(),
   resolveUserRoleAgreementState: jest.fn(),
+  resolveRequiredReConsents: jest.fn(),
 }));
 
 describe('productAccessGate', () => {
   let mod;
   let resolveUserLegalAcceptanceState;
   let resolveUserRoleAgreementState;
+  let resolveRequiredReConsents;
 
   beforeEach(() => {
     global.Parse = {
@@ -29,12 +31,13 @@ describe('productAccessGate', () => {
     };
 
     jest.resetModules();
-    ({ resolveUserLegalAcceptanceState, resolveUserRoleAgreementState } = require('../../functions/legal/legalConsentUserSync'));
+    ({ resolveUserLegalAcceptanceState, resolveUserRoleAgreementState, resolveRequiredReConsents } = require('../../functions/legal/legalConsentUserSync'));
     resolveUserRoleAgreementState.mockResolvedValue({
       required: false,
       accepted: true,
       version: null,
     });
+    resolveRequiredReConsents.mockResolvedValue({ required: [] });
     mod = require('../productAccessGate');
   });
 
@@ -93,6 +96,28 @@ describe('productAccessGate', () => {
     ).rejects.toMatchObject({
       code: Parse.Error.OPERATION_FORBIDDEN,
       message: 'Trader (Signal Provider) Agreement must be accepted before using this feature.',
+    });
+  });
+
+  test('throws when re-consent is required for outdated TOS version', async () => {
+    resolveUserLegalAcceptanceState.mockResolvedValue({
+      acceptedTerms: true,
+      acceptedPrivacyPolicy: true,
+    });
+    resolveRequiredReConsents.mockResolvedValue({
+      required: [{
+        consentType: 'terms_of_service',
+        activeVersion: '2.0',
+        userVersion: '1.0',
+        blocking: true,
+      }],
+    });
+
+    await expect(
+      mod.assertProductAccessEligible(makeUser({ onboardingCompleted: true })),
+    ).rejects.toMatchObject({
+      code: Parse.Error.OPERATION_FORBIDDEN,
+      message: 'Terms of Service must be re-accepted (version 2.0 required).',
     });
   });
 

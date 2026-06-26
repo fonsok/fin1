@@ -23,6 +23,7 @@ const { registerLegalImportExportFunctions } = require('./legal/importExport');
 const { registerLegalBrandingFunctions } = require('./legal/branding');
 const { registerLegalDevMaintenanceFunctions } = require('./legal/devMaintenance');
 const { registerRoleAgreementConsentFunctions } = require('./legal/roleAgreementConsent');
+const { registerRequiredReConsentsFunctions } = require('./legal/requiredReConsents');
 
 registerLegalPublicAuditFunctions();
 registerLegalAdminTermsFunctions();
@@ -30,6 +31,7 @@ registerLegalImportExportFunctions();
 registerLegalBrandingFunctions();
 registerLegalDevMaintenanceFunctions();
 registerRoleAgreementConsentFunctions();
+registerRequiredReConsentsFunctions();
 
 console.log('Legal cloud functions loaded');
 

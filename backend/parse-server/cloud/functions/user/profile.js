@@ -5,6 +5,7 @@ const { readCustomerNumber } = require('../../utils/userIdentity');
 const {
   resolveUserLegalAcceptanceState,
   resolveUserRoleAgreementState,
+  resolveRequiredReConsents,
   persistResolvedLegalAcceptanceIfNeeded,
   persistResolvedRoleAgreementIfNeeded,
 } = require('../legal/legalConsentUserSync');
@@ -87,6 +88,7 @@ Parse.Cloud.define('getUserMe', async (request) => {
   await persistResolvedLegalAcceptanceIfNeeded(user, legal);
   const roleAgreement = await resolveUserRoleAgreementState(user, { language: 'de' });
   await persistResolvedRoleAgreementIfNeeded(user, roleAgreement);
+  const requiredReConsents = await resolveRequiredReConsents(user, { language: 'de' });
   const riskTolerance = await resolveEffectiveRiskTolerance(user);
 
   // Single round-trip for app refresh / post-login: KYB + identity + legal acceptance SSOT.
@@ -124,6 +126,7 @@ Parse.Cloud.define('getUserMe', async (request) => {
     roleAgreementRequired: roleAgreement.required,
     roleAgreementAccepted: roleAgreement.accepted,
     roleAgreementVersion: roleAgreement.version,
+    requiredReConsents: requiredReConsents.required,
   };
 });
 

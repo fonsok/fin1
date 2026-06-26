@@ -3,6 +3,7 @@
 const {
   resolveUserLegalAcceptanceState,
   resolveUserRoleAgreementState,
+  resolveRequiredReConsents,
 } = require('../functions/legal/legalConsentUserSync');
 
 function readUserField(user, key) {
@@ -45,6 +46,15 @@ async function assertProductAccessEligible(user, { language = 'de' } = {}) {
     throw new Parse.Error(
       Parse.Error.OPERATION_FORBIDDEN,
       `${label} must be accepted before using this feature.`,
+    );
+  }
+
+  const reConsents = await resolveRequiredReConsents(user, { language });
+  const blockingReConsent = reConsents.required.find((item) => item.blocking === true);
+  if (blockingReConsent) {
+    throw new Parse.Error(
+      Parse.Error.OPERATION_FORBIDDEN,
+      reConsentRequiredMessage(blockingReConsent),
     );
   }
 
@@ -102,7 +112,23 @@ function normalizeString(value) {
   return value.trim();
 }
 
+function reConsentRequiredMessage(item) {
+  switch (item.consentType) {
+    case 'terms_of_service':
+      return `Terms of Service must be re-accepted (version ${item.activeVersion} required).`;
+    case 'privacy_policy':
+      return `Privacy Policy must be re-accepted (version ${item.activeVersion} required).`;
+    case 'trader_agreement':
+      return `Trader (Signal Provider) Agreement must be re-accepted (version ${item.activeVersion} required).`;
+    case 'investor_agreement':
+      return `Investor Agreement must be re-accepted (version ${item.activeVersion} required).`;
+    default:
+      return 'Legal consent must be re-accepted before using this feature.';
+  }
+}
+
 module.exports = {
   assertProductAccessEligible,
   assertCompanyKybApproved,
+  reConsentRequiredMessage,
 };

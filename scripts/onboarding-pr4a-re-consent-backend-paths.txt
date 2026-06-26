@@ -1,0 +1,12 @@
+Documentation/FIN1_APP_DOCS/EPIC_POST_ONBOARDING_RE_CONSENT.md
+Documentation/RELEASE_ABNAHME_RE_CONSENT.md
+backend/parse-server/cloud/functions/legal.js
+backend/parse-server/cloud/functions/legal/legalConsentUserSync.js
+backend/parse-server/cloud/functions/legal/requiredReConsents.js
+backend/parse-server/cloud/functions/legal/__tests__/requiredReConsents.test.js
+backend/parse-server/cloud/functions/user/profile.js
+backend/parse-server/cloud/utils/legalVersionCompare.js
+backend/parse-server/cloud/utils/productAccessGate.js
+backend/parse-server/cloud/utils/__tests__/legalVersionCompare.test.js
+backend/parse-server/cloud/utils/__tests__/productAccessGate.test.js
+scripts/onboarding-pr4a-re-consent-backend-paths.txt
