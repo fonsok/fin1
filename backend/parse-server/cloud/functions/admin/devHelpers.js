@@ -7,6 +7,8 @@ const { registerEnsureInvestmentSchemaParseFields } = require('./devHelpers/ensu
 const { registerMigrateLegacyCustomerIdFunctions } = require('./devHelpers/migrateLegacyCustomerId');
 const { registerCleanupDuplicateInvestmentSplitsFunctions } = require('./devHelpers/cleanupDuplicateInvestmentSplits');
 const { registerDevCleanupE2EOpenTrades } = require('./devHelpers/cleanupE2EOpenTrades');
+const { registerDevCleanupSignupRunUsers } = require('./devHelpers/cleanupSignupRunUsers');
+const { registerMigrateOnboardingLegacyPickerDefaultsFunctions } = require('./devHelpers/migrateOnboardingLegacyPickerDefaults');
 
 registerDevResetTradingDataFunctions();
 registerTradesDebugFunctions();
@@ -15,5 +17,7 @@ registerSchemaInitFunctions();
 registerMigrateLegacyCustomerIdFunctions();
 registerCleanupDuplicateInvestmentSplitsFunctions();
 registerDevCleanupE2EOpenTrades();
+registerDevCleanupSignupRunUsers();
+registerMigrateOnboardingLegacyPickerDefaultsFunctions();
 
 console.log('Admin dev helpers loaded');
