@@ -6,6 +6,8 @@ export async function searchUsers(params: {
   query?: string;
   status?: string;
   role?: string;
+  /** seed = iOS debug-list users; signupRuns = Get Started prefill runs */
+  testUserFilter?: '' | 'seed' | 'signupRuns';
   limit?: number;
   skip?: number;
   sortBy?: string;

@@ -86,7 +86,7 @@ Dieses Dokument fasst **Entscheidungen, Architektur und Umsetzungsstand** für d
 | **API-Schicht** | `CompanyKybAPIService` + `SavedCompanyKybData` etc. sind implementiert und in **`AppServices.companyKybAPIService`** (live mit `ParseAPIClient`) registriert. |
 | **UI / Wizard** | **Nicht** angebunden: Es gibt **keinen** SwiftUI-Wizard, **keine** Aufrufe aus `SignUpView`/`AuthenticationView`/`LandingView` für die KYB-Functions – **Phase P2**. |
 | **Routing / Resume** | Spezifiziert (Company-KYB vor Personal-Onboarding bei `accountType == company` & offenem KYB), aber **noch nicht** in der Navigationslogik umgesetzt. |
-| **In-App-„Admin“** | **`AdminDashboardView`** (nur für Admin-Rollen in der App): Hinweis, dass **Konfiguration, Reports und Operatives** über das **Web-Admin-Portal** laufen – die iOS-App ist hier bewusst **kein** vollwertiges Admin-Tool. |
+| **In-App-„Admin“** | **`AdminDashboardView`** (nur für Admin-Rollen): Read-only Diagnose (Ledger, Beleg-Suche, Drift-Health). **Konfiguration, Reports und Operatives** ausschließlich über das **Web-Admin-Portal** (4-Augen). Role Testing nur in **DEBUG**-Builds (lokaler UI-Switch, kein Server-Audit). |
 
 ### 6.4 Kurzfazit Frontend
 

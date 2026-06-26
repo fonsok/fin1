@@ -85,7 +85,8 @@ protocol ConfigurationServiceProtocol: ObservableObject, Sendable {
     /// iOS Investor: Bereich „Teil-Sell-Realisierungen (Active Investment)“ — unabhängig von Trader-Teil-Sells.
     var showInvestorPartialSellRealizations: Bool { get }
 
-    var isAdminMode: Bool { get }
+    /// iOS Trader Dashboard Quick Stats: Zeile „Investment aktiv“ (reserviertes/aktives Pool-Kapital).
+    var showTraderDashboardInvestmentActiveStatus: Bool { get }
 
     /// Wenn true, wird die Commission-Breakdown-Tabelle in der Trader-Gutschrift angezeigt (Admin-Option).
     var showCommissionBreakdownInCreditNote: Bool { get }

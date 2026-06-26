@@ -42,20 +42,9 @@ struct GetConfigResponse: Decodable {
         let traderMonetaryServerOnly: Bool?
         let frontendReadonlyMode: Bool?
         let showInvestorPartialSellRealizations: Bool?
+        let showTraderDashboardInvestmentActiveStatus: Bool?
         let serviceChargeLegacyDisableAllowedFrom: String?
     }
-}
-
-struct UpdateConfigResponse: Decodable {
-    let display: GetConfigResponse.DisplaySection?
-}
-
-// MARK: - 4-Eyes configuration models
-struct ConfigurationChangeRequestResponse: Decodable {
-    let success: Bool
-    let requiresApproval: Bool
-    let fourEyesRequestId: String?
-    let message: String
 }
 
 struct ConfigurationChangeApprovalResponse: Decodable {

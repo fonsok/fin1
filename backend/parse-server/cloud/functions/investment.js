@@ -24,6 +24,7 @@ const {
 } = require('./investmentPoolTraderHandlers');
 const { handleDiscoverTraders } = require('./investmentDiscoverTraders');
 const { rollbackOrphanInvestmentAfterFailedReserve } = require('../utils/investmentReservationRollback');
+const { assertProductAccessEligible } = require('../utils/productAccessGate');
 
 Parse.Cloud.define('getInvestorPortfolio', async (request) => {
   const user = request.user;
@@ -63,6 +64,7 @@ Parse.Cloud.define('createInvestment', async (request) => {
   console.warn('[createInvestment] deprecated — prefer createInvestmentSplits for batch/idempotent investor flow');
   const user = request.user;
   if (!user) throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Anmeldung erforderlich.');
+  await assertProductAccessEligible(user);
 
   const { traderId, amount } = request.params;
 

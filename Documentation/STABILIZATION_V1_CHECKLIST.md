@@ -19,8 +19,8 @@ Kurzcheckliste nach den umfangreichen DEV-/UI-Änderungen.
 Siehe **`Documentation/SCHEMA_MIGRATIONS.md`**. Kurz:
 
 - Parse Dashboard oder Cloud-Logs: Startup meldet `Schema migrations (GoB registry) ok` bzw. `partial` (siehe `main.js` ~6 s nach Boot).
-- Bei Unsicherheit: Admin-Cloud **`listSchemaMigrations`** (letzte Zeilen in `SchemaMigration`) — erwartet u. a. `success: true` für `gob_investment_schema_v1` und `gob_document_schema_v1` nach erstem erfolgreichen Lauf.
-- Wenn Migrationen fehlen / rot: **`updateInvestmentClassSchemaFields`** (Admin) erneut ausführen, dann erneut `listSchemaMigrations` prüfen.
+- Bei Unsicherheit: Admin-Cloud **`listSchemaMigrations`** (letzte Zeilen in `SchemaMigration`) — erwartet u. a. `success: true` für `gob_investment_schema_v1` und `gob_document_schema_v1` nach erstem erfolgreichen Lauf; für Signup-Skalierung zusätzlich **`onboarding_signup_indexes_v1`**.
+- Wenn Migrationen fehlen / rot: **`updateInvestmentClassSchemaFields`** (Admin) erneut ausführen, dann erneut `listSchemaMigrations` prüfen — oder Shell: `./scripts/run-onboarding-signup-indexes-migration.sh`.
 - Symptom „**Permission denied for action addField on class Investment**“: Schema-Feld fehlt noch → obige Schritte, bis `feeConfigSnapshot` auf der Klasse `Investment` existiert.
 
 ## 2) Keine manuellen DB-Hotfixes für CSR-Templates

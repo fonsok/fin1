@@ -16,7 +16,9 @@ struct AdminDashboardView: View {
                     self.appSettingsSection
                     self.appLedgerSection
                     self.adminPortalCustomerContextSection
+                    #if DEBUG
                     self.roleTestingSection
+                    #endif
                     Spacer(minLength: ResponsiveDesign.spacing(20))
                 }
                 .padding()
@@ -236,7 +238,8 @@ struct AdminDashboardView: View {
         .cornerRadius(ResponsiveDesign.spacing(12))
     }
 
-    // MARK: - Role Testing Section
+    // MARK: - Role Testing Section (DEBUG builds only — local UI impersonation, no server audit)
+    #if DEBUG
     private var roleTestingSection: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
             Text("Role Testing")
@@ -259,6 +262,7 @@ struct AdminDashboardView: View {
         .background(AppTheme.sectionBackground)
         .cornerRadius(ResponsiveDesign.spacing(12))
     }
+    #endif
 }
 
 // MARK: - Admin Action Card
@@ -323,6 +327,7 @@ struct AdminInfoRow: View {
     }
 }
 
+#if DEBUG
 // MARK: - Role Test Button
 struct RoleTestButton: View {
     let role: UserRole
@@ -371,6 +376,7 @@ struct RoleTestButton: View {
         }
     }
 }
+#endif
 
 #Preview {
     AdminDashboardView()

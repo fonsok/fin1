@@ -188,20 +188,14 @@ struct VVaaaStyleDataCell: View {
 
     var body: some View {
         if self.column.id == "trader" {
-            // Trader name - clickable, blue color
-            Button(action: {
-                self.row.onTap?()
-            }) {
-                Text(self.row.cells[self.column.id] ?? "")
-                    .font(ResponsiveDesign.bodyFont())
-                    .fontWeight(.medium)
-                    .foregroundColor(DataTableColors.traderNameColor)
-                    .frame(maxWidth: .infinity, alignment: self.column.alignment)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-                    .contentShape(Rectangle())
+            if let onTap = self.row.onTap {
+                Button(action: onTap) {
+                    self.traderNameLabel
+                }
+                .buttonStyle(PlainButtonStyle())
+            } else {
+                self.traderNameLabel
             }
-            .buttonStyle(PlainButtonStyle())
         } else if self.column.id == "return" || self.column.id == "returnLastTrade" {
             // Return values - green for positive, red for negative
             Text(self.row.cells[self.column.id] ?? "")
@@ -219,6 +213,19 @@ struct VVaaaStyleDataCell: View {
                 .frame(maxWidth: .infinity, alignment: self.column.alignment)
                 .minimumScaleFactor(0.8)
         }
+    }
+
+    private var traderNameLabel: some View {
+        Text(self.row.cells[self.column.id] ?? "")
+            .font(ResponsiveDesign.bodyFont())
+            .fontWeight(.medium)
+            .foregroundColor(
+                self.row.onTap == nil ? DataTableColors.normalText.opacity(0.55) : DataTableColors.traderNameColor
+            )
+            .frame(maxWidth: .infinity, alignment: self.column.alignment)
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+            .contentShape(Rectangle())
     }
 }
 

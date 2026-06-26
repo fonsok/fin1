@@ -8,6 +8,10 @@ struct DashboardTraderOverview: View {
     @State private var showError: Bool = false
     @State private var errorTitle: String = ""
 
+    private var canCreatePlatformInvestments: Bool {
+        self.appServices.userService.currentUser?.canCreatePlatformInvestments ?? false
+    }
+
     init(startStripeIndex: Int = 5) {
         self.startStripeIndex = startStripeIndex
         let tempServices = AppServices.live
@@ -43,6 +47,12 @@ struct DashboardTraderOverview: View {
                 )
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
+
+            if let currentUser = self.appServices.userService.currentUser, !self.canCreatePlatformInvestments {
+                DashboardTradingAccessNotice(riskClass: currentUser.riskClass, roleContext: .investor)
+                    .padding(.horizontal, ResponsiveDesign.mainHorizontalPadding())
+                    .padding(.top, ResponsiveDesign.spacing(8))
+            }
         }
         .sheet(item: self.$selectedTraderID) { traderIDItem in
             TraderNavigationHelper.sheetView(for: traderIDItem.id, appServices: self.appServices)
@@ -53,23 +63,25 @@ struct DashboardTraderOverview: View {
                 watchlistService: self.appServices.watchlistService
             )
             self.viewModel.onTraderTap = { username in
+                guard self.canCreatePlatformInvestments else { return }
                 if let traderID = self.viewModel.getTraderID(username: username) {
                     self.selectedTraderID = TraderIDItem(id: traderID)
                 }
             }
+            self.viewModel.updateCachedData(allowTraderTap: self.canCreatePlatformInvestments)
         }
         .task {
             await self.appServices.traderDataService.refreshTraderCatalog()
-            self.viewModel.updateCachedData()
+            self.viewModel.updateCachedData(allowTraderTap: self.canCreatePlatformInvestments)
         }
         .onChange(of: self.appServices.traderDataService.traders.count) { _, _ in
-            self.viewModel.updateCachedData()
+            self.viewModel.updateCachedData(allowTraderTap: self.canCreatePlatformInvestments)
         }
         .onChange(of: self.appServices.watchlistService.watchlist.count) { _, _ in
-            self.viewModel.updateCachedData()
+            self.viewModel.updateCachedData(allowTraderTap: self.canCreatePlatformInvestments)
         }
         .onReceive(NotificationCenter.default.publisher(for: .init("WatchlistUpdated"))) { _ in
-            self.viewModel.updateCachedData()
+            self.viewModel.updateCachedData(allowTraderTap: self.canCreatePlatformInvestments)
         }
         .onReceive(self.viewModel.$lastWatchlistError.dropFirst().receive(on: RunLoop.main)) { err in
             guard let err else { return }

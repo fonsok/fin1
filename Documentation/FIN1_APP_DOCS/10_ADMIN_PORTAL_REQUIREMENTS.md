@@ -1,6 +1,6 @@
 # FIN1 Admin-Web-Portal: Dokumentation
 
-> **Datum:** 2026-05-02 (Ergänzung: **System**-Seite Health/Smoke, **App Ledger** Summen/User-Filter; siehe unten „Stand 2026-05“) · zuvor 2026-04-15 (**Legal Branding / `{{APP_NAME}}`**: kanonische Pflege unter **Konfiguration → Systemparameter** (`legalAppName`, 4‑Augen); AGB & Rechtstexte nur Hinweis/Link; `updateLegalBranding` deprecated) (**vorher 2026-04-04:** Benutzer-Detailseite: Trading-/Investment-Übersicht und Kontoauszug ausführlich dokumentiert; zuvor Payload/`getUserDetails`; 2026-04-03 Freigaben: Typ-Filter, Listen-Sortierung / Parse-Datum / Deploy-Check in §5; 2026-04-01 Hilfe & Anleitung; 2026-03-28 KYB-Status CSR, Vitest/ESLint/CI, `getCompanyKyb*`)
+> **Datum:** 2026-06-25 (Ergänzung: **Anzeige** → „Trader-Depot: Investment-Pool Status anzeigen“, iOS Depot-Kachel) · zuvor 2026-05-02 (Ergänzung: **System**-Seite Health/Smoke, **App Ledger** Summen/User-Filter; siehe unten „Stand 2026-05“) · zuvor 2026-04-15 (**Legal Branding / `{{APP_NAME}}`**: kanonische Pflege unter **Konfiguration → Systemparameter** (`legalAppName`, 4‑Augen); AGB & Rechtstexte nur Hinweis/Link; `updateLegalBranding` deprecated) (**vorher 2026-04-04:** Benutzer-Detailseite: Trading-/Investment-Übersicht und Kontoauszug ausführlich dokumentiert; zuvor Payload/`getUserDetails`; 2026-04-03 Freigaben: Typ-Filter, Listen-Sortierung / Parse-Datum / Deploy-Check in §5; 2026-04-01 Hilfe & Anleitung; 2026-03-28 KYB-Status CSR, Vitest/ESLint/CI, `getCompanyKyb*`)
 > **Status:** MVP Implementiert ✅
 > **URL:** `https://192.168.178.24/admin/`
 
@@ -58,6 +58,12 @@ Ein web-basiertes Administrations-Portal für FIN1, das rollen-basierte Zugriffs
 | Benutzer-Aktionen | ✅ | Suspend/Reactivate, Passwort-Reset (mit Grund/Modal; keine Selbstsperrung) |
 | Ticket-Liste | ✅ | Filter nach Status, Priorität |
 | 2FA-Flow | ✅ | Verification bei Login |
+
+### Stand 2026-06: Anzeige — Trader-Depot Investment-Pool
+
+- **Konfiguration → Anzeige:** Parameter **„Trader-Depot: Investment-Pool Status anzeigen“** (`showTraderDashboardInvestmentActiveStatus`, **4-Augen**, Standard **an**).
+- **Wirkung (iOS):** In der Trader-App im **Depot** zeigt jede Positions-Kachel optional die Zeile **Investment-Pool** mit `active` oder `-` — nur nach abgeschlossener Kauforder; nicht im Dashboard Quick Stats.
+- **Freigaben-Liste:** Anzeigename in `ApprovalsList.tsx` (`PARAM_DISPLAY_NAMES`); Definition in `parameterDefinitions.ts`.
 
 ### Stand 2026-05: System, App Ledger, Konfiguration (Wallet)
 

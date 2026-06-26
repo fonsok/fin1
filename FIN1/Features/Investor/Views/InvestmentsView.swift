@@ -59,16 +59,23 @@ struct InvestmentsView: View {
                     InvestmentsHeaderSectionView(currentUser: self.viewModel.currentUser)
                         .stripedListSection(stripeIndex: 0)
 
-                    self.reservedInvestmentsSection(titleStripeIndex: 1)
+                    if let currentUser = self.viewModel.currentUser, !self.viewModel.canCreateNewInvestment {
+                        DashboardTradingAccessNotice(riskClass: currentUser.riskClass, roleContext: .investor)
+                            .stripedListSection(stripeIndex: 1, bandTint: AppTheme.accentOrange)
+                    }
 
-                    self.activeInvestmentsSection(titleStripeIndex: 2)
+                    self.reservedInvestmentsSection(titleStripeIndex: self.viewModel.canCreateNewInvestment ? 1 : 2)
+
+                    self.activeInvestmentsSection(titleStripeIndex: self.viewModel.canCreateNewInvestment ? 2 : 3)
 
                     if self.appServices.configurationService.showInvestorPartialSellRealizations {
-                        self.partialSellRealizationsSection(titleStripeIndex: 3)
+                        self.partialSellRealizationsSection(titleStripeIndex: self.viewModel.canCreateNewInvestment ? 3 : 4)
                     }
 
                     self.completedInvestmentsSection(
-                        titleStripeIndex: self.appServices.configurationService.showInvestorPartialSellRealizations ? 4 : 3
+                        titleStripeIndex: self.viewModel.canCreateNewInvestment
+                            ? (self.appServices.configurationService.showInvestorPartialSellRealizations ? 4 : 3)
+                            : (self.appServices.configurationService.showInvestorPartialSellRealizations ? 5 : 4)
                     )
                 }
                 .padding(.bottom, ResponsiveDesign.spacing(16))
@@ -80,9 +87,19 @@ struct InvestmentsView: View {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: { self.viewModel.showNewInvestmentSheet() }, label: {
                     Image(systemName: "plus.circle.fill")
-                        .foregroundColor(AppTheme.accentLightBlue)
+                        .foregroundColor(
+                            self.viewModel.canCreateNewInvestment
+                                ? AppTheme.accentLightBlue
+                                : AppTheme.fontColor.opacity(0.35)
+                        )
                 })
+                .disabled(!self.viewModel.canCreateNewInvestment)
                 .accessibilityIdentifier("NewInvestmentButton")
+                .accessibilityHint(
+                    self.viewModel.canCreateNewInvestment
+                        ? "Create a new investment"
+                        : "New investments are not available for your risk class"
+                )
             }
         }
         .sheet(isPresented: self.$viewModel.showNewInvestment) {

@@ -16,6 +16,7 @@ const {
   flushBatchCreatedNotifications,
   discardDeferredBatchNotifications,
 } = require('../utils/investmentBatchNotifications');
+const { assertProductAccessEligible } = require('../utils/productAccessGate');
 
 const AMOUNT_EPSILON = 0.01;
 
@@ -65,6 +66,7 @@ async function handleCreateInvestmentSplits(request) {
   if (!user) {
     throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Anmeldung erforderlich.');
   }
+  await assertProductAccessEligible(user);
 
   const {
     batchId: rawBatchId,

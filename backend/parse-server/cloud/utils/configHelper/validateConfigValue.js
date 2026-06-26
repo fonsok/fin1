@@ -189,6 +189,10 @@ function validateConfigValue(paramName, value) {
       type: 'boolean',
       errorMsg: 'showInvestorPartialSellRealizations muss true oder false sein',
     },
+    showTraderDashboardInvestmentActiveStatus: {
+      type: 'boolean',
+      errorMsg: 'showTraderDashboardInvestmentActiveStatus muss true oder false sein',
+    },
     collectionBillServerLegs: {
       type: 'boolean',
       errorMsg: 'collectionBillServerLegs muss true oder false sein',

@@ -1,6 +1,7 @@
 'use strict';
 
 const { getUserStableId } = require('./tradingIdentity');
+const { assertProductAccessEligible } = require('../utils/productAccessGate');
 
 const PARSE_OBJECT_ID_PATTERN = /^[A-Za-z0-9]{10}$/;
 
@@ -50,6 +51,7 @@ async function resolveTradeForUpsert(Trade, stableId, trade) {
 async function handleUpsertTrade(request) {
   const user = request.user;
   if (!user) throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Login required');
+  await assertProductAccessEligible(user);
 
   const stableId = getUserStableId(user);
   const { trade } = request.params || {};

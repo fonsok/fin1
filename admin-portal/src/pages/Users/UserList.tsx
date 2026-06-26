@@ -17,19 +17,21 @@ export function UserListPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearch = useDebounce(searchQuery);
   const [statusFilter, setStatusFilter] = useState<string>('');
+  const [testUserFilter, setTestUserFilter] = useState<'' | 'seed' | 'signupRuns'>('');
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(20);
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
-  useEffect(() => { setPage(0); }, [debouncedSearch]);
+  useEffect(() => { setPage(0); }, [debouncedSearch, testUserFilter]);
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['users', debouncedSearch, statusFilter, page, pageSize, sortBy, sortOrder],
+    queryKey: ['users', debouncedSearch, statusFilter, testUserFilter, page, pageSize, sortBy, sortOrder],
     queryFn: () =>
       searchUsers({
         query: debouncedSearch || undefined,
         status: statusFilter || undefined,
+        testUserFilter: testUserFilter || undefined,
         limit: pageSize,
         skip: page * pageSize,
         sortBy,
@@ -84,6 +86,22 @@ export function UserListPage() {
             <option value="pending">Ausstehend</option>
             <option value="suspended">Gesperrt</option>
             <option value="locked">Gesperrt (locked)</option>
+          </select>
+          <select
+            value={testUserFilter}
+            onChange={(e) => {
+              setTestUserFilter(e.target.value as '' | 'seed' | 'signupRuns');
+              setPage(0);
+            }}
+            className={clsx(
+              'px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-fin1-primary',
+              adminControlField(isDark)
+            )}
+            title="Debug-Testuser aus der iOS-Debug-Liste vs. Get-Started-Läufe"
+          >
+            <option value="">Ohne Get-Started-Läufe</option>
+            <option value="seed">Nur Debug-Testuser (iOS)</option>
+            <option value="signupRuns">Nur Get-Started-Läufe</option>
           </select>
           <Button type="submit">
             Suchen

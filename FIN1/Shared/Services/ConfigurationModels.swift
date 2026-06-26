@@ -23,6 +23,7 @@ struct AppConfiguration: Codable {
     var traderMonetaryServerOnly: Bool?
     var frontendReadonlyMode: Bool?
     var showInvestorPartialSellRealizations: Bool?
+    var showTraderDashboardInvestmentActiveStatus: Bool?
     var dailyTransactionLimit: Double?
     var weeklyTransactionLimit: Double?
     var monthlyTransactionLimit: Double?
@@ -44,7 +45,7 @@ struct AppConfiguration: Codable {
         case platformServiceChargeRate, platformServiceChargeRateCompanies
         case showCommissionBreakdownInCreditNote, showDocumentReferenceLinksInAccountStatement
         case maximumRiskExposurePercent, walletFeatureEnabled
-        case serviceChargeInvoiceFromBackend, serviceChargeLegacyClientFallbackEnabled, investorMonetaryServerOnly, collectionBillServerLegs, traderMonetaryServerOnly, frontendReadonlyMode, showInvestorPartialSellRealizations
+        case serviceChargeInvoiceFromBackend, serviceChargeLegacyClientFallbackEnabled, investorMonetaryServerOnly, collectionBillServerLegs, traderMonetaryServerOnly, frontendReadonlyMode, showInvestorPartialSellRealizations, showTraderDashboardInvestmentActiveStatus
         case dailyTransactionLimit, weeklyTransactionLimit, monthlyTransactionLimit
         case minInvestment, maxInvestment, maxPoolMirrorBuyOrderAmount, maxTraderPartialSells, taxCollectionMode, userMinimumCashReserves, slaMonitoringInterval, lastUpdated, updatedBy
     }
@@ -77,6 +78,10 @@ struct AppConfiguration: Codable {
         self.traderMonetaryServerOnly = try c.decodeIfPresent(Bool.self, forKey: .traderMonetaryServerOnly)
         self.frontendReadonlyMode = try c.decodeIfPresent(Bool.self, forKey: .frontendReadonlyMode)
         self.showInvestorPartialSellRealizations = try c.decodeIfPresent(Bool.self, forKey: .showInvestorPartialSellRealizations)
+        self.showTraderDashboardInvestmentActiveStatus = try c.decodeIfPresent(
+            Bool.self,
+            forKey: .showTraderDashboardInvestmentActiveStatus
+        )
         self.dailyTransactionLimit = try c.decodeIfPresent(Double.self, forKey: .dailyTransactionLimit)
         self.weeklyTransactionLimit = try c.decodeIfPresent(Double.self, forKey: .weeklyTransactionLimit)
         self.monthlyTransactionLimit = try c.decodeIfPresent(Double.self, forKey: .monthlyTransactionLimit)
@@ -113,6 +118,7 @@ struct AppConfiguration: Codable {
         try c.encodeIfPresent(self.traderMonetaryServerOnly, forKey: .traderMonetaryServerOnly)
         try c.encodeIfPresent(self.frontendReadonlyMode, forKey: .frontendReadonlyMode)
         try c.encodeIfPresent(self.showInvestorPartialSellRealizations, forKey: .showInvestorPartialSellRealizations)
+        try c.encodeIfPresent(self.showTraderDashboardInvestmentActiveStatus, forKey: .showTraderDashboardInvestmentActiveStatus)
         try c.encodeIfPresent(self.dailyTransactionLimit, forKey: .dailyTransactionLimit)
         try c.encodeIfPresent(self.weeklyTransactionLimit, forKey: .weeklyTransactionLimit)
         try c.encodeIfPresent(self.monthlyTransactionLimit, forKey: .monthlyTransactionLimit)
@@ -148,6 +154,7 @@ struct AppConfiguration: Codable {
         traderMonetaryServerOnly: Bool? = nil,
         frontendReadonlyMode: Bool? = nil,
         showInvestorPartialSellRealizations: Bool? = nil,
+        showTraderDashboardInvestmentActiveStatus: Bool? = nil,
         dailyTransactionLimit: Double?,
         weeklyTransactionLimit: Double?,
         monthlyTransactionLimit: Double?,
@@ -181,6 +188,7 @@ struct AppConfiguration: Codable {
         self.traderMonetaryServerOnly = traderMonetaryServerOnly
         self.frontendReadonlyMode = frontendReadonlyMode
         self.showInvestorPartialSellRealizations = showInvestorPartialSellRealizations
+        self.showTraderDashboardInvestmentActiveStatus = showTraderDashboardInvestmentActiveStatus
         self.dailyTransactionLimit = dailyTransactionLimit
         self.weeklyTransactionLimit = weeklyTransactionLimit
         self.monthlyTransactionLimit = monthlyTransactionLimit
@@ -250,6 +258,9 @@ struct AppConfiguration: Codable {
     var effectiveTraderMonetaryServerOnly: Bool { self.traderMonetaryServerOnly ?? true }
     var effectiveFrontendReadonlyMode: Bool { self.frontendReadonlyMode ?? false }
     var effectiveShowInvestorPartialSellRealizations: Bool { self.showInvestorPartialSellRealizations ?? false }
+    var effectiveShowTraderDashboardInvestmentActiveStatus: Bool {
+        self.showTraderDashboardInvestmentActiveStatus ?? true
+    }
     var effectiveDailyTransactionLimit: Double { self.dailyTransactionLimit ?? CalculationConstants.TransactionLimits.baseDailyLimit }
     var effectiveWeeklyTransactionLimit: Double { self.weeklyTransactionLimit ?? CalculationConstants.TransactionLimits.baseWeeklyLimit }
     var effectiveMonthlyTransactionLimit: Double { self.monthlyTransactionLimit ?? CalculationConstants.TransactionLimits.baseMonthlyLimit }
@@ -273,6 +284,8 @@ enum ConfigurationError: Error, LocalizedError {
     case fourEyesApprovalRequired(requestId: String)
     case noBackendConnection
     case approvalRejected(reason: String)
+    /// Remote admin parameters are SSOT in the Admin Web Portal (`Configuration` + 4-eyes).
+    case serverManagedConfiguration
 
     var errorDescription: String? {
         switch self {
@@ -283,6 +296,8 @@ enum ConfigurationError: Error, LocalizedError {
         case .fourEyesApprovalRequired(let requestId): return "This configuration change requires 4-eyes approval. Request ID: \(requestId)"
         case .noBackendConnection: return "No backend connection available for configuration change"
         case .approvalRejected(let reason): return "Configuration change was rejected: \(reason)"
+        case .serverManagedConfiguration:
+            return "This setting is managed via the Admin Web Portal (Configuration, 4-eyes). The iOS app is read-only for remote configuration."
         }
     }
 

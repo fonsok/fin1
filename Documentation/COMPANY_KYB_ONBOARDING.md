@@ -87,7 +87,7 @@ legal_entity → registered_address → tax_compliance → beneficial_owners
 | **P0** | Schrittliste & ADR-003 | ✅ erledigt |
 | **P1** | Parse-Felder, Cloud Functions + Joi, iOS-Modelle + API | ✅ erledigt |
 | **P2** | SwiftUI-Wizard (8 Schritte), Resume, Routing | ✅ umgesetzt |
-| **P3** | Admin/CSR, Vier-Augen, Last-/E2E-Tests | offen |
+| **P3** | Admin/CSR, Vier-Augen, Last-/E2E-Tests | teilweise (Admin `/kyb-review` ✅; **Product Gate** siehe [`FIN1_APP_DOCS/EPIC_KYB_REGULATED_PRODUCT_GATE.md`](FIN1_APP_DOCS/EPIC_KYB_REGULATED_PRODUCT_GATE.md)) |
 
 ### P2-Implementierungsdetails (2026-03-21)
 

@@ -4,7 +4,6 @@ extension ConfigurationService {
     // MARK: - ServiceLifecycle
     func start() {
         self.loadConfiguration()
-        self.updateAdminModeStatus()
         Task { await self.fetchRemoteDisplayConfig() }
     }
 
@@ -89,21 +88,12 @@ extension ConfigurationService {
         traderMonetaryServerOnly = configuration.effectiveTraderMonetaryServerOnly
         frontendReadonlyMode = configuration.effectiveFrontendReadonlyMode
         showInvestorPartialSellRealizations = configuration.effectiveShowInvestorPartialSellRealizations
+        showTraderDashboardInvestmentActiveStatus = configuration.effectiveShowTraderDashboardInvestmentActiveStatus
         minimumInvestmentAmount = configuration.effectiveMinimumInvestment
         maximumInvestmentAmount = configuration.effectiveMaximumInvestment
         maxTraderPartialSells = configuration.effectiveMaxTraderPartialSells
         taxCollectionMode = configuration.effectiveTaxCollectionMode
         slaMonitoringInterval = configuration.slaMonitoringInterval
-    }
-
-    func setupUserRoleObservation() {
-        self.updateAdminModeStatus()
-    }
-
-    func updateAdminModeStatus() {
-        Task { @MainActor [weak self] in
-            self?.isAdminMode = self?.userService.currentUser?.role == .admin
-        }
     }
 
     func fetchRemoteDisplayConfig() async {
@@ -147,6 +137,10 @@ extension ConfigurationService {
                 if let v = response.display?.frontendReadonlyMode { self.configuration.frontendReadonlyMode = v; changed = true }
                 if let v = response.display?.showInvestorPartialSellRealizations {
                     self.configuration.showInvestorPartialSellRealizations = v
+                    changed = true
+                }
+                if let v = response.display?.showTraderDashboardInvestmentActiveStatus {
+                    self.configuration.showTraderDashboardInvestmentActiveStatus = v
                     changed = true
                 }
                 if let lim = response.limits {

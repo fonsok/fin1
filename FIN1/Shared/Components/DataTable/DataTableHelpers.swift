@@ -14,7 +14,7 @@ struct TraderData {
 // MARK: - Data Conversion Helpers
 extension TraderData {
     func toTableRowData(
-        onTraderTap: @escaping () -> Void,
+        onTraderTap: (() -> Void)?,
         onWatchlistToggle: @escaping (Bool) -> Void,
         isInWatchlist: Bool = false,
         isWatchlistBusy: Bool = false
@@ -43,14 +43,14 @@ struct TableDataFactory {
         onTraderTap: @escaping (String) -> Void,
         onWatchlistToggle: @escaping (String, Bool) -> Void,
         watchlistStatus: [String: Bool] = [:],
-        busyStatus: [String: Bool] = [:]
+        busyStatus: [String: Bool] = [:],
+        allowTraderTap: Bool = true
     ) -> [TableRowData] {
         return traders.map { trader in
             trader.toTableRowData(
-                onTraderTap: {
-                    // Pass the traderName as-is (may include "@" prefix)
+                onTraderTap: allowTraderTap ? {
                     onTraderTap(trader.traderName)
-                },
+                } : nil,
                 onWatchlistToggle: { isWatched in
                     // Pass the traderName as-is (may include "@" prefix)
                     onWatchlistToggle(trader.traderName, isWatched)
