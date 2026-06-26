@@ -4,10 +4,14 @@ import XCTest
 final class SignUpExperienceNoneFollowUpTests: XCTestCase {
     func testNoneTransactionCountDoesNotRequireFollowUpAnswers() {
         let signUpData = SignUpData()
-        signUpData.stocksTransactionsCount = .none
-        signUpData.etfsTransactionsCount = .none
-        signUpData.derivativesTransactionsCount = .none
-        signUpData.otherAssets["No"] = true
+        signUpData.stocksTransactionsCount = StocksTransactionCount.none
+        signUpData.etfsTransactionsCount = ETFsTransactionCount.none
+        signUpData.derivativesTransactionsCount = DerivativesTransactionCount.none
+        signUpData.otherAssets = [
+            "Real estate": false,
+            "Gold, silver": false,
+            "No": true
+        ]
 
         XCTAssertTrue(signUpData.isStocksExperienceComplete)
         XCTAssertTrue(signUpData.isEtfsExperienceComplete)
@@ -18,9 +22,13 @@ final class SignUpExperienceNoneFollowUpTests: XCTestCase {
     func testNonNoneTransactionCountStillRequiresFollowUpAnswers() {
         let signUpData = SignUpData()
         signUpData.stocksTransactionsCount = .oneToTen
-        signUpData.etfsTransactionsCount = .none
-        signUpData.derivativesTransactionsCount = .none
-        signUpData.otherAssets["No"] = true
+        signUpData.etfsTransactionsCount = ETFsTransactionCount.none
+        signUpData.derivativesTransactionsCount = DerivativesTransactionCount.none
+        signUpData.otherAssets = [
+            "Real estate": false,
+            "Gold, silver": false,
+            "No": true
+        ]
 
         XCTAssertFalse(signUpData.isStocksExperienceComplete)
         XCTAssertFalse(signUpData.isExperienceStepComplete)
