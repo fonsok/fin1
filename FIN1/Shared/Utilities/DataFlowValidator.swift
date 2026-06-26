@@ -98,6 +98,7 @@ struct DataFlowValidator {
         function: String = #function,
         line: Int = #line
     ) {
+        #if DEBUG
         let fileName = URL(fileURLWithPath: file).lastPathComponent
         print("🔄 DATA FLOW [\(fileName):\(line)] \(step)")
 
@@ -114,6 +115,7 @@ struct DataFlowValidator {
         if let underlyingAsset = underlyingAsset {
             print("   🏢 UnderlyingAsset: \(underlyingAsset)")
         }
+        #endif
     }
 
     // MARK: - Integration Test Helpers

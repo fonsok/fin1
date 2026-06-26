@@ -64,17 +64,21 @@ final class BuyOrderInvestmentCalculator: BuyOrderInvestmentCalculatorProtocol {
             return nil
         }
 
+        #if DEBUG
         print("💰 BuyOrderInvestmentCalculator: Calculating order with full pool capital")
         print("   📊 Available investments count: \(allReservedInvestments.count)")
         print("   💵 Total pool capital (sum of available investments): €\(String(format: "%.2f", investmentBalance))")
+        #endif
 
         let traderCashBalance = cashBalanceService.currentBalance
 
+        #if DEBUG
         print("💰 BuyOrderInvestmentCalculator.calculateInvestmentOrder:")
         print("   📊 Input quantity (desired trader quantity): \(quantity)")
         print("   💵 traderCashBalance: €\(String(format: "%.2f", traderCashBalance))")
         print("   💵 investmentBalance (sum of reserved investments): €\(String(format: "%.2f", investmentBalance))")
         print("   📊 Reserved investments count: \(allReservedInvestments.count)")
+        #endif
 
         // Get security metadata
         let denomination = searchResult.denomination

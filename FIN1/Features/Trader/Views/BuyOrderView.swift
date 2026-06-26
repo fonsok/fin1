@@ -177,7 +177,9 @@ struct BuyOrderView: View {
             self.viewModel.priceValidityTimerManager.cleanup()
         }
         .task(id: self.viewModel.searchResult.wkn) {
+            #if DEBUG
             print("🔍 BuyOrderView: loading trader pool investments from backend")
+            #endif
             await self.viewModel.loadPoolInvestmentsIfNeeded()
             await self.viewModel.calculateInvestmentOrder()
         }
@@ -323,7 +325,9 @@ struct BuyOrderView: View {
                 limitText: self.$viewModel.limit,
                 isVisible: self.viewModel.orderMode == .limit,
                 onChange: { newValue in
+                    #if DEBUG
                     print("🔍 DEBUG: Limit field changed to: '\(newValue)'")
+                    #endif
                     // Validation is now handled internally by LimitPriceInput
                     // No need for additional filtering here
                 },
@@ -537,7 +541,9 @@ struct BuyOrderView: View {
             isEnabled: self.viewModel.canPlaceOrder && !self.viewModel.showLimitWarning,
             isLoading: self.isPlacingOrder,
             action: {
+                #if DEBUG
                 print("🔘 DEBUG: Buy button tapped in form section")
+                #endif
                 self.viewModel.prepareForPlacement()
                 Task {
                     await self.viewModel.placeOrder()

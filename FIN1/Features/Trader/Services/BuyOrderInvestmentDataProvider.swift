@@ -42,25 +42,35 @@ final class BuyOrderInvestmentDataProvider: BuyOrderInvestmentDataProviderProtoc
         traderId: String?,
         currentUser: User?
     ) -> [Investment] {
+        #if DEBUG
         print("🔍 BuyOrderInvestmentDataProvider: Fetching reserved investments")
+        #endif
 
         guard let currentUser = currentUser else {
+            #if DEBUG
             print("   ❌ No current user")
+            #endif
             return []
         }
 
         guard currentUser.role == .trader else {
+            #if DEBUG
             print("   ❌ User is not a trader")
+            #endif
             return []
         }
 
         // Use provided traderId or find one
         var effectiveTraderId = traderId ?? self.findTraderIdForMatching(currentUser: currentUser) ?? currentUser.id
+        #if DEBUG
         print("   📊 Using trader ID: \(effectiveTraderId)")
+        #endif
 
         // Get ALL investments for this trader
         var allTraderInvestments = self.investmentService.getInvestments(forTrader: effectiveTraderId)
+        #if DEBUG
         print("   📊 Total investments for trader: \(allTraderInvestments.count)")
+        #endif
 
         // FALLBACK: If no investments found and traderDataService is nil, try matching by name
         if allTraderInvestments.isEmpty && self.traderDataService == nil {
@@ -69,11 +79,15 @@ final class BuyOrderInvestmentDataProvider: BuyOrderInvestmentDataProviderProtoc
 
         // Filter investments - match BuyOrderInvestmentCalculator logic
         let filteredInvestments = self.filterEligibleInvestments(allTraderInvestments)
+        #if DEBUG
         print("   📊 Filtered to \(filteredInvestments.count) eligible investments")
+        #endif
 
         // Apply Round Robin: Select ONE investment per investor
         let selectedInvestments = self.applyRoundRobinSelection(filteredInvestments)
+        #if DEBUG
         print("   ✅ Selected \(selectedInvestments.count) investments (Round Robin)")
+        #endif
 
         return selectedInvestments
     }
@@ -89,7 +103,9 @@ final class BuyOrderInvestmentDataProvider: BuyOrderInvestmentDataProviderProtoc
 
     private func fallbackMatchByName(currentUser: User, effectiveTraderId: inout String) -> [Investment] {
         let displayName = "\(currentUser.firstName) \(currentUser.lastName)".trimmingCharacters(in: .whitespaces)
+        #if DEBUG
         print("   🔄 Fallback: Trying to match by traderName '\(displayName)'")
+        #endif
 
         let allInvestments = self.investmentService.investments
         let matched = allInvestments.filter { investment in
@@ -98,9 +114,13 @@ final class BuyOrderInvestmentDataProvider: BuyOrderInvestmentDataProviderProtoc
 
         if !matched.isEmpty, let first = matched.first {
             effectiveTraderId = first.traderId
+            #if DEBUG
             print("   ✅ Fallback match: Found \(matched.count) investments")
+            #endif
         } else {
+            #if DEBUG
             print("   ⚠️ Fallback match failed")
+            #endif
         }
 
         return matched

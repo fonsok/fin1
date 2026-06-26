@@ -233,7 +233,9 @@ final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
 
     func placeOrder() async {
         guard self.placementSession.phase.isEditing else {
+            #if DEBUG
             print("🔍 DEBUG: placeOrder ignored - already placing")
+            #endif
             return
         }
 
@@ -289,7 +291,9 @@ final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
                 self.resumePriceValidityAfterFailure()
             }
         } catch is CancellationError {
+            #if DEBUG
             print("⚠️ BuyOrderViewModel: placeOrder cancelled — snapshot quantity \(snapshot.quantity)")
+            #endif
             self.mutatePlacementSession {
                 $0.completeFailure(
                     .validationError(

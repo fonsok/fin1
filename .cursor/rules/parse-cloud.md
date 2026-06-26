@@ -60,6 +60,17 @@ Ziel ist **weniger Fehlerfläche** und bessere Reviews — nicht nur kürzere Da
 - Bestehende **Duplicate-Guards**, **batchId/referenceId**-Strategien und **unique** Annahmen nicht „refactorbedingt“ lockern.
 - Neue schreibende Flows: **Idempotenz** explizit benennen (welcher Schlüssel verhindert Doppelbuch? was passiert bei Retry?).
 
+### Multi-Leg Orders: sequentielles Speichern (orderNumber)
+
+**REQUIRED** wenn mehrere `Order`-Zeilen in einem gekoppelten Flow angelegt werden und `beforeSave` eine **sequentielle Nummer** (`orderNumber` o. ä.) vergibt:
+
+- **Nicht** `Parse.Object.saveAll(legs)` für diese Beine verwenden — Parse führt `beforeSave`-Hooks **parallel** aus; das führt zu Duplicate-Key-/Race-Fehlern bei sequentieller Nummerierung.
+- **Stattdessen** jedes Bein **sequentiell** speichern: `for (const leg of legs) { await leg.save(null, { useMasterKey: true }); }`.
+- Bei Teilerfolg: **Kompensation** (z. B. `destroyAll` der bereits angelegten Orders) und gekoppelten Status auf `ABORTED` setzen — siehe `functions/tradingPairedBuyExecution.js`.
+- Referenz-Implementierung: `executePairedBuy` (Paired Buy, `legType` TRADER + MIRROR_POOL).
+
+**Erlaubt:** `saveAll` für **unabhängige** Objekte ohne geteilte sequentielle Nummerierung (z. B. balancierte `AppLedgerEntry`-Paare mit festen Konten, keine `orderNumber`-Race).
+
 ### Abnahme (Minimum pro PR)
 
 - `node --check` auf geänderte Dateien; **`npx jest`** im Ordner `backend/parse-server/cloud` (oder gezielte Suites für berührte Domänen).

@@ -37,7 +37,9 @@ extension BuyOrderViewModel {
                 limitWarningMessage = nil
             }
         } catch {
+            #if DEBUG
             print("⚠️ Transaction limit check failed: \(error.localizedDescription)")
+            #endif
             transactionLimitCheckResult = nil
             showLimitWarning = false
             limitWarningMessage = nil

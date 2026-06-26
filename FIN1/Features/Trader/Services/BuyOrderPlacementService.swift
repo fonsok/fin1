@@ -62,12 +62,14 @@ final class BuyOrderPlacementService: BuyOrderPlacementServiceProtocol, @uncheck
         clientOrderIntentId: String,
         traderService: any TraderServiceProtocol
     ) async throws -> BuyOrderPlacementResult {
+        #if DEBUG
         if priceValidityProgress < BuyOrderPriceStaleness.elevatedWarningThreshold {
             print(
                 "ℹ️ BuyOrderPlacementService: placing with elevated price staleness "
                     + "(indicator=\(String(format: "%.2f", priceValidityProgress)))"
             )
         }
+        #endif
 
         let executedPrice = Double(searchResult.askPrice.replacingOccurrences(of: ",", with: ".")) ?? 0.0
 
@@ -77,9 +79,13 @@ final class BuyOrderPlacementService: BuyOrderPlacementServiceProtocol, @uncheck
         case .valid:
             break
         case .warning(let message):
+            #if DEBUG
             print("⚠️ WARNING: \(message)")
+            #endif
         case .error(let message):
+            #if DEBUG
             print("❌ ERROR: \(message)")
+            #endif
             return BuyOrderPlacementResult(
                 success: false,
                 error: AppError.validationError("Data validation failed: \(message)")
