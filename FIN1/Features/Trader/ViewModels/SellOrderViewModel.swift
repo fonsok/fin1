@@ -19,85 +19,32 @@ final class SellOrderViewModel: ObservableObject, LimitOrderMonitor {
     @Published var priceValidityProgress: Double = 1.0
     @Published var quantityErrorMessage: String?
     @Published var shouldShowDepotView: Bool = false
-
-    // Automatic limit order monitoring
     @Published var isMonitoringLimitOrder: Bool = false
-    private var limitOrderMonitor: SellOrderMonitorImpl?
-
-    // MARK: - Order Type
-    // Note: OrderMode enum moved to Shared/Models/OrderModels.swift to eliminate duplication
 
     // MARK: - Properties
     let holding: DepotHolding
-    private let traderService: any TraderServiceProtocol
-    private let userService: (any UserServiceProtocol)?
-    private let maxPartialSells: Int
-    private nonisolated(unsafe) var cancellables = Set<AnyCancellable>()
-    private nonisolated(unsafe) var timerCancellable: AnyCancellable?
-
-    /// Teil-Verkaufs-Limit (Admin `maxTraderPartialSells`, 0–3).
-    var effectiveMaxPartialSells: Int {
-        min(3, max(0, self.maxPartialSells))
-    }
-
-    /// Letzter erlaubter Teil-Verkauf — Restposition muss vollständig verkauft werden.
-    var mustSellFullRemaining: Bool {
-        let maxAllowed = self.effectiveMaxPartialSells
-        if maxAllowed == 0 { return true }
-        let events = self.holding.traderPartialSellEventCount ?? 0
-        return events >= maxAllowed - 1
-    }
-
-    var quantityInputLocked: Bool {
-        self.mustSellFullRemaining
-    }
-
-    var partialSellLimitInfoMessage: String? {
-        guard self.mustSellFullRemaining, self.maxQuantity > 0 else { return nil }
-        let maxAllowed = self.effectiveMaxPartialSells
-        if maxAllowed == 0 {
-            return "Teil-Verkäufe sind deaktiviert: bitte die gesamte Restposition verkaufen."
-        }
-        let events = self.holding.traderPartialSellEventCount ?? 0
-        if events >= maxAllowed {
-            return "Teil-Verkaufs-Limit (\(maxAllowed)) erreicht: verbleibende "
-                + "\(self.maxQuantity.formattedAsLocalizedInteger()) St. müssen vollständig verkauft werden — "
-                + "danach ist das Depot leer."
-        }
-        return "Teil-Verkaufs-Limit (\(maxAllowed) erlaubt): dieser Verkauf (Nr. \(events + 1)) muss alle verbleibenden "
-            + "\(self.maxQuantity.formattedAsLocalizedInteger()) Stück umfassen — das Depot wird danach geleert."
-    }
-
-    // MARK: - Current Trader ID
-    /// Returns the current trader's ID from the user service
-    private var currentTraderId: String {
-        self.userService?.currentUser?.id ?? "unknown_trader"
-    }
+    let traderService: any TraderServiceProtocol
+    let userService: (any UserServiceProtocol)?
+    let maxPartialSells: Int
+    var limitOrderMonitor: SellOrderMonitorImpl?
+    nonisolated(unsafe) var cancellables = Set<AnyCancellable>()
+    nonisolated(unsafe) var timerCancellable: AnyCancellable?
 
     // MARK: - Computed Properties
     var currentPrice: Double {
-        // Use the current bid price (updated via reloadPrice)
-        return self.currentBidPrice > 0 ? self.currentBidPrice : self.holding.currentPrice
+        self.currentBidPrice > 0 ? self.currentBidPrice : self.holding.currentPrice
     }
 
     var maxQuantity: Int {
-        return self.holding.remainingQuantity
+        self.holding.remainingQuantity
     }
 
     var quantity: Int {
-        return OrderCalculationUtility.parseGermanQuantity(self.quantityText)
+        OrderCalculationUtility.parseGermanQuantity(self.quantityText)
     }
 
-    private var isQuantityInValidSteps: Bool {
-        guard let denomination = enforcedQuantityDenomination else { return true }
-        let currentQuantity = self.quantity
-        guard currentQuantity > 0 else { return true }
-        return currentQuantity % denomination == 0
-    }
-
-    // Current price as Double for limit order comparisons
     var currentPriceValue: Double {
-        return self.currentBidPrice > 0 ? self.currentBidPrice : self.holding.currentPrice
+        self.currentBidPrice > 0 ? self.currentBidPrice : self.holding.currentPrice
     }
 
     var limitPrice: Double? {
@@ -111,14 +58,9 @@ final class SellOrderViewModel: ObservableObject, LimitOrderMonitor {
         let hasValidOrderMode = self.orderMode == .market || (
             self.orderMode == .limit && self.limitPrice != nil && (self.limitPrice ?? 0) > 0
         )
-
-        // For limit orders, ensure the limit price is reasonable (not higher than current market price for sell orders)
         let hasReasonableLimitPrice = self.orderMode == .market ||
             (self.orderMode == .limit && self.limitPrice != nil && (self.limitPrice ?? 0) <= self.currentPrice)
-
-        // Check if price data is still valid (not expired)
         let hasValidPrice = self.priceValidityProgress > 0
-
         let isValid = hasValidQuantity && hasValidOrderMode && hasReasonableLimitPrice && hasValidPrice && respectsDenomination
 
         #if DEBUG
@@ -141,14 +83,8 @@ final class SellOrderViewModel: ObservableObject, LimitOrderMonitor {
         self.traderService = traderService
         self.userService = userService
         self.maxPartialSells = maxPartialSells
-
-        // Default quantity: full remaining (required on last allowed partial sell)
         self.quantityText = String(holding.remainingQuantity)
-
-        // Initialize current bid price with holding's geldKurs
         self.currentBidPrice = holding.currentPrice
-
-        // Initialize the limit order monitor
         self.limitOrderMonitor = SellOrderMonitorImpl(sellOrderViewModel: self)
 
         self.setupBindings()
@@ -164,302 +100,10 @@ final class SellOrderViewModel: ObservableObject, LimitOrderMonitor {
     }
 
     deinit {
-        // Clean up Combine subscriptions and timers to prevent retain cycles
         cancellables.removeAll()
         timerCancellable?.cancel()
         #if DEBUG
         print("🧹 SellOrderViewModel deallocated")
-        #endif
-    }
-
-    // MARK: - Setup
-    private func setupBindings() {
-        Publishers.orderCalculation(
-            quantityText: self.$quantityText.eraseToAnyPublisher(),
-            orderMode: self.$orderMode.eraseToAnyPublisher(),
-            limitText: self.$limit.eraseToAnyPublisher(),
-            marketPrice: self.$currentBidPrice.eraseToAnyPublisher(),
-            isSellOrder: true
-        )
-        .assign(to: \.estimatedProceeds, on: self)
-        .store(in: &self.cancellables)
-
-        // Error message validation (without auto-correction to avoid jerky behavior)
-        self.$quantityText
-            .map { [weak self] text in
-                guard let self = self else { return "" }
-                let enteredQuantity = OrderCalculationUtility.parseGermanQuantity(text)
-
-                if text.isEmpty {
-                    return "" // No error when field is empty
-                } else if enteredQuantity <= 0 {
-                    return "Please enter a valid quantity"
-                } else if enteredQuantity > self.maxQuantity {
-                    return "Current holdings: \(self.maxQuantity.formattedAsLocalizedInteger()) shares"
-                } else if let denomination = self.enforcedQuantityDenomination,
-                          enteredQuantity % denomination != 0 {
-                    return self.constraintMessage(for: denomination)
-                } else {
-                    return "" // Valid quantity
-                }
-            }
-            .assign(to: \.quantityErrorMessage, on: self)
-            .store(in: &self.cancellables)
-    }
-
-    // MARK: - Public Methods
-    func validateAndCorrectQuantity() {
-        if self.mustSellFullRemaining {
-            self.quantityText = String(self.maxQuantity)
-            return
-        }
-
-        let enteredQuantity = OrderCalculationUtility.parseGermanQuantity(self.quantityText)
-
-        // Auto-correct if quantity exceeds maximum
-        if !self.quantityText.isEmpty && enteredQuantity > self.maxQuantity {
-            self.quantityText = String(self.maxQuantity)
-        }
-
-        guard let denomination = enforcedQuantityDenomination, enteredQuantity > 0 else {
-            return
-        }
-
-        let remainder = enteredQuantity % denomination
-        if remainder != 0 {
-            let adjustedQuantity = enteredQuantity - remainder
-            self.quantityText = adjustedQuantity > 0 ? String(adjustedQuantity) : ""
-        }
-    }
-
-    func placeOrder() async {
-        #if DEBUG
-        print("🔘 DEBUG: placeOrder called - canPlaceOrder: \(self.canPlaceOrder)")
-        #endif
-
-        guard self.canPlaceOrder else {
-            #if DEBUG
-            print("❌ DEBUG: Order validation failed")
-            #endif
-            await MainActor.run {
-                self.errorMessage = "Bitte überprüfen Sie Ihre Eingaben"
-                self.showError = true
-            }
-            return
-        }
-
-        #if DEBUG
-        print("✅ DEBUG: Order validation passed, proceeding with order creation")
-        #endif
-
-        await MainActor.run {
-            self.isLoading = true
-            self.errorMessage = nil
-        }
-
-        do {
-            let order = self.createSellOrder()
-            #if DEBUG
-            print("📤 DEBUG: Submitting order to trader service")
-            #endif
-            try await self.traderService.submitOrder(order)
-            #if DEBUG
-            print("✅ DEBUG: Order submitted successfully")
-            #endif
-            await MainActor.run {
-                self.isLoading = false
-                // Trigger navigation to depot view for successful order placement
-                self.shouldShowDepotView = true
-            }
-        } catch {
-            #if DEBUG
-            print("❌ DEBUG: Order submission failed with error: \(error.localizedDescription)")
-            #endif
-            await MainActor.run {
-                self.isLoading = false
-                let appError = error.toAppError()
-                self.errorMessage = "Fehler beim Platzieren der Order: \(appError.errorDescription ?? "An error occurred")"
-                self.showError = true
-            }
-        }
-    }
-
-    // MARK: - Quantity Constraint Helpers
-
-    private func constraintMessage(for denomination: Int) -> String {
-        let ratioText = self.formattedSubscriptionRatio ?? "-"
-        return "Zeichnungsverhältnis \(ratioText) → Eingaben nur in \(denomination)-Schritten."
-    }
-
-    private var formattedSubscriptionRatio: String? {
-        guard let ratio = effectiveSubscriptionRatio else { return nil }
-        let formatter = NumberFormatter.localizedDecimalFormatter
-        return formatter.string(from: NSNumber(value: ratio))
-    }
-
-    private var enforcedQuantityDenomination: Int? {
-        if let explicitDenomination = holding.denomination, explicitDenomination > 1 {
-            return self.maxQuantity % explicitDenomination == 0 ? explicitDenomination : nil
-        }
-
-        guard let ratio = effectiveSubscriptionRatio else {
-            return nil
-        }
-
-        guard let defaultDenomination = CalculationConstants.SecurityDenominations
-            .defaultDenomination(forSubscriptionRatio: ratio) else {
-            return nil
-        }
-
-        if defaultDenomination == 10 || defaultDenomination == 100 {
-            return self.maxQuantity % defaultDenomination == 0 ? defaultDenomination : nil
-        }
-
-        return nil
-    }
-
-    /// Determines the effective subscription ratio for this holding, including fallbacks
-    /// for legacy holdings where ratio/denomination might not be persisted.
-    private var effectiveSubscriptionRatio: Double? {
-        if let ratio = holding.subscriptionRatio, ratio > 0 {
-            return ratio
-        }
-
-        if let denomination = holding.denomination, denomination > 0 {
-            return 1.0 / Double(denomination)
-        }
-
-        // Legacy/backfill: For options/warrants without stored subscription data,
-        // assume a typical warrant subscription ratio to align with search hitlist behavior.
-        if self.holding.direction != nil {
-            return 0.01
-        }
-
-        return nil
-    }
-
-    // MARK: - Private Methods
-    private func createSellOrder() -> OrderSell {
-        let orderPrice = self.orderMode == .market ? self.currentPrice : (self.limitPrice ?? self.currentPrice)
-        #if DEBUG
-        print(
-            "🔧 DEBUG: Creating sell order with quantity: \(self.quantity), orderMode: \(self.orderMode), orderPrice: \(orderPrice), limitPrice: \(self.limitPrice ?? 0), totalAmount: \(self.estimatedProceeds)"
-        )
-        print("🔧 DEBUG: Holding orderId: \(self.holding.orderId ?? "nil"), wkn: \(self.holding.wkn)")
-        print("🔧 DEBUG: Using traderId: \(self.currentTraderId)")
-        #endif
-
-        return OrderSell(
-            id: UUID().uuidString,
-            traderId: self.currentTraderId, // Use actual logged-in trader ID
-            symbol: self.holding.wkn,
-            description: self.holding.designation,
-            quantity: Double(self.quantity),
-            price: orderPrice,
-            totalAmount: self.estimatedProceeds,
-            status: .submitted,
-            createdAt: Date(),
-            executedAt: nil,
-            confirmedAt: nil,
-            updatedAt: Date(),
-            optionDirection: self.holding.direction,
-            underlyingAsset: self.holding.underlyingAsset,
-            wkn: self.holding.wkn,
-            category: nil, // TODO: Set category from holding
-            strike: self.holding.strike,
-            orderInstruction: self.orderMode == .market ? "market" : "limit",
-            limitPrice: self.limitPrice,
-            originalHoldingId: self.holding.orderId
-        )
-    }
-
-    func reloadPrice() {
-        // Simulate price update by a small random amount
-        let changeFactor = Double.random(in: 0.98...1.02) // +/- 2% for more realistic variation
-        let newPrice = self.holding.currentPrice * changeFactor
-
-        // Update the current bid price
-        self.currentBidPrice = newPrice
-
-        // Start price validity timer
-        self.startPriceValidityTimer()
-
-        // Start limit order monitoring when user manually refreshes price
-        // This gives user control over when automatic monitoring begins
-        if self.orderMode == .limit, let price = limitPrice, price > 0, !isMonitoringLimitOrder {
-            #if DEBUG
-            print("🔄 User manually refreshed price - starting automatic limit order monitoring")
-            #endif
-            startLimitOrderMonitoring()
-        }
-    }
-
-    func startPriceValidityTimer() {
-        // Cancel any existing timer first
-        self.timerCancellable?.cancel()
-        self.priceValidityProgress = 1.0
-
-        self.timerCancellable = Timer.publish(every: 0.25, on: .main, in: .common)
-            .autoconnect()
-            .sink { [weak self] _ in
-                guard let self = self else { return }
-
-                let decrement = 0.25 / 8.0 // 8 s staleness ramp, 4 Hz (matches buy order)
-                self.priceValidityProgress -= decrement
-
-                if self.priceValidityProgress <= 0 {
-                    self.priceValidityProgress = 0
-                    self.timerCancellable?.cancel()
-                }
-            }
-
-        // Store the timer cancellable to manage its lifecycle
-        self.timerCancellable?.store(in: &self.cancellables)
-    }
-
-    // MARK: - Private Methods
-    // Note: calculateEstimatedProceeds() method removed - now using shared OrderCalculationUtility
-}
-
-// MARK: - Extensions
-extension SellOrderViewModel {
-    var formattedCurrentPrice: String {
-        return self.currentPrice.formattedAsLocalizedCurrency()
-    }
-
-    var formattedEstimatedProceeds: String {
-        return self.estimatedProceeds.formattedAsLocalizedCurrency()
-    }
-
-    var formattedMaxQuantity: String {
-        return self.maxQuantity.formattedAsLocalizedInteger()
-    }
-
-    // MARK: - Automatic Limit Order Monitoring
-
-    func startLimitOrderMonitoring() {
-        self.limitOrderMonitor?.startLimitOrderMonitoring()
-    }
-
-    func stopLimitOrderMonitoring() {
-        self.limitOrderMonitor?.stopLimitOrderMonitoring()
-    }
-
-    // MARK: - Limit Price Management
-
-    /// Called when the user changes the limit price input
-    /// Does NOT start automatic monitoring - user must manually refresh price to start monitoring
-    func onLimitPriceChanged() {
-        // Stop any existing monitoring when limit price changes
-        if self.isMonitoringLimitOrder {
-            #if DEBUG
-            print("🛑 Limit price changed - stopping automatic monitoring")
-            #endif
-            self.stopLimitOrderMonitoring()
-        }
-
-        #if DEBUG
-        print("💰 Limit price changed to: \(self.limit) - waiting for user to refresh price to start monitoring")
         #endif
     }
 }

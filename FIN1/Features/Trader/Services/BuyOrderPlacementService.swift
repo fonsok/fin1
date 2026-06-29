@@ -25,13 +25,13 @@ struct BuyOrderPlacementResult {
 final class BuyOrderPlacementService: BuyOrderPlacementServiceProtocol, @unchecked Sendable {
 
     // MARK: - Dependencies
-    private let auditLoggingService: any AuditLoggingServiceProtocol
-    private let userService: any UserServiceProtocol
-    private let transactionLimitService: (any TransactionLimitServiceProtocol)?
-    private let parseAPIClient: (any ParseAPIClientProtocol)?
-    private let investmentAPIService: (any InvestmentAPIServiceProtocol)?
-    private let investmentService: (any InvestmentServiceProtocol)?
-    private let investmentDataProvider: (any BuyOrderInvestmentDataProviderProtocol)?
+    let auditLoggingService: any AuditLoggingServiceProtocol
+    let userService: any UserServiceProtocol
+    let transactionLimitService: (any TransactionLimitServiceProtocol)?
+    let parseAPIClient: (any ParseAPIClientProtocol)?
+    let investmentAPIService: (any InvestmentAPIServiceProtocol)?
+    let investmentService: (any InvestmentServiceProtocol)?
+    let investmentDataProvider: (any BuyOrderInvestmentDataProviderProtocol)?
 
     // MARK: - Initialization
     init(
@@ -169,7 +169,7 @@ final class BuyOrderPlacementService: BuyOrderPlacementServiceProtocol, @uncheck
 
                 await self.recordTransactionIfNeeded(amount: estimatedCost)
                 self.logOrderPlacedCompliance(
-                    description: "Trader buy placed (no mirror pool leg): qty=\(traderQuantity) for \(searchResult.underlyingAsset ?? searchResult.wkn) @ €\(safeCurrencyString(executedPrice))",
+                    description: "Trader buy placed (no mirror pool leg): qty=\(traderQuantity) for \(searchResult.underlyingAsset ?? searchResult.wkn) @ €\(buyOrderPlacementSafeCurrencyString(executedPrice))",
                     notes: "Mode: \(orderMode.rawValue), Symbol: \(searchResult.wkn)"
                 )
 
@@ -207,74 +207,6 @@ final class BuyOrderPlacementService: BuyOrderPlacementServiceProtocol, @uncheck
         }
     }
 
-    private static func mapPairedBuyFailure(_ error: AppError) -> AppError {
-        let message = error.errorDescription ?? ""
-        let normalized = message.lowercased()
-        if normalized.contains("duplicate value for a field with unique values")
-            || normalized.contains("duplicate key")
-            || normalized.contains("e11000") {
-            return .validationError(
-                "Der Kauf konnte wegen eines Server-Konflikts nicht abgeschlossen werden. "
-                    + "Bitte prüfen Sie zuerst Ihr Depot — der Auftrag könnte bereits eingegangen sein."
-            )
-        }
-        if normalized.contains("paired execution aborted") {
-            return .validationError(
-                "Der Kauf konnte nicht abgeschlossen werden. Bitte prüfen Sie Ihr Depot, bevor Sie erneut kaufen."
-            )
-        }
-        return error
-    }
-
-    /// Buy order payload shared by trader-only and paired flows.
-    private func makeBuyOrderRequest(
-        searchResult: SearchResult,
-        quantity: Int,
-        executedPrice: Double,
-        orderMode: OrderMode,
-        limit: String,
-        isMirrorPoolOrder: Bool
-    ) -> BuyOrderRequest {
-        BuyOrderRequest(
-            symbol: searchResult.wkn,
-            quantity: quantity,
-            price: executedPrice,
-            optionDirection: searchResult.direction,
-            description: searchResult.underlyingAsset,
-            orderInstruction: orderMode.rawValue,
-            limitPrice: orderMode == .limit ? Double(limit.replacingOccurrences(of: ",", with: ".")) : nil,
-            strike: Double(searchResult.strike.replacingOccurrences(of: ",", with: ".")),
-            subscriptionRatio: searchResult.subscriptionRatio,
-            denomination: searchResult.denomination,
-            isMirrorPoolOrder: isMirrorPoolOrder
-        )
-    }
-
-    private func traderOnlyBlockReason(mirrorPoolQuantity: Int) async -> TraderPairedBuyPlacementGuard.BlockReason? {
-        let currentUser = self.userService.currentUser
-        let localPoolCapital: Double
-        if let investmentService, let investmentDataProvider {
-            localPoolCapital = TraderPairedBuyPlacementGuard.localReservedPoolCapital(
-                investmentService: investmentService,
-                investmentDataProvider: investmentDataProvider,
-                currentUser: currentUser
-            )
-        } else {
-            localPoolCapital = 0
-        }
-
-        let traderId = currentUser?.id ?? ""
-        return await TraderPairedBuyPlacementGuard.blockReason(
-            mirrorPoolQuantity: mirrorPoolQuantity,
-            localReservedPoolCapital: localPoolCapital,
-            parseAPIClient: self.parseAPIClient,
-            investmentAPIService: self.investmentAPIService,
-            traderId: traderId,
-            traderUsername: currentUser?.username,
-            traderName: currentUser.map { "\($0.firstName) \($0.lastName)".trimmingCharacters(in: .whitespaces) }
-        )
-    }
-
     /// Transaction limit bookkeeping when a limit service is configured.
     func recordTransactionIfNeeded(amount: Double) async {
         if let limitService = transactionLimitService,
@@ -299,9 +231,4 @@ final class BuyOrderPlacementService: BuyOrderPlacementServiceProtocol, @uncheck
             await self.auditLoggingService.logComplianceEvent(complianceEvent)
         }
     }
-}
-
-private func safeCurrencyString(_ value: Double) -> String {
-    guard value.isFinite else { return "—" }
-    return value.formatted(.number.precision(.fractionLength(2)))
 }
