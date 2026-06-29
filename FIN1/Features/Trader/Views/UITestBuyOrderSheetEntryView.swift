@@ -1,7 +1,7 @@
 import SwiftUI
 
 #if DEBUG
-/// UI-test harness: opens buy order via `.sheet(item:)` + `BuyOrderViewWrapper` (same pattern as search results).
+/// UI-test harness: opens buy order via `.buyOrderSheet(item:)` (same path as search / watchlist).
 struct UITestBuyOrderSheetEntryView: View {
     let services: AppServices
     @State private var selectedResultForOrder: SearchResult?
@@ -47,10 +47,7 @@ struct UITestBuyOrderSheetEntryView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(AppTheme.screenBackground)
-        .sheet(item: self.$selectedResultForOrder) { result in
-            BuyOrderViewWrapper(searchResult: result, services: self.services)
-                .accessibilityIdentifier("BuyOrderSheetRoot")
-        }
+        .buyOrderSheet(item: self.$selectedResultForOrder, services: self.services)
         .task { await self.prepareTraderSessionIfNeeded() }
     }
 

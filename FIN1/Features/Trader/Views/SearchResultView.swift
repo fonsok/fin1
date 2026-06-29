@@ -75,16 +75,11 @@ struct SearchResultView: View {
                 }
             }
         }
-        .sheet(item: self.$selectedResultForOrder) { result in
-            BuyOrderViewWrapper(
-                searchResult: result,
-                services: self.appServices,
-                onOrderPlaced: {
-                    self.selectedResultForOrder = nil
-                    self.onOrderPlaced?()
-                }
-            )
-        }
+        .buyOrderSheet(
+            item: self.$selectedResultForOrder,
+            services: self.appServices,
+            onOrderPlaced: self.onOrderPlaced
+        )
         .sheet(isPresented: self.$showWarrantDetails) {
             WarrantDetailsView(viewModel: self.warrantDetailsViewModel)
         }

@@ -89,13 +89,10 @@ struct TraderWatchlistView: View {
         } message: {
             Text("Are you sure you want to remove all securities from your watchlist?")
         }
-        .sheet(item: self.$selectedSecurityForOrder) { security in
-            BuyOrderViewWrapper(
-                searchResult: security,
-                services: self.services,
-                onOrderPlaced: { self.selectedSecurityForOrder = nil }
-            )
-        }
+        .buyOrderSheet(
+            item: self.$selectedSecurityForOrder,
+            services: self.services
+        )
         .sheet(isPresented: self.$showSecuritiesSearch) {
             SecuritiesSearchView(services: self.services)
         }
