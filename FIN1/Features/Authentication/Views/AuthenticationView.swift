@@ -13,6 +13,7 @@ struct AuthenticationView: View {
     @State private var showCompanyKybStatus = false
     @State private var companyKybReviewStatus: CompanyKybReviewStatus?
     @State private var onboardingRePresentTask: Task<Void, Never>?
+    @State private var reConsentViewModel: ReConsentViewModel?
 
     var body: some View {
         ZStack {
@@ -92,6 +93,7 @@ struct AuthenticationView: View {
             self.showCompanyKybResume = false
             self.showCompanyKybStatus = false
             self.companyKybReviewStatus = nil
+            self.reConsentViewModel = nil
             print("🔍 AuthenticationView: User signed out")
         }
         .onReceive(NotificationCenter.default.publisher(for: .userDataDidUpdate)) { _ in
@@ -231,16 +233,27 @@ struct AuthenticationView: View {
                 .zIndex(1_000)
             }
 
-            if self.showReConsent {
-                ReConsentModalView(
-                    userService: self.services.userService,
-                    termsAcceptanceService: self.services.termsAcceptanceService,
-                    roleAgreementConsentService: RoleAgreementConsentService(
+            if self.showReConsent, let reConsentViewModel = self.reConsentViewModel {
+                ReConsentModalView(viewModel: reConsentViewModel)
+                    .zIndex(1_001)
+            }
+        }
+        .onChange(of: self.showReConsent) { _, isPresented in
+            if isPresented {
+                if self.reConsentViewModel == nil {
+                    self.reConsentViewModel = ReConsentViewModel(
+                        userService: self.services.userService,
+                        termsAcceptanceService: self.services.termsAcceptanceService,
+                        roleAgreementConsentService: RoleAgreementConsentService(
+                            parseAPIClient: self.services.parseAPIClient
+                        ),
                         parseAPIClient: self.services.parseAPIClient
-                    ),
-                    parseAPIClient: self.services.parseAPIClient
-                )
-                .zIndex(1_001)
+                    )
+                } else {
+                    self.reConsentViewModel?.loadFromCurrentUser()
+                }
+            } else {
+                self.reConsentViewModel = nil
             }
         }
     }
@@ -260,6 +273,16 @@ struct AuthenticationView: View {
         self.isResolvingLegalConsentGate = true
         Task {
             await self.evaluateLegalConsentRequirement(showOnlyIfNeeded: false)
+        }
+        Task {
+            try? await Task.sleep(nanoseconds: 12_000_000_000)
+            await MainActor.run {
+                guard self.isResolvingLegalConsentGate else { return }
+                #if DEBUG
+                print("⚠️ AuthenticationView: legal consent gate timed out — showing main content")
+                #endif
+                self.isResolvingLegalConsentGate = false
+            }
         }
     }
 
@@ -339,6 +362,20 @@ struct AuthenticationView: View {
         let blocking = self.services.userService.currentUser?.requiredReConsents?.filter(\.blocking) ?? []
         await MainActor.run {
             self.showReConsent = !blocking.isEmpty
+            if blocking.isEmpty {
+                self.reConsentViewModel = nil
+            } else if self.reConsentViewModel == nil {
+                self.reConsentViewModel = ReConsentViewModel(
+                    userService: self.services.userService,
+                    termsAcceptanceService: self.services.termsAcceptanceService,
+                    roleAgreementConsentService: RoleAgreementConsentService(
+                        parseAPIClient: self.services.parseAPIClient
+                    ),
+                    parseAPIClient: self.services.parseAPIClient
+                )
+            } else {
+                self.reConsentViewModel?.loadFromCurrentUser()
+            }
             self.isResolvingLegalConsentGate = false
         }
     }

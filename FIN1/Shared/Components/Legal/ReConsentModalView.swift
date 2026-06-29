@@ -2,13 +2,13 @@ import SwiftUI
 
 /// Blocking flow for account-level legal version drift (`requiredReConsents` from server).
 struct ReConsentModalView: View {
-    @ObservedObject private var viewModel: ReConsentViewModel
+    @StateObject private var viewModel: ReConsentViewModel
     @Environment(\.appServices) private var appServices
     @State private var showTermsOfService = false
     @State private var showPrivacyPolicy = false
 
     init(viewModel: ReConsentViewModel) {
-        self._viewModel = ObservedObject(wrappedValue: viewModel)
+        self._viewModel = StateObject(wrappedValue: viewModel)
     }
 
     init(
@@ -17,8 +17,8 @@ struct ReConsentModalView: View {
         roleAgreementConsentService: (any RoleAgreementConsentServiceProtocol)?,
         parseAPIClient: (any ParseAPIClientProtocol)?
     ) {
-        self.init(
-            viewModel: ReConsentViewModel(
+        self._viewModel = StateObject(
+            wrappedValue: ReConsentViewModel(
                 userService: userService,
                 termsAcceptanceService: termsAcceptanceService,
                 roleAgreementConsentService: roleAgreementConsentService,
@@ -32,8 +32,8 @@ struct ReConsentModalView: View {
             AppTheme.screenBackground
                 .ignoresSafeArea()
 
-            if self.viewModel.isLoading {
-                ProgressView(String(localized: "Zustimmung wird gespeichert…"))
+            if !self.viewModel.hasLoadedFromUser {
+                ProgressView(String(localized: "Zustimmung wird geladen…"))
                     .tint(AppTheme.accentLightBlue)
             } else if let item = viewModel.currentItem {
                 ScrollView {
@@ -66,10 +66,27 @@ struct ReConsentModalView: View {
                     }
                     .padding(ResponsiveDesign.spacing(24))
                 }
+                .overlay {
+                    if self.viewModel.isLoading {
+                        ZStack {
+                            AppTheme.screenBackground.opacity(0.6)
+                            ProgressView(String(localized: "Zustimmung wird gespeichert…"))
+                                .tint(AppTheme.accentLightBlue)
+                        }
+                        .ignoresSafeArea()
+                    }
+                }
+            } else {
+                self.resolvedEmptyState
             }
         }
         .onAppear {
             self.viewModel.loadFromCurrentUser()
+            self.dismissIfNothingPending()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .userDataDidUpdate)) { _ in
+            self.viewModel.loadFromCurrentUser()
+            self.dismissIfNothingPending()
         }
         .sheet(isPresented: self.$showTermsOfService) {
             TermsOfServiceView(
@@ -162,5 +179,21 @@ struct ReConsentModalView: View {
         case "investor_agreement": return .investor
         default: return nil
         }
+    }
+
+    private var resolvedEmptyState: some View {
+        VStack(spacing: ResponsiveDesign.spacing(16)) {
+            ProgressView()
+                .tint(AppTheme.accentLightBlue)
+            Text(String(localized: "Keine ausstehenden Zustimmungen."))
+                .font(ResponsiveDesign.bodyFont())
+                .foregroundColor(AppTheme.secondaryText)
+        }
+    }
+
+    /// Gate was shown but server/user state has no blocking items — release the dashboard.
+    private func dismissIfNothingPending() {
+        guard self.viewModel.hasLoadedFromUser, !self.viewModel.hasPendingItems else { return }
+        NotificationCenter.default.post(name: .reConsentCompleted, object: nil)
     }
 }

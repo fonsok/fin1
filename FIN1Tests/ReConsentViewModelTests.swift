@@ -35,6 +35,7 @@ final class ReConsentViewModelTests: XCTestCase {
         )
         viewModel.loadFromCurrentUser()
 
+        XCTAssertTrue(viewModel.hasLoadedFromUser)
         XCTAssertEqual(viewModel.pendingItems.count, 1)
         XCTAssertEqual(viewModel.currentItem?.consentType, "terms_of_service")
         XCTAssertTrue(viewModel.hasPendingItems)

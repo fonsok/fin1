@@ -5,6 +5,8 @@ final class ReConsentViewModel: ObservableObject {
     @Published private(set) var pendingItems: [RequiredReConsent] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
+    /// False until the first `loadFromCurrentUser()` — avoids an empty blocking overlay flash.
+    @Published private(set) var hasLoadedFromUser = false
 
     private let userService: any UserServiceProtocol
     private let termsAcceptanceService: any TermsAcceptanceServiceProtocol
@@ -21,6 +23,7 @@ final class ReConsentViewModel: ObservableObject {
         self.termsAcceptanceService = termsAcceptanceService
         self.roleAgreementConsentService = roleAgreementConsentService
         self.parseAPIClient = parseAPIClient
+        self.loadFromCurrentUser()
     }
 
     var currentItem: RequiredReConsent? {
@@ -32,6 +35,7 @@ final class ReConsentViewModel: ObservableObject {
     func loadFromCurrentUser() {
         let items = self.userService.currentUser?.requiredReConsents ?? []
         self.pendingItems = items.filter(\.blocking)
+        self.hasLoadedFromUser = true
     }
 
     func acceptTermsOrPrivacy(item: RequiredReConsent, documentHash: String? = nil) async {
