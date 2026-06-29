@@ -1,7 +1,7 @@
 ---
 title: "FIN1 – Test- und Qualitätsdokumentation"
 audience: ["QA", "Entwicklung", "Compliance"]
-lastUpdated: "2026-06-26"
+lastUpdated: "2026-06-29"
 ---
 
 ## Zweck
@@ -119,6 +119,11 @@ Ausführung: `cd backend/parse-server && npm test -- --testPathPattern='onboardi
   - Schritte: `--ui-test-entry-buy-order-sheet` → KAUFEN tippen
   - Erwartet: Navigation „Kauf-Order“, `QuantityInputField` und `PlaceOrderButton` sichtbar (kein leeres Sheet)
 
+- **TC-D4 Depot KAUFEN (iOS, manuell)**
+  - Voraussetzungen: Trader mit Depot-Position (`trader1@test.com`)
+  - Schritte: Depot → Positions-Kachel → **KAUFEN**
+  - Erwartet: gleiches Kauf-Sheet wie Suche/Watchlist (`.buyOrderSheet`); WKN/Strike aus `SearchResult(depotHolding:)` korrekt befüllt
+
 ### Automatisierte Tests (Trader Buy / Paired Buy, Referenz)
 
 **Backend (Jest, `backend/parse-server/cloud`):**
@@ -139,6 +144,8 @@ Ausführung: `cd backend/parse-server/cloud && npx jest functions/__tests__/trad
 | `BuyOrderQuantityPipelineTests.swift` | `executePairedBuy`-Payload Quantity |
 | `TraderPairedBuyPlacementGuardTests.swift` | Trader-only-Block bei reserviertem Pool |
 | `BuyOrderPlacementSessionTests.swift` | Intent-Rotation nach Fehler / `canStartPlacement` |
+| `SearchResultDepotHoldingTests.swift` | `SearchResult(depotHolding:)` — WKN, Strike, denomination, askPrice |
+| `ReConsentViewModelTests.swift` | `loadFromCurrentUser` filtert blocking `requiredReConsents`; `hasLoadedFromUser` |
 
 **iOS (`FIN1UITests/`):**
 
@@ -196,6 +203,11 @@ Checkliste mit Abbruchkriterien: [`Documentation/RELEASE_ABNAHME_PAIRED_BUY.md`]
   - Voraussetzungen: nur `investor_agreement` auf höhere Version gesetzt, TOS unverändert
   - Schritte: App-Login
   - Erwartet: `ReConsentModalView` mit Scroll + Checkbox; nach Accept leeres `requiredReConsents`
+
+- **TC-E9 Re-Consent: Dashboard nach Login (iOS, manuell)**
+  - Voraussetzungen: Nutzer mit blocking `requiredReConsents` oder abgeschlossenem Onboarding ohne Drift
+  - Schritte: Login → Legal-Gate ggf. accepten
+  - Erwartet: kein dauerhafter Spinner „Zustimmung wird geladen…“; bei offenem Re-Consent Modal sichtbar, sonst `MainTabView`. Unit: `ReConsentViewModelTests`.
 
 ### F) Support/SLA
 
