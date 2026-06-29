@@ -121,10 +121,11 @@ final class SellOrderViewModel: ObservableObject, LimitOrderMonitor {
 
         let isValid = hasValidQuantity && hasValidOrderMode && hasReasonableLimitPrice && hasValidPrice && respectsDenomination
 
-        // Debug logging
+        #if DEBUG
         print(
             "🔍 DEBUG: canPlaceOrder validation - quantity: \(self.quantity), maxQuantity: \(self.maxQuantity), orderMode: \(self.orderMode), limitPrice: \(self.limitPrice ?? 0), currentPrice: \(self.currentPrice), priceValidityProgress: \(self.priceValidityProgress), hasValidQuantity: \(hasValidQuantity), respectsDenomination: \(respectsDenomination), hasValidOrderMode: \(hasValidOrderMode), hasReasonableLimitPrice: \(hasReasonableLimitPrice), hasValidPrice: \(hasValidPrice), isValid: \(isValid)"
         )
+        #endif
 
         return isValid
     }
@@ -166,7 +167,9 @@ final class SellOrderViewModel: ObservableObject, LimitOrderMonitor {
         // Clean up Combine subscriptions and timers to prevent retain cycles
         cancellables.removeAll()
         timerCancellable?.cancel()
+        #if DEBUG
         print("🧹 SellOrderViewModel deallocated")
+        #endif
     }
 
     // MARK: - Setup
@@ -230,10 +233,14 @@ final class SellOrderViewModel: ObservableObject, LimitOrderMonitor {
     }
 
     func placeOrder() async {
+        #if DEBUG
         print("🔘 DEBUG: placeOrder called - canPlaceOrder: \(self.canPlaceOrder)")
+        #endif
 
         guard self.canPlaceOrder else {
+            #if DEBUG
             print("❌ DEBUG: Order validation failed")
+            #endif
             await MainActor.run {
                 self.errorMessage = "Bitte überprüfen Sie Ihre Eingaben"
                 self.showError = true
@@ -241,7 +248,9 @@ final class SellOrderViewModel: ObservableObject, LimitOrderMonitor {
             return
         }
 
+        #if DEBUG
         print("✅ DEBUG: Order validation passed, proceeding with order creation")
+        #endif
 
         await MainActor.run {
             self.isLoading = true
@@ -250,16 +259,22 @@ final class SellOrderViewModel: ObservableObject, LimitOrderMonitor {
 
         do {
             let order = self.createSellOrder()
+            #if DEBUG
             print("📤 DEBUG: Submitting order to trader service")
+            #endif
             try await self.traderService.submitOrder(order)
+            #if DEBUG
             print("✅ DEBUG: Order submitted successfully")
+            #endif
             await MainActor.run {
                 self.isLoading = false
                 // Trigger navigation to depot view for successful order placement
                 self.shouldShowDepotView = true
             }
         } catch {
+            #if DEBUG
             print("❌ DEBUG: Order submission failed with error: \(error.localizedDescription)")
+            #endif
             await MainActor.run {
                 self.isLoading = false
                 let appError = error.toAppError()
@@ -326,11 +341,13 @@ final class SellOrderViewModel: ObservableObject, LimitOrderMonitor {
     // MARK: - Private Methods
     private func createSellOrder() -> OrderSell {
         let orderPrice = self.orderMode == .market ? self.currentPrice : (self.limitPrice ?? self.currentPrice)
+        #if DEBUG
         print(
             "🔧 DEBUG: Creating sell order with quantity: \(self.quantity), orderMode: \(self.orderMode), orderPrice: \(orderPrice), limitPrice: \(self.limitPrice ?? 0), totalAmount: \(self.estimatedProceeds)"
         )
         print("🔧 DEBUG: Holding orderId: \(self.holding.orderId ?? "nil"), wkn: \(self.holding.wkn)")
         print("🔧 DEBUG: Using traderId: \(self.currentTraderId)")
+        #endif
 
         return OrderSell(
             id: UUID().uuidString,
@@ -370,7 +387,9 @@ final class SellOrderViewModel: ObservableObject, LimitOrderMonitor {
         // Start limit order monitoring when user manually refreshes price
         // This gives user control over when automatic monitoring begins
         if self.orderMode == .limit, let price = limitPrice, price > 0, !isMonitoringLimitOrder {
+            #if DEBUG
             print("🔄 User manually refreshed price - starting automatic limit order monitoring")
+            #endif
             startLimitOrderMonitoring()
         }
     }
@@ -433,11 +452,14 @@ extension SellOrderViewModel {
     func onLimitPriceChanged() {
         // Stop any existing monitoring when limit price changes
         if self.isMonitoringLimitOrder {
+            #if DEBUG
             print("🛑 Limit price changed - stopping automatic monitoring")
+            #endif
             self.stopLimitOrderMonitoring()
         }
 
-        // Do NOT start monitoring automatically - wait for user to refresh price
+        #if DEBUG
         print("💰 Limit price changed to: \(self.limit) - waiting for user to refresh price to start monitoring")
+        #endif
     }
 }

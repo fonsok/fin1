@@ -149,7 +149,9 @@ struct SearchResultCard: View {
 
                 // Full-width Buy button
                 Button(action: {
+                    #if DEBUG
                     print("🔘 DEBUG: KAUFEN button tapped in SearchResultCard")
+                    #endif
                     self.onKaufenTapped()
                 }, label: {
                     Text("KAUFEN")
