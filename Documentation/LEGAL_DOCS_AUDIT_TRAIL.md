@@ -347,6 +347,8 @@ Vergleich: `legalVersionCompare.js` (`isLegalVersionOutdated`). Betroffene Typen
 1. **Device-Gate** (`TermsAcceptanceModalView`) — pro Install, aktive TOS/Privacy-Version
 2. **Re-Consent** (`ReConsentModalView` / `ReConsentViewModel`) — wenn `getUserMe.requiredReConsents` blocking Einträge hat; Role Agreement mit Scroll-to-Accept
 
+**Implementierung (2026-06-29):** Gate-Evaluation in `AuthenticationView+LegalConsent.swift`. `ReConsentViewModel` wird als `@State` in `AuthenticationView` gehalten und über `makeReConsentViewModel()` erzeugt — **kein** `@ObservedObject` mit Inline-Init im View-`body` (sonst VM-Reset bei jedem Re-Render → dauerhafter Lade-Spinner, leeres Overlay). 12s Legal-Gate-Timeout als Fallback.
+
 Bei reinem AGB-Bump kann das Device-Gate den Versions-Drift bereits auflösen; gezielter Test der Re-Consent-UI: nur `investor_agreement` / `trader_agreement` bumpen.
 
 ### Admin

@@ -400,6 +400,20 @@ Per [Swift API Design Guidelines](https://swift.org/documentation/api-design-gui
 - **Do** call timer/subscription cleanup in the sheet content’s `.onDisappear` (e.g. `priceValidityTimerManager.cleanup()`).
 
 Reference: `BuyOrderSheetCoordinator` / `.buyOrderSheet(item:)`, `SearchResultView`, `TraderWatchlistView`, `TraderDepotView`, `BuyOrderViewWrapper` in `BuyOrderViewWrapper.swift`.
+
+### Buy-order ViewModel wiring (composition root)
+
+- **Do** construct buy-order ViewModels via `BuyOrderViewModelFactory.make(searchResult:dependencies:)` with `BuyOrderDependencies(services:)` (or explicit service list for tests).
+- **Do not** duplicate placement-service wiring in Views or the ViewModel initializer — factory owns `BuyOrderPlacementService` + `BuyOrderInvestmentDataProvider` defaults.
+- **Do** keep insufficient-funds message/check logic in `BuyOrderFundsWarningBuilder` (ViewModel delegates; no formatting in SwiftUI Views).
+- Removed dead code: `BuyOrderSetupCoordinator` (unused; bindings live in `BuyOrderViewModel+Bindings`).
+
+Reference: `BuyOrderDependencies.swift`, `BuyOrderViewModelFactory.swift`, `BuyOrderFundsWarningBuilder.swift`.
+
+### Large root views (file-size CI)
+
+When a root gate view (e.g. `AuthenticationView`) exceeds the baseline, **split by concern** into same-type extensions (`AuthenticationView+LegalConsent.swift`, `+Onboarding.swift`, `+AuthenticatedContent.swift`) — keep `body` + `@State` in the main file; gate logic in extensions (internal access).
+
 - Use `@Published` sparingly - only for UI-bound properties.
 - Avoid retain cycles with `[weak self]` in closures.
 - Use `Task` for async operations, not `DispatchQueue`.

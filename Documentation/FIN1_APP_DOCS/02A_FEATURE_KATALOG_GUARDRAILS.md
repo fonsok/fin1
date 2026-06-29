@@ -117,7 +117,8 @@ Diese Regeln schützen **bereits korrekte Finanzwerte** vor “Formel-Drift” (
 ### 3.2 Sign In / Auth Root (Gatekeeper)
 
 - **Entry Points**
-  - `FIN1/Features/Authentication/Views/AuthenticationView.swift` (Root Gate)
+  - `FIN1/Features/Authentication/Views/AuthenticationView.swift` (Root Gate — `body`, State, Notifications)
+  - Extensions: `AuthenticationView+LegalConsent.swift` (Device-Gate + Re-Consent), `AuthenticationView+Onboarding.swift` (SignUp/KYB resume), `AuthenticationView+AuthenticatedContent.swift` (MainTab + Modals)
   - `FIN1/Shared/Components/Navigation/MainTabView.swift` (nach abgeschlossenem Onboarding)
 - **Protected Behaviors**
   - Auth Gate:
@@ -132,7 +133,8 @@ Diese Regeln schützen **bereits korrekte Finanzwerte** vor “Formel-Drift” (
     - Server-Sync (`syncAcknowledgementsFromServer`) nur beim vollen Gate-Check (Login), nicht bei jedem `userDataDidUpdate` nach Teil-Accept.
     - Version-Auflösung: Cache → Server → Profil-Version → Bundled Fallback (`LegalConsentVersionResolver`).
   - **Post-Onboarding Re-Consent (Konto-Version-Drift, seit 2026-06):**
-    - Nach Device-Gate (oder wenn Device-Gate nicht nötig): `AuthenticationView.evaluateReConsentRequirement` refresht `getUserMe` und zeigt `ReConsentModalView`, solange `requiredReConsents` blocking Einträge enthält.
+    - Nach Device-Gate (oder wenn Device-Gate nicht nötig): `AuthenticationView.evaluateReConsentRequirement` (in `+LegalConsent`) refresht `getUserMe` und zeigt `ReConsentModalView`, solange `requiredReConsents` blocking Einträge enthält.
+    - **`ReConsentViewModel`-Lifecycle:** `@State` in `AuthenticationView` (via `makeReConsentViewModel()`); **nicht** `@ObservedObject` + Inline-Init im `body` — sonst Reset bei Re-Render → endloses „Zustimmung wird geladen…“.
     - TOS/Privacy: `recordLegalConsent` + lokales User-Update + Device-Store via `TermsAcceptanceService`; Role Agreement: `RoleAgreementReConsentView` (Scroll + Checkbox) → `recordRoleAgreementConsent` mit `source: app`.
     - **Grandfather:** Nutzer ohne `accepted*Version` auf `_User` werden nicht erzwungen (Server-SSOT `resolveRequiredReConsents`).
     - Bei AGB-only-Bump kann zuerst das Device-Gate erscheinen (erwartet); Role-Agreement-Bump testet gezielt die neue Modal-UI.
@@ -238,9 +240,11 @@ Diese Regeln schützen **bereits korrekte Finanzwerte** vor “Formel-Drift” (
 
 - **Entry Points**
   - Orders: `FIN1/Features/Trader/Views/BuyOrderView.swift`, `SellOrderView.swift`
-  - **Buy-Order SSOT (iOS):** `BuyOrderViewModel` (+ Extensions `+Bindings`, `+Investment`, `+Placement`, `+Types`) — **kein** paralleles `NewBuyOrderViewModel` / `SimplifiedBuyOrderViewModel` (entfernt 2026-06).
+  - **Depot KAUFEN (seit 2026-06):** `TraderDepotView` / `HoldingCard` → `.buyOrderSheet(item:services:)` (gleicher Pfad wie Suche/Watchlist); Mapping `SearchResult(depotHolding:)` in `SearchResult+DepotHolding.swift`
+  - **Buy-Order SSOT (iOS):** `BuyOrderViewModel` (+ Extensions `+Bindings`, `+Investment`, `+Placement`, `+Types`, `+TransactionLimits`, `+Formatting`) — **kein** paralleles `NewBuyOrderViewModel` / `SimplifiedBuyOrderViewModel` (entfernt 2026-06).
+  - **VM-Wiring (Composition Root):** `BuyOrderDependencies` + `BuyOrderViewModelFactory.make(...)` — Views/Wrapper rufen die Factory auf; **kein** direkter 10-Parameter-`BuyOrderViewModel`-Init in Feature-Views. Insufficient-Funds-Text/Logik: `BuyOrderFundsWarningBuilder`.
   - **Buy-Sheet:** `.sheet(item:)` → `BuyOrderViewWrapper` (`@StateObject`); Erfolg über `onOrderPlaced:` — nicht `NotificationCenter.orderPlacedSuccessfully` (deprecated).
-  - Placement/Validation: `FIN1/Features/Trader/Services/BuyOrderPlacementService.swift` + `BuyOrderValidator`
+  - Placement/Validation: `BuyOrderPlacementService` (+ Extensions) + `BuyOrderValidator`
 - **Protected Behaviors**
   - **Pre-trade Checks** werden nicht umgangen:
     - Extend/verwende `BuyOrderValidator` Pattern (Compliance Rule).
@@ -259,7 +263,8 @@ Diese Regeln schützen **bereits korrekte Finanzwerte** vor “Formel-Drift” (
   - **Multi-Leg Order-Persistenz:** gekoppelte `Order`-Beine mit sequentieller `orderNumber` **sequentiell** speichern — kein paralleles `Parse.Object.saveAll` (`.cursor/rules/parse-cloud.md`, `tradingPairedBuyExecution.js`).
 - **Minimal-Checks**
   - Buy/Sell Order UI: placeOrder triggert erwartete UI-Updates (Loading, Validation, Error).
-  - **Buy-Sheet Regression:** UITest `testBuyOrderSheet_OpensWithContent_OnFirstTap` (Titel „Kauf-Order“, Quantity-Feld, kein leeres Modal).
+  - **Buy-Sheet Regression:** UITest `testBuyOrderSheet_OpensWithContent_OnFirstTap` (Titel „Kauf-Order“, Quantity-Feld, kein leeres Modal); manuell zusätzlich **KAUFEN aus Depot** (`HoldingCard`).
+  - Unit: `SearchResultDepotHoldingTests` (Depot → `SearchResult`-Mapping).
   - Depot/Trades Overview: Live Updates (LiveQuery) degrade gracefully, wenn Server nicht erreichbar.
   - Trades Overview vs Detail vs Steuer/Breakdown: identische Zahlen (keine Abweichung zwischen Screens).
 

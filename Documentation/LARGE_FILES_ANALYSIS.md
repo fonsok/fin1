@@ -1,6 +1,6 @@
 # Analyse: Zu große Script-/Code-Dateien (Backend & FIN1 App)
 
-**Stand:** 2026-06-26
+**Stand:** 2026-06-29
 **Kontext:** Cursor Rules (architecture.md) – File Size Limits: Models ≤200, Views ≤300, ViewModels/Services ≤400, Protocols ≤100.
 
 ---
@@ -50,8 +50,8 @@
 | `CustomerSupportService+Tickets.swift` | **548** | Service | 400 | Weitere Extension-Dateien pro Thema (Tickets, Templates, etc.). |
 | `UserServiceProtocol.swift` | **520** | Protocol | 100 | Protocol auf Kern-API reduzieren; erweiterte APIs in `UserServiceProtocol+Extensions`. |
 | `AppServicesBuilder.swift` | **~18** (war 463) | Builder | 400 | Erledigt: Orchestrierung in Hauptdatei; Build in +BuildContext, +Core, +Trader, +Investment, +Remaining. |
-| `BuyOrderViewModel.swift` | **~339** (war 463) | ViewModel | 400 | **Erledigt (Orchestrierung):** Extensions +Types, +Bindings, +Investment, +Placement, +TransactionLimits, +Formatting; Hauptdatei noch über 300 — Baseline-grandfathered. |
-| `BuyOrderPlacementService.swift` | **470** | Service | 400 | Grandfathered (Baseline 2026-06); Paired-Buy-Placement — bei Wachstum Placement-Session/Guards weiter auslagern. |
+| `BuyOrderViewModel.swift` | **~236** (war 463) | ViewModel | 400 | **Erledigt:** Extensions +Types, +Bindings, +Investment, +Placement, +TransactionLimits, +Formatting; Kern unter Baseline; VM-Wiring via `BuyOrderDependencies` / `BuyOrderViewModelFactory`. |
+| `BuyOrderPlacementService.swift` | **~234** (war 470) | Service | 400 | **Erledigt:** Extensions `+Helpers`, `+PairedBuy`; unter Limit. |
 | `InvoiceService.swift` | **~319** (war 470) | Service | 400 | **Erledigt:** PDF in `InvoicePDFService`; Backfill in `+CompletedTrades`, Validierung in `+Validation`; Kern-CRUD in Hauptdatei. |
 | `OrderManagementService.swift` | **423** | Service | 400 | Nah am Limit; bei Erweiterung Lifecycle vs. API trennen. |
 
@@ -67,6 +67,7 @@
 | `CustomerSupportDashboardView.swift` | **~281** (war 498) | 300 | **Erledigt:** QuickActions und RecentTickets in `CustomerSupportDashboard/` ausgelagert. |
 | `BulkOperationsView.swift` | **~255** (war 491) | 300 | **Erledigt:** Subviews in `BulkOperations/` (BulkSelectableTicketRow, PriorityBadge, BulkActionButton, BulkAssignSheet, BulkCloseSheet). |
 | `LandingView.swift` | **~73** (war 472) | 300 | Ausgelagert: `Landing/` (LandingOriginalStyleBody, LandingTypewriterStyleBody, LandingLegalLinksSection, FeatureRow, LandingConstants). |
+| `AuthenticationView.swift` | **~123** (war 382) | 300 | **Erledigt (2026-06-29):** Gate/Onboarding in `AuthenticationView+LegalConsent`, `+Onboarding`, `+AuthenticatedContent`; Hauptdatei nur `body` + State. |
 
 ### Content/Data-Dateien (optional prüfen)
 
