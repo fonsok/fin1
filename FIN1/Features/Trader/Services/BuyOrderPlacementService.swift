@@ -223,12 +223,20 @@ final class BuyOrderPlacementService: BuyOrderPlacementServiceProtocol, @uncheck
                 parameters: payload
             )
 
+            BuyOrderPlacementTelemetry.pairedBuyServerResponse(
+                intentId: clientOrderIntentId,
+                status: executionResult.status,
+                idempotentReplay: executionResult.idempotentReplay ?? false,
+                pairExecutionId: executionResult.pairExecutionId
+            )
+
             let normalizedStatus = executionResult.status.uppercased()
             if normalizedStatus == "ABORTED" {
                 return BuyOrderPlacementResult(
                     success: false,
                     error: AppError.validationError(
-                        "Der Kauf konnte nicht abgeschlossen werden. Bitte prüfen Sie Ihr Depot, bevor Sie erneut kaufen."
+                        "Der Kauf konnte nicht abgeschlossen werden. Bitte prüfen Sie Ihr Depot. "
+                            + "Tippen Sie auf „Erneut versuchen“, um mit einer neuen Auftragsreferenz fortzufahren."
                     )
                 )
             }

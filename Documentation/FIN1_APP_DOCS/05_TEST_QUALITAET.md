@@ -138,12 +138,24 @@ Ausführung: `cd backend/parse-server/cloud && npx jest functions/__tests__/trad
 | `BuyOrderPoolRecalcTriggerTests.swift` | Security-Input-Fingerprint für Pool-Recalc (kein Recalc bei unrelated `SearchResult`-Feldern) |
 | `BuyOrderQuantityPipelineTests.swift` | `executePairedBuy`-Payload Quantity |
 | `TraderPairedBuyPlacementGuardTests.swift` | Trader-only-Block bei reserviertem Pool |
+| `BuyOrderPlacementSessionTests.swift` | Intent-Rotation nach Fehler / `canStartPlacement` |
 
 **iOS (`FIN1UITests/`):**
 
 | Datei | Abdeckung |
 |-------|-----------|
 | `InvestmentTradingUITests.swift` | `testBuyOrderSheet_OpensWithContent_OnFirstTap` |
+
+### Manueller Release-Check — Paired Buy E2E (L4)
+
+**Nicht in GitHub Actions** (Parse auf Homelab/iobox). Vor Release oder nach Backend-Änderungen am Paired-Buy-Pfad:
+
+1. Jest: `npx jest functions/__tests__/tradingPairedBuyExecution.test.js`
+2. Shell: `bash scripts/e2e-execute-paired-buy.sh` (Parse-URL per `PARSE_SERVER_URL` oder SSH-Tunnel `ssh -L 8443:127.0.0.1:443 io@192.168.178.20`)
+
+Checkliste mit Abbruchkriterien: [`Documentation/RELEASE_ABNAHME_PAIRED_BUY.md`](../RELEASE_ABNAHME_PAIRED_BUY.md).
+
+**iOS Observability (Placement):** Kategorie `BuyOrderPlacement` in Console — `placement_started`, `placement_finished`, `paired_buy_response` (Intent-ID, Dauer, Status).
 
 ### E) Legal (Audit)
 

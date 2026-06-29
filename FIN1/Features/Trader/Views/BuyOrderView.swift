@@ -484,10 +484,18 @@ struct BuyOrderView: View {
                     .foregroundColor(AppTheme.primaryText)
                     .multilineTextAlignment(.leading)
 
+                Text("Ein erneuter Versuch startet mit einer neuen Auftragsreferenz.")
+                    .font(ResponsiveDesign.captionFont())
+                    .foregroundColor(AppTheme.secondaryText)
+                    .multilineTextAlignment(.leading)
+
                 Button {
-                    self.viewModel.acknowledgeOrderFailure()
+                    self.viewModel.prepareForPlacement()
+                    Task {
+                        await self.viewModel.placeOrder()
+                    }
                 } label: {
-                    Text("Verstanden")
+                    Text("Erneut versuchen")
                         .font(ResponsiveDesign.bodyFont())
                         .fontWeight(.semibold)
                         .frame(maxWidth: .infinity)
@@ -496,7 +504,18 @@ struct BuyOrderView: View {
                         .cornerRadius(ResponsiveDesign.spacing(8))
                 }
                 .buttonStyle(.plain)
-                .accessibilityIdentifier("BuyOrderFailureAcknowledgeButton")
+                .accessibilityIdentifier("BuyOrderRetryButton")
+
+                Button {
+                    self.viewModel.acknowledgeOrderFailure()
+                } label: {
+                    Text("Hinweis schließen")
+                        .font(ResponsiveDesign.captionFont())
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, ResponsiveDesign.spacing(6))
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("BuyOrderFailureDismissButton")
             }
             .padding()
             .background(Color.red.opacity(0.08))

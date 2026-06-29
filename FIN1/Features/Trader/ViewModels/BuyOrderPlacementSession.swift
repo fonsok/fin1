@@ -22,6 +22,11 @@ enum BuyOrderPhase {
         return false
     }
 
+    /// Placement may start from editing or after a surfaced failure (retry with a fresh intent).
+    var canStartPlacement: Bool {
+        self.isEditing || self.isFailed
+    }
+
     var lockedQuantity: Int? {
         if case .placing(let snapshot) = self { return snapshot.quantity }
         return nil

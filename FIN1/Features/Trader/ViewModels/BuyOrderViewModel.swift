@@ -227,11 +227,15 @@ final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
     }
 
     func placeOrder() async {
-        guard self.placementSession.phase.isEditing else {
+        guard self.placementSession.phase.canStartPlacement else {
             #if DEBUG
-            print("🔍 DEBUG: placeOrder ignored - already placing")
+            print("🔍 DEBUG: placeOrder ignored - transmission already in progress")
             #endif
             return
+        }
+
+        if self.placementSession.phase.isFailed {
+            self.mutatePlacementSession { $0.acknowledgeFailure() }
         }
 
         self.normalizeQuantityTextAfterEditing()
@@ -257,6 +261,25 @@ final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
         )
         self.mutatePlacementSession { $0.beginPlacing(snapshot) }
 
+        let placementStartedAt = Date()
+        var placementOutcome = "aborted"
+        var placementErrorCategory: String?
+        defer {
+            let durationMs = Int(Date().timeIntervalSince(placementStartedAt) * 1_000)
+            BuyOrderPlacementTelemetry.placementFinished(
+                intentId: snapshot.clientOrderIntentId,
+                durationMs: durationMs,
+                outcome: placementOutcome,
+                errorCategory: placementErrorCategory
+            )
+        }
+        BuyOrderPlacementTelemetry.placementStarted(
+            intentId: snapshot.clientOrderIntentId,
+            symbol: snapshot.searchResult.wkn,
+            quantity: snapshot.quantity,
+            orderMode: snapshot.orderMode
+        )
+
         await self.refreshPlacementPoolContext()
 
         let placementCalculation = self.investmentOrderCalculation ?? snapshot.investmentOrderCalculation
@@ -274,18 +297,25 @@ final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
             )
 
             if result.success {
+                placementOutcome = "succeeded"
                 self.mutatePlacementSession { $0.completeSuccess() }
                 self.shouldShowDepotView = true
             } else if let error = result.error {
+                placementOutcome = "failed"
+                placementErrorCategory = Self.placementErrorCategory(error)
                 self.mutatePlacementSession { $0.completeFailure(error) }
                 self.resumePriceValidityAfterFailure()
             } else {
+                placementOutcome = "failed"
+                placementErrorCategory = "unknown"
                 self.mutatePlacementSession {
                     $0.completeFailure(.unknown("Unbekannter Fehler bei der Orderplatzierung."))
                 }
                 self.resumePriceValidityAfterFailure()
             }
         } catch is CancellationError {
+            placementOutcome = "cancelled"
+            placementErrorCategory = "cancellation"
             #if DEBUG
             print("⚠️ BuyOrderViewModel: placeOrder cancelled — snapshot quantity \(snapshot.quantity)")
             #endif
@@ -298,11 +328,34 @@ final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
             }
             self.resumePriceValidityAfterFailure()
         } catch let appError as AppError {
+            placementOutcome = "failed"
+            placementErrorCategory = Self.placementErrorCategory(appError)
             self.mutatePlacementSession { $0.completeFailure(appError) }
             self.resumePriceValidityAfterFailure()
         } catch {
+            placementOutcome = "failed"
+            placementErrorCategory = "unknown"
             self.mutatePlacementSession { $0.completeFailure(error.toAppError()) }
             self.resumePriceValidityAfterFailure()
+        }
+    }
+
+    private static func placementErrorCategory(_ error: AppError) -> String {
+        switch error {
+        case .validation:
+            return "validation"
+        case .network:
+            return "network"
+        case .authentication:
+            return "authentication"
+        case .service:
+            return "service"
+        case .orderNotFound:
+            return "order_not_found"
+        case .tradeNotFound:
+            return "trade_not_found"
+        case .unknown:
+            return "unknown"
         }
     }
 
