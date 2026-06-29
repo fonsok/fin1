@@ -399,7 +399,7 @@ Per [Swift API Design Guidelines](https://swift.org/documentation/api-design-gui
 - **Do** clear the sheet `item` binding on success via `BuyOrderViewWrapper(onOrderPlaced:)` (parent owns dismiss chain — no `NotificationCenter` for sheet teardown). The wrapper discards the ViewModel when the sheet is torn down.
 - **Do** call timer/subscription cleanup in the sheet content’s `.onDisappear` (e.g. `priceValidityTimerManager.cleanup()`).
 
-Reference: `BuyOrderSheetCoordinator` / `.buyOrderSheet(item:)`, `SearchResultView`, `TraderWatchlistView`, `BuyOrderViewWrapper` in `BuyOrderView.swift`.
+Reference: `BuyOrderSheetCoordinator` / `.buyOrderSheet(item:)`, `SearchResultView`, `TraderWatchlistView`, `TraderDepotView`, `BuyOrderViewWrapper` in `BuyOrderViewWrapper.swift`.
 - Use `@Published` sparingly - only for UI-bound properties.
 - Avoid retain cycles with `[weak self]` in closures.
 - Use `Task` for async operations, not `DispatchQueue`.

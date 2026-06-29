@@ -6,6 +6,7 @@ struct HoldingCard: View {
     let holding: DepotHolding
     let ongoingOrders: [Order]
     @ObservedObject var warrantDetailsViewModel: WarrantDetailsViewModel
+    let onKaufenTapped: () -> Void
     @Environment(\.appServices) private var services
     @State private var showSellOrder = false
     @State private var showAdditionalDetails = false
@@ -52,8 +53,8 @@ struct HoldingCard: View {
                     columns: 2
                 )
 
-                // Sell button or info tile based on remaining quantity and existing sell orders
-                self.sellActionView
+                // Buy / sell actions
+                self.tradeActionView
             }
         }
         .sheet(isPresented: self.$showSellOrder) {
@@ -108,20 +109,47 @@ struct HoldingCard: View {
         .cornerRadius(ResponsiveDesign.spacing(6))
     }
 
-    // MARK: - Sell Action View
-    private var sellActionView: some View {
+    // MARK: - Trade Action View
+    private var tradeActionView: some View {
         let sellOrderStatus = HoldingSellOrderStatus(holding: holding, ongoingOrders: ongoingOrders)
 
         if self.holding.remainingQuantity <= 0 {
-            // Show info tile when fully sold
-            return AnyView(self.fullySoldInfoView)
+            return AnyView(
+                VStack(spacing: ResponsiveDesign.spacing(8)) {
+                    self.fullySoldInfoView
+                    self.kaufenButtonView
+                }
+            )
         } else if sellOrderStatus.hasActiveSellOrder {
-            // Show active sell order status
-            return AnyView(self.activeSellOrderView(sellOrderStatus))
+            return AnyView(
+                VStack(spacing: ResponsiveDesign.spacing(8)) {
+                    self.activeSellOrderView(sellOrderStatus)
+                    self.kaufenButtonView
+                }
+            )
         } else {
-            // Show sell button
-            return AnyView(self.sellButtonView)
+            return AnyView(
+                HStack(spacing: ResponsiveDesign.spacing(8)) {
+                    self.kaufenButtonView
+                    self.sellButtonView
+                }
+            )
         }
+    }
+
+    private var kaufenButtonView: some View {
+        Button(action: self.onKaufenTapped, label: {
+            Text("KAUFEN")
+                .font(ResponsiveDesign.bodyFont())
+                .fontWeight(.bold)
+                .foregroundColor(AppTheme.fontColor)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, ResponsiveDesign.spacing(12))
+                .background(AppTheme.buttonColor)
+                .cornerRadius(ResponsiveDesign.spacing(6))
+        })
+        .buttonStyle(PlainButtonStyle())
+        .accessibilityIdentifier("KaufenButton_\(self.holding.wkn)")
     }
 
     private var fullySoldInfoView: some View {
@@ -201,18 +229,7 @@ struct HoldingCard: View {
             if self.services.traderService.isInWatchlist(self.holding.wkn) {
                 try? await self.services.traderService.removeFromWatchlist(self.holding.wkn)
             } else {
-                // Create a SearchResult from the holding for watchlist
-                let searchResult = SearchResult(
-                    valuationDate: holding.valuationDate,
-                    wkn: self.holding.wkn,
-                    strike: String(self.holding.strike),
-                    askPrice: String(self.holding.currentPrice),
-                    direction: self.holding.direction,
-                    category: self.holding.direction,
-                    underlyingType: nil,
-                    isin: self.holding.wkn, // Use WKN as ISIN fallback
-                    underlyingAsset: self.holding.underlyingAsset
-                )
+                let searchResult = SearchResult(depotHolding: self.holding)
                 try? await self.services.traderService.addToWatchlist(searchResult)
             }
         }
@@ -242,7 +259,8 @@ struct HoldingCard: View {
                 totalValue: 16_000.0
             ),
             ongoingOrders: [],
-            warrantDetailsViewModel: WarrantDetailsViewModel()
+            warrantDetailsViewModel: WarrantDetailsViewModel(),
+            onKaufenTapped: {}
         )
 
         // Fully sold example
@@ -265,7 +283,8 @@ struct HoldingCard: View {
                 totalValue: 0.0
             ),
             ongoingOrders: [],
-            warrantDetailsViewModel: WarrantDetailsViewModel()
+            warrantDetailsViewModel: WarrantDetailsViewModel(),
+            onKaufenTapped: {}
         )
     }
     .padding()

@@ -9,6 +9,7 @@ struct TraderDepotView: View {
     @State private var showTradeSuccess = false
     @State private var completedTrade: Trade?
     @State private var completedOrderType: OrderSuccessMessageOverlay.OrderType?
+    @State private var selectedResultForOrder: SearchResult?
     @Environment(\.themeManager) private var themeManager
 
     init(services: AppServices? = nil) {
@@ -43,7 +44,10 @@ struct TraderDepotView: View {
                             titleStripeIndex: 2,
                             holdings: self.viewModel.holdings,
                             ongoingOrders: self.viewModel.ongoingOrders,
-                            warrantDetailsViewModel: self.warrantDetailsViewModel
+                            warrantDetailsViewModel: self.warrantDetailsViewModel,
+                            onKaufenTapped: { holding in
+                                self.selectedResultForOrder = SearchResult(depotHolding: holding)
+                            }
                         )
                     }
                     .padding(.bottom, ResponsiveDesign.spacing(16))
@@ -59,6 +63,7 @@ struct TraderDepotView: View {
             }
             .navigationViewStyle(.stack)
             .dismissKeyboardOnTap()
+            .buyOrderSheet(item: self.$selectedResultForOrder, services: self.services)
             .onReceive(NotificationCenter.default.publisher(for: .buyOrderCompleted)) { notification in
                 if let trade = notification.object as? Trade {
                     self.completedTrade = trade
@@ -169,6 +174,7 @@ private struct HoldingsSection: View {
     let holdings: [DepotHolding]
     let ongoingOrders: [Order]
     let warrantDetailsViewModel: WarrantDetailsViewModel
+    let onKaufenTapped: (DepotHolding) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(0)) {
@@ -214,7 +220,10 @@ private struct HoldingsSection: View {
                 HoldingCard(
                     holding: holding,
                     ongoingOrders: self.ongoingOrders,
-                    warrantDetailsViewModel: self.warrantDetailsViewModel
+                    warrantDetailsViewModel: self.warrantDetailsViewModel,
+                    onKaufenTapped: {
+                        self.onKaufenTapped(holding)
+                    }
                 )
             }
         }
