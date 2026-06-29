@@ -197,7 +197,7 @@ curl -sk -X POST "$HOST/parse/functions/createInvestmentSplits" \
 | 3 | Accept TOS v2.0 | `recordLegalConsent`, `_User.acceptedTermsVersion=2.0` | ☑ |
 | 4 | `createInvestmentSplits` | Erfolg (sofern sonstige Gates passieren) | ☑ |
 | 5 | Investor: neue `investor_agreement`-Version | Scroll-to-Accept + Checkbox, dann frei | ☑ |
-| 6 | Frisch registrierter User (gleiche Version) | Kein redundantes Modal nach Gate 1 Mirror | ☐ |
+| 6 | Frisch registrierter User (gleiche Version) | Kein redundantes Modal nach Gate 1 Mirror | ☑ |
 | 7 | API ohne Accept | `productAccessGate` → `OPERATION_FORBIDDEN` | ☑ |
 | 8 | `LegalConsent` Audit | Zeile mit `source: app`, Version, IP, deviceInstallId | ☑ |
 
@@ -210,6 +210,6 @@ curl -sk -X POST "$HOST/parse/functions/createInvestmentSplits" \
 | | |
 |---|---|
 | **Go / No-Go** | ☑ Go ☐ No-Go |
-| **Datum** | 2026-06-26 |
+| **Datum** | 2026-06-29 |
 | **Umgebung** | Staging (`192.168.178.24`) |
-| **Bemerkungen** | Manuelle Abnahme bestätigt; PR #11 Backend, #12 iOS, #13 Runbook |
+| **Bemerkungen** | Manuelle Abnahme + CI grün; iOS `main`: `0a6f97d` (Re-Consent/Dashboard), `dc5ab07` (file-size trader), `d604301` (Depot KAUFEN), `9de2368` (AuthView-Split + BuyOrder L2). Kein Parse-Cloud-/Admin-Deploy in dieser Welle. Parse health OK; Post-Deploy-Smoke admin + commission OK (`legalAppName` 4-eyes Flake — bekannt, nicht release-blockierend). |
