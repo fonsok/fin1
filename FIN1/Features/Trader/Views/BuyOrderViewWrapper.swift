@@ -71,17 +71,19 @@ struct BuyOrderViewWrapper: View {
         auditLoggingService: (any AuditLoggingServiceProtocol)? = nil,
         transactionLimitService: (any TransactionLimitServiceProtocol)? = nil
     ) -> BuyOrderViewModel {
-        BuyOrderViewModel(
+        BuyOrderViewModelFactory.make(
             searchResult: searchResult,
-            traderService: traderService,
-            cashBalanceService: cashBalanceService,
-            configurationService: configurationService,
-            investmentQuantityCalculationService: investmentQuantityCalculationService,
-            investmentService: investmentService,
-            userService: userService,
-            traderDataService: traderDataService,
-            auditLoggingService: auditLoggingService,
-            transactionLimitService: transactionLimitService
+            dependencies: BuyOrderDependencies(
+                traderService: traderService,
+                cashBalanceService: cashBalanceService,
+                configurationService: configurationService,
+                investmentQuantityCalculationService: investmentQuantityCalculationService,
+                investmentService: investmentService,
+                userService: userService,
+                traderDataService: traderDataService,
+                auditLoggingService: auditLoggingService ?? AuditLoggingService(),
+                transactionLimitService: transactionLimitService
+            )
         )
     }
 

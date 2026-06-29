@@ -37,12 +37,12 @@ final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
     var exceedsMaximum: Bool { self.quantityInputManager.exceedsMaximum }
     var hasInsufficientFunds: Bool { self.showInsufficientFundsWarning }
     var insufficientFundsMessage: String {
-        guard let currentUser = userService.currentUser else { return "Please log in to check your balance." }
-        let currentBalance = self.cashBalanceService.currentBalance
-        let estimatedBalance = self.cashBalanceService.estimatedBalanceAfterPurchase(amount: self.estimatedCost)
-        let minimumReserve = self.configurationService.getMinimumCashReserve(for: currentUser.id)
-        let shortfall = minimumReserve - estimatedBalance
-        return "Insufficient funds. Current balance: €\(currentBalance.formatted(.currency(code: "EUR"))), Estimated after purchase: €\(estimatedBalance.formatted(.currency(code: "EUR"))). Need €\(shortfall.formatted(.currency(code: "EUR"))) more to maintain minimum reserve of €\(minimumReserve.formatted(.currency(code: "EUR")))."
+        BuyOrderFundsWarningBuilder.insufficientFundsMessage(
+            userService: self.userService,
+            cashBalanceService: self.cashBalanceService,
+            configurationService: self.configurationService,
+            estimatedCost: self.estimatedCost
+        )
     }
 
     var cancellables = Set<AnyCancellable>()
@@ -118,67 +118,48 @@ final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
 
     init(
         searchResult: SearchResult,
-        traderService: any TraderServiceProtocol,
-        cashBalanceService: any CashBalanceServiceProtocol,
-        configurationService: any ConfigurationServiceProtocol,
-        investmentQuantityCalculationService: any InvestmentQuantityCalculationServiceProtocol,
-        investmentService: any InvestmentServiceProtocol,
-        userService: any UserServiceProtocol,
-        traderDataService: (any TraderDataServiceProtocol)? = nil,
+        dependencies: BuyOrderDependencies,
         limitOrderMonitoringService: any LimitOrderMonitoringServiceProtocol = LimitOrderMonitoringService(),
         investmentCalculator: any BuyOrderInvestmentCalculatorProtocol = BuyOrderInvestmentCalculator(),
         validator: any BuyOrderValidatorProtocol = BuyOrderValidator(),
         placementService: (any BuyOrderPlacementServiceProtocol)? = nil,
-        auditLoggingService: (any AuditLoggingServiceProtocol)? = nil,
-        transactionLimitService: (any TransactionLimitServiceProtocol)? = nil,
         investmentDataProvider: (any BuyOrderInvestmentDataProviderProtocol)? = nil
     ) {
         self.searchResult = searchResult
-        self.traderService = traderService
-        self.cashBalanceService = cashBalanceService
-        self.configurationService = configurationService
-        self.investmentQuantityCalculationService = investmentQuantityCalculationService
-        self.investmentService = investmentService
-        self.userService = userService
-        self.traderDataService = traderDataService
+        self.traderService = dependencies.traderService
+        self.cashBalanceService = dependencies.cashBalanceService
+        self.configurationService = dependencies.configurationService
+        self.investmentQuantityCalculationService = dependencies.investmentQuantityCalculationService
+        self.investmentService = dependencies.investmentService
+        self.userService = dependencies.userService
+        self.traderDataService = dependencies.traderDataService
         self.limitOrderMonitoringService = limitOrderMonitoringService
         self.investmentCalculator = investmentCalculator
         self.validator = validator
-        self.transactionLimitService = transactionLimitService
-        let parseAPIClient = (configurationService as? ConfigurationService)?.getParseAPIClient()
+        self.transactionLimitService = dependencies.transactionLimitService
+
+        let parseAPIClient = dependencies.resolvedParseAPIClient()
         let resolvedDataProvider = investmentDataProvider ?? BuyOrderInvestmentDataProvider(
-            investmentService: investmentService,
-            traderDataService: traderDataService
+            investmentService: dependencies.investmentService,
+            traderDataService: dependencies.traderDataService
         )
         self.investmentDataProvider = resolvedDataProvider
         let resolvedInvestmentAPIService = parseAPIClient.map { InvestmentAPIService(apiClient: $0) }
 
-        // Create placement service with audit logging and transaction limits if not provided
         if let providedService = placementService {
             self.placementService = providedService
-        } else if let auditService = auditLoggingService {
-            self.placementService = BuyOrderPlacementService(
-                auditLoggingService: auditService,
-                userService: userService,
-                transactionLimitService: transactionLimitService,
-                parseAPIClient: parseAPIClient,
-                investmentAPIService: resolvedInvestmentAPIService,
-                investmentService: investmentService,
-                investmentDataProvider: resolvedDataProvider
-            )
         } else {
-            // Fallback: Create without audit logging (for backward compatibility)
-            // This should not happen in production - audit logging should always be provided
             self.placementService = BuyOrderPlacementService(
-                auditLoggingService: AuditLoggingService(),
-                userService: userService,
-                transactionLimitService: transactionLimitService,
+                auditLoggingService: dependencies.auditLoggingService,
+                userService: dependencies.userService,
+                transactionLimitService: dependencies.transactionLimitService,
                 parseAPIClient: parseAPIClient,
                 investmentAPIService: resolvedInvestmentAPIService,
-                investmentService: investmentService,
+                investmentService: dependencies.investmentService,
                 investmentDataProvider: resolvedDataProvider
             )
         }
+
         self.quantityInputManager = QuantityInputManager(initialQuantity: 1_000)
         self.priceValidityTimerManager = PriceValidityTimerManager()
 

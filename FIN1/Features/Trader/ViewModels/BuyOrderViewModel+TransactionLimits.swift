@@ -3,13 +3,12 @@ import Foundation
 extension BuyOrderViewModel {
 
     func updateInsufficientFundsWarning() {
-        guard let currentUser = userService.currentUser else {
-            showInsufficientFundsWarning = false
-            return
-        }
-        let minimumReserve = configurationService.getMinimumCashReserve(for: currentUser.id)
-        let hasSufficientFunds = cashBalanceService.hasSufficientFunds(for: estimatedCost, minimumReserve: minimumReserve)
-        showInsufficientFundsWarning = !hasSufficientFunds
+        showInsufficientFundsWarning = BuyOrderFundsWarningBuilder.shouldShowInsufficientFundsWarning(
+            userService: userService,
+            cashBalanceService: cashBalanceService,
+            configurationService: configurationService,
+            estimatedCost: estimatedCost
+        )
     }
 
     @MainActor
