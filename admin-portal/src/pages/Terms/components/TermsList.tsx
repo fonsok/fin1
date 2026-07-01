@@ -17,6 +17,13 @@ import type { LegalBrandingPreviewValues } from '../utils/hydrateTermsPreview';
 import { hydrateTermsPreviewText } from '../utils/hydrateTermsPreview';
 
 import { adminBorderChrome, adminCaption, adminHeadline, adminHeadlineAlt, adminMuted, adminPrimary, adminSoft, adminStatTitle, adminStrong } from '../../../utils/adminThemeClasses';
+
+const TERMS_CLONE_BUTTON_TOOLTIP =
+  'Erstellt eine neue, zunächst inaktive Version als Kopie dieser Fassung (Versionsnummer wird erhöht) und öffnet den Editor zum Bearbeiten von Titel und Abschnitten. Die aktive Version bleibt unverändert, bis Sie die neue Version speichern und ggf. aktiv setzen.';
+
+const TERMS_SET_ACTIVE_BUTTON_TOOLTIP =
+  'Schaltet diese Version für den Dokumenttyp und die Sprache live. Sie ersetzt die bisher aktive Fassung in App, Registrierung und Einwilligungsablauf. Ältere Versionen bleiben als Historie erhalten.';
+
 interface TermsListProps {
   items: TermsContentListItem[];
   documentTypeFilter?: 'all' | 'terms' | 'privacy' | 'imprint';
@@ -300,12 +307,18 @@ export function TermsList({
               </div>
             </div>
             <div className="flex gap-2 flex-shrink-0 flex-wrap">
-              <Button variant="secondary" size="sm" onClick={() => onClone(item)}>
+              <Button
+                variant="secondary"
+                size="sm"
+                title={TERMS_CLONE_BUTTON_TOOLTIP}
+                onClick={() => onClone(item)}
+              >
                 Klonen (neue Version)
               </Button>
               {!item.isActive && (
                 <Button
                   size="sm"
+                  title={TERMS_SET_ACTIVE_BUTTON_TOOLTIP}
                   disabled={settingActiveId !== null}
                   onClick={() => onSetActive(item.objectId)}
                 >
