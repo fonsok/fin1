@@ -20,6 +20,39 @@ describe('refreshMarketDataQuotes', () => {
     delete process.env.MARKET_DATA_FEED_ENABLED;
 
     global.Parse = {
+      Query: class MockQuery {
+        constructor(className) {
+          this.className = className;
+        }
+
+        equalTo() {
+          return this;
+        }
+
+        descending() {
+          return this;
+        }
+
+        greaterThan() {
+          return this;
+        }
+
+        exists() {
+          return this;
+        }
+
+        limit() {
+          return this;
+        }
+
+        async first() {
+          return null;
+        }
+
+        async find() {
+          return [];
+        }
+      },
       Object: class MarketData {
         constructor(className) {
           this.className = className;
@@ -51,5 +84,14 @@ describe('refreshMarketDataQuotes', () => {
     expect(savedRows[0].symbol).toBe('865985');
     expect(savedRows[0].price).toBeGreaterThan(0);
     expect(savedRows[0].timestamp).toBeInstanceOf(Date);
+  });
+
+  test('refreshes unknown symbol via synthetic feed entry', async () => {
+    const result = await refreshMarketDataQuotes({ symbols: ['EXOTIC-OPTION-WKN'] });
+    expect(result.enabled).toBe(true);
+    expect(result.refreshed).toBe(1);
+    expect(savedRows).toHaveLength(1);
+    expect(savedRows[0].symbol).toBe('EXOTIC-OPTION-WKN');
+    expect(savedRows[0].price).toBeGreaterThan(0);
   });
 });

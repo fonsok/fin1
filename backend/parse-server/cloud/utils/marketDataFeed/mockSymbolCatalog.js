@@ -53,4 +53,5 @@ module.exports = {
   listMockSymbols,
   getMockSymbol,
   quotePriceForSymbol,
+  hashString,
 };

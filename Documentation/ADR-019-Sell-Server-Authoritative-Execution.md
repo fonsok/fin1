@@ -109,6 +109,7 @@ Async GL posting: `AccountStatement` + `SettlementOutbox` in Mongo-Transaction; 
 1. **`refreshMarketDataQuotes` worker** in `main.js` (mock catalog → Parse `MarketData`, default 60s).
 2. **`runMarketDataFeedRefresh`** Cloud Function (admin/ops).
 3. **iOS Slice 2:** `MarketDataQuotePublisher.ensureFreshMarketDataBeforeExecution` — feed-first, `upsertMarketDataQuote` nur bei fehlendem/stale Quote.
+4. **Slice 3 (2026-07-02):** Feed-Union = Mock-Katalog + kürzlich gehandelte Symbole (`Trade`/`Order`, 30 Tage); unbekannte WKN mit letztem `MarketData`-Preis oder deterministischem Synthetic-Default.
 
 - Saldo-UI an `UserCashBalance` / `getAccountStatement` koppeln (→ Phase 3)
 

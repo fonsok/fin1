@@ -1,7 +1,8 @@
 'use strict';
 
 const { loadConfig } = require('../configHelper/index.js');
-const { listMockSymbols, getMockSymbol, quotePriceForSymbol } = require('./mockSymbolCatalog');
+const { quotePriceForSymbol } = require('./mockSymbolCatalog');
+const { buildFeedRefreshEntries } = require('./feedEntryResolver');
 const { persistMarketDataRow } = require('./persistMarketDataRow');
 
 const DEFAULT_INTERVAL_SECONDS = 60;
@@ -52,14 +53,9 @@ async function refreshMarketDataQuotes({ symbols = null } = {}) {
   }
 
   const now = new Date();
-  let entries;
-  if (Array.isArray(symbols) && symbols.length > 0) {
-    entries = symbols
-      .map((symbol) => getMockSymbol(symbol))
-      .filter(Boolean);
-  } else {
-    entries = listMockSymbols();
-  }
+  const entries = await buildFeedRefreshEntries({
+    symbols: Array.isArray(symbols) && symbols.length > 0 ? symbols : null,
+  });
 
   const results = [];
   for (const entry of entries) {
