@@ -49,7 +49,7 @@ extension BuyOrderPlacementService {
         }
 
         if orderMode == .market {
-            try await MarketDataQuotePublisher.publishBeforeMarketExecution(
+            try await MarketDataQuotePublisher.ensureFreshMarketDataBeforeExecution(
                 symbol: searchResult.wkn,
                 indicativePrice: executedPrice,
                 via: parseAPIClient

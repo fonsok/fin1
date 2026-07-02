@@ -104,6 +104,12 @@ Async GL posting: `AccountStatement` + `SettlementOutbox` in Mongo-Transaction; 
 
 **Konsequenz:** Alte iOS-Builds, die noch `price` mitsenden, sind harmlos (Server ignoriert). Market-Orders **ohne** frische `MarketData` schlagen fehl (`no market data for symbol`).
 
+### Phase 9 — Server market-data feed (Slice 1, 2026-07-02)
+
+1. **`refreshMarketDataQuotes` worker** in `main.js` (mock catalog → Parse `MarketData`, default 60s).
+2. **`runMarketDataFeedRefresh`** Cloud Function (admin/ops).
+3. **iOS Slice 2:** `MarketDataQuotePublisher.ensureFreshMarketDataBeforeExecution` — feed-first, `upsertMarketDataQuote` nur bei fehlendem/stale Quote.
+
 - Saldo-UI an `UserCashBalance` / `getAccountStatement` koppeln (→ Phase 3)
 
 ## Nicht-Ziele

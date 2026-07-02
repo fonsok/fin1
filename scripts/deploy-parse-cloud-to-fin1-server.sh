@@ -78,7 +78,17 @@ rsync -avz \
   "$PROJECT_ROOT/scripts/e2e-paired-sell-integrity-smoke.js" \
   "$PROJECT_ROOT/scripts/post-deploy-smoke.sh" \
   "$PROJECT_ROOT/scripts/smoke-admin-get-user-details.sh" \
+  "$PROJECT_ROOT/scripts/smoke-growth-dashboard.sh" \
+  "$PROJECT_ROOT/scripts/smoke-marketing-spend-import.sh" \
+  "$PROJECT_ROOT/scripts/smoke-user-acquisition-e2e.sh" \
+  "$PROJECT_ROOT/scripts/ensure-growth-marketing-indexes.sh" \
   "$PROJECT_ROOT/scripts/smoke-commission-rate-bundle-e2e.sh" \
+  "$PROJECT_ROOT/scripts/smoke-user-commission-rate-bundle-e2e.sh" \
+  "$PROJECT_ROOT/scripts/smoke-user-app-service-charge-e2e.sh" \
+  "$PROJECT_ROOT/scripts/smoke-user-open-depot-limit-e2e.sh" \
+  "$PROJECT_ROOT/scripts/smoke-publish-market-data-quote-e2e.sh" \
+  "$PROJECT_ROOT/scripts/smoke-market-data-feed-e2e.sh" \
+  "$PROJECT_ROOT/scripts/smoke-min-trader-buy-order-e2e.sh" \
   "$PROJECT_ROOT/scripts/smoke-legal-app-name-e2e.sh" \
   "$PROJECT_ROOT/scripts/run-onboarding-signup-indexes-migration.sh" \
   "$PROJECT_ROOT/scripts/load-test-signup-onboarding.js" \
@@ -108,7 +118,9 @@ if [[ "${POST_DEPLOY_SMOKE:-1}" != "0" ]]; then
   else
     # shellcheck disable=SC2029
     ssh "${REMOTE_USER}@${REMOTE_HOST}" \
-      "cd ~/fin1-server && BA_PASSWORD='${BA_PASSWORD}' PARSE_URL='http://127.0.0.1:1338/parse' POST_DEPLOY_SMOKE_PROFILE='${POST_DEPLOY_SMOKE_PROFILE:-full}' POST_DEPLOY_WAIT_PARSE='${POST_DEPLOY_WAIT_PARSE:-1}' bash scripts/post-deploy-smoke.sh"
+      "cd ~/fin1-server && \
+        export PARSE_MASTER_KEY=\$(grep -E '^PARSE_SERVER_MASTER_KEY=' backend/.env 2>/dev/null | head -1 | cut -d= -f2- | tr -d '\"' | tr -d \"'\") && \
+        BA_PASSWORD='${BA_PASSWORD}' PARSE_URL='http://127.0.0.1:1338/parse' POST_DEPLOY_SMOKE_PROFILE='${POST_DEPLOY_SMOKE_PROFILE:-full}' POST_DEPLOY_WAIT_PARSE='${POST_DEPLOY_WAIT_PARSE:-1}' bash scripts/post-deploy-smoke.sh"
   fi
 fi
 

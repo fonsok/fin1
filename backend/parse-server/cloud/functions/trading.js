@@ -30,6 +30,7 @@ const {
 } = require('./tradingSettlementReads');
 const { handleGetUserDocumentInbox } = require('./userDocumentInbox');
 const { handleUpsertMarketDataQuote } = require('./upsertMarketDataQuote');
+const { handleRunMarketDataFeedRefresh } = require('./runMarketDataFeedRefresh');
 
 // Get trader's open trades
 Parse.Cloud.define('getOpenTrades', async (request) => {
@@ -165,6 +166,8 @@ Parse.Cloud.define('placeOrder', async (request) => {
 });
 
 Parse.Cloud.define('upsertMarketDataQuote', handleUpsertMarketDataQuote);
+
+Parse.Cloud.define('runMarketDataFeedRefresh', handleRunMarketDataFeedRefresh);
 
 Parse.Cloud.define('executePairedBuy', handleExecutePairedBuy);
 

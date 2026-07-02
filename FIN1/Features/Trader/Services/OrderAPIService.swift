@@ -512,7 +512,7 @@ final class OrderAPIService: OrderAPIServiceProtocol {
         }
 
         if Self.isMarketOrderInstruction(order.orderInstruction) {
-            try await MarketDataQuotePublisher.publishBeforeMarketExecution(
+            try await MarketDataQuotePublisher.ensureFreshMarketDataBeforeExecution(
                 symbol: order.symbol,
                 indicativePrice: order.price,
                 via: self.apiClient

@@ -192,6 +192,17 @@ function validateConfigValue(paramName, value) {
       type: 'boolean',
       errorMsg: 'settlementGLOutboxEnabled muss true oder false sein',
     },
+    marketDataFeedEnabled: {
+      type: 'boolean',
+      errorMsg: 'marketDataFeedEnabled muss true oder false sein',
+    },
+    marketDataFeedIntervalSeconds: {
+      type: 'number',
+      min: 15,
+      max: 3600,
+      integer: true,
+      errorMsg: 'marketDataFeedIntervalSeconds muss zwischen 15 und 3600 liegen',
+    },
     showInvestorPartialSellRealizations: {
       type: 'boolean',
       errorMsg: 'showInvestorPartialSellRealizations muss true oder false sein',

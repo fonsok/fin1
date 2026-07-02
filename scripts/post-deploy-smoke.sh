@@ -83,15 +83,51 @@ case "$PROFILE" in
   full)
     run_smoke "admin getUserDetails" "smoke-admin-get-user-details.sh"
     inter_smoke_sleep
+    run_smoke "growth dashboard" "smoke-growth-dashboard.sh"
+    inter_smoke_sleep
+    run_smoke "marketing spend import" "smoke-marketing-spend-import.sh"
+    inter_smoke_sleep
+    run_smoke "user acquisition" "smoke-user-acquisition-e2e.sh"
+    inter_smoke_sleep
     run_smoke "commission 4-eyes E2E" "smoke-commission-rate-bundle-e2e.sh"
+    inter_smoke_sleep
+    run_smoke "user commission 4-eyes E2E" "smoke-user-commission-rate-bundle-e2e.sh"
+    inter_smoke_sleep
+    run_smoke "user app service charge 4-eyes E2E" "smoke-user-app-service-charge-e2e.sh"
+    inter_smoke_sleep
+    run_smoke "user open depot limit 4-eyes E2E" "smoke-user-open-depot-limit-e2e.sh"
+    inter_smoke_sleep
+    run_smoke "upsertMarketDataQuote E2E" "smoke-publish-market-data-quote-e2e.sh"
+    inter_smoke_sleep
+    run_smoke "market data feed E2E" "smoke-market-data-feed-e2e.sh"
+    inter_smoke_sleep
+    run_smoke "min trader buy order 4-eyes E2E" "smoke-min-trader-buy-order-e2e.sh"
     inter_smoke_sleep
     run_smoke "legalAppName 4-eyes E2E" "smoke-legal-app-name-e2e.sh"
     ;;
   admin)
     run_smoke "admin getUserDetails" "smoke-admin-get-user-details.sh"
+    inter_smoke_sleep
+    run_smoke "growth dashboard" "smoke-growth-dashboard.sh"
+    inter_smoke_sleep
+    run_smoke "marketing spend import" "smoke-marketing-spend-import.sh"
+    inter_smoke_sleep
+    run_smoke "user acquisition" "smoke-user-acquisition-e2e.sh"
     ;;
   parse)
     run_smoke "commission 4-eyes E2E" "smoke-commission-rate-bundle-e2e.sh"
+    inter_smoke_sleep
+    run_smoke "user commission 4-eyes E2E" "smoke-user-commission-rate-bundle-e2e.sh"
+    inter_smoke_sleep
+    run_smoke "user app service charge 4-eyes E2E" "smoke-user-app-service-charge-e2e.sh"
+    inter_smoke_sleep
+    run_smoke "user open depot limit 4-eyes E2E" "smoke-user-open-depot-limit-e2e.sh"
+    inter_smoke_sleep
+    run_smoke "upsertMarketDataQuote E2E" "smoke-publish-market-data-quote-e2e.sh"
+    inter_smoke_sleep
+    run_smoke "market data feed E2E" "smoke-market-data-feed-e2e.sh"
+    inter_smoke_sleep
+    run_smoke "min trader buy order 4-eyes E2E" "smoke-min-trader-buy-order-e2e.sh"
     inter_smoke_sleep
     run_smoke "legalAppName 4-eyes E2E" "smoke-legal-app-name-e2e.sh"
     ;;

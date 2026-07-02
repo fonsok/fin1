@@ -119,6 +119,16 @@ async function loadConfig(forceRefresh = false) {
               )),
             ),
           ),
+          maxTraderOpenDepotPositions: Math.min(
+            50,
+            Math.max(
+              1,
+              Math.floor(Number(
+                config.get('maxTraderOpenDepotPositions')
+                ?? DEFAULT_CONFIG.financial.maxTraderOpenDepotPositions,
+              )),
+            ),
+          ),
         },
         limits: {
           ...DEFAULT_CONFIG.limits,
@@ -140,6 +150,12 @@ async function loadConfig(forceRefresh = false) {
             }
             const n = Number(raw);
             return Number.isFinite(n) && n >= 0 ? n : 0;
+          })(),
+          minTraderBuyOrderAmount: (() => {
+            const { normalizeMinTraderBuyOrderAmount } = require('./minTraderBuyOrderAmount');
+            const raw = config.get('minTraderBuyOrderAmount')
+              ?? (config.get('limits') || {}).minTraderBuyOrderAmount;
+            return normalizeMinTraderBuyOrderAmount(raw);
           })(),
           dailyTransactionLimit:
             (config.get('limits') || {}).dailyTransactionLimit
@@ -196,6 +212,12 @@ async function loadConfig(forceRefresh = false) {
           collectionBillServerLegs:
             config.get('collectionBillServerLegs')
             ?? DEFAULT_CONFIG.display.collectionBillServerLegs,
+          marketDataFeedEnabled:
+            config.get('marketDataFeedEnabled')
+            ?? DEFAULT_CONFIG.display.marketDataFeedEnabled,
+          marketDataFeedIntervalSeconds:
+            config.get('marketDataFeedIntervalSeconds')
+            ?? DEFAULT_CONFIG.display.marketDataFeedIntervalSeconds,
         },
         legal: {
           ...DEFAULT_CONFIG.legal,

@@ -85,6 +85,10 @@ const DEFAULT_CONFIG = {
     showTraderDashboardInvestmentActiveStatus: true,
     /** ADR-009: iOS reads buyLeg/sellLeg from server metadata only; missing legs → pending. */
     collectionBillServerLegs: true,
+    /** Periodic mock MarketData feed for tradable WKNs (Slice 1; replaces on-order upsert long-term). */
+    marketDataFeedEnabled: true,
+    /** Worker interval for marketDataFeed (seconds). */
+    marketDataFeedIntervalSeconds: 60,
   },
   legal: {
     appName: 'FIN1',

@@ -20,6 +20,8 @@ const { generateSequentialNumber, formatCurrency } = require('./utils/helpers');
 // Triggers (encryption must load before class-specific triggers)
 require('./triggers/encryption');
 require('./triggers/user');
+require('./triggers/userAcquisitionTriggerBeforeSave');
+require('./triggers/marketingSpendTriggerBeforeSave');
 require('./triggers/investment');
 require('./triggers/trade');
 require('./triggers/order');
@@ -95,6 +97,15 @@ Parse.Cloud.define('getConfig', async (request) => {
         0,
         Math.floor(Number(
           liveConfig.financial?.maxTraderPartialSells ?? 3,
+        )),
+      ),
+    ),
+    maxTraderOpenDepotPositions: Math.min(
+      50,
+      Math.max(
+        1,
+        Math.floor(Number(
+          liveConfig.financial?.maxTraderOpenDepotPositions ?? 5,
         )),
       ),
     ),
@@ -222,6 +233,7 @@ Parse.Cloud.define('getConfig', async (request) => {
     minInvestment: 20.0,
     maxInvestment: 100000.0,
     maxPoolMirrorBuyOrderAmount: 0,
+    minTraderBuyOrderAmount: 300,
     dailyTransactionLimit: 10000.0,
   };
 
@@ -235,6 +247,19 @@ Parse.Cloud.define('getConfig', async (request) => {
     vatRate: Number.isFinite(taxConfig.vatRate) ? taxConfig.vatRate : 0.19,
   };
 
+  if (request.user && String(request.user.get('role') || '').toLowerCase() === 'investor') {
+    const { resolveAppServiceChargeRate } = require('./utils/configHelper/index.js');
+    const accountType = request.user.get('accountType') || 'individual';
+    const resolved = await resolveAppServiceChargeRate({
+      investorId: request.user.id,
+      accountType,
+    });
+    financial.appServiceChargeRate = resolved.rate;
+    if (String(accountType).toLowerCase() === 'company') {
+      financial.appServiceChargeRateCompanies = resolved.rate;
+    }
+  }
+
   return {
     financial,
     tax,
@@ -243,7 +268,11 @@ Parse.Cloud.define('getConfig', async (request) => {
       darkModeEnabled: false,
       biometricAuthEnabled: true,
     },
-    limits: { ...defaultLimits, ...(configData.limits || {}) },
+    limits: {
+      ...defaultLimits,
+      ...(configData.limits || {}),
+      ...(liveConfig.limits || {}),
+    },
     display,
   };
 });
@@ -416,6 +445,66 @@ setInterval(async () => {
     slaMonitorWorkerRunning = false;
   }
 }, slaMonitorIntervalMs);
+
+// ============================================================================
+// MARKET DATA FEED WORKER (mock catalog → Parse MarketData, ADR-019 Phase 9 slice 1)
+// ============================================================================
+const {
+  refreshMarketDataQuotes,
+  getMarketDataFeedIntervalMs,
+} = require('./utils/marketDataFeed/refreshMarketDataQuotes');
+
+let marketDataFeedWorkerRunning = false;
+let marketDataFeedIntervalMs = 60 * 1000;
+
+async function bootstrapMarketDataFeedWorker() {
+  marketDataFeedIntervalMs = await getMarketDataFeedIntervalMs();
+  const enabled = marketDataFeedIntervalMs > 0;
+  console.log(
+    `📈 MarketDataFeedWorker interval: ${marketDataFeedIntervalMs / 1000}s `
+      + `(MARKET_DATA_FEED_ENABLED=${process.env.MARKET_DATA_FEED_ENABLED !== '0' ? 'on' : 'off'}, `
+      + `feed=${enabled ? 'on' : 'off'})`,
+  );
+  if (!enabled) {
+    return;
+  }
+  try {
+    const first = await refreshMarketDataQuotes();
+    if (Number(first?.refreshed || 0) > 0) {
+      console.log(`📈 MarketDataFeedWorker initial refresh: ${first.refreshed} symbol(s)`);
+    }
+  } catch (err) {
+    console.error('❌ MarketDataFeedWorker initial refresh failed:', err && err.message ? err.message : err);
+  }
+}
+
+setTimeout(() => {
+  bootstrapMarketDataFeedWorker().catch((err) => {
+    console.error('❌ MarketDataFeedWorker bootstrap failed:', err && err.message ? err.message : err);
+  });
+}, 8000);
+
+setInterval(async () => {
+  if (marketDataFeedWorkerRunning) return;
+  marketDataFeedWorkerRunning = true;
+  try {
+    const nextIntervalMs = await getMarketDataFeedIntervalMs();
+    if (nextIntervalMs > 0 && nextIntervalMs !== marketDataFeedIntervalMs) {
+      marketDataFeedIntervalMs = nextIntervalMs;
+    }
+    if (marketDataFeedIntervalMs <= 0) {
+      return;
+    }
+    const result = await refreshMarketDataQuotes();
+    if (Number(result?.refreshed || 0) > 0) {
+      console.log(`📈 MarketDataFeedWorker refreshed ${result.refreshed} symbol(s)`);
+    }
+  } catch (err) {
+    console.error('❌ MarketDataFeedWorker failed:', err && err.message ? err.message : err);
+  } finally {
+    marketDataFeedWorkerRunning = false;
+  }
+}, 60 * 1000);
 
 // ============================================================================
 // LOGGING

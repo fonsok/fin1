@@ -143,6 +143,12 @@ struct CalculationConstants {
         static let fallbackMaximumInvestmentAmount: Double = 100_000.0
     }
 
+    /// Trader buy-order limits (TRADER leg only; pool-mirror excluded)
+    struct TraderBuyOrder {
+        /// Last-resort minimum gross (EUR) when `getConfig` has no `limits.minTraderBuyOrderAmount`
+        static let fallbackMinimumBuyOrderAmount: Double = 300.0
+    }
+
     // MARK: - Calculation Limits
 
     /// Limits and thresholds for calculations
@@ -297,5 +303,13 @@ struct CalculationConstants {
                 return self.noDenomination
             }
         }
+    }
+
+    // MARK: - Execution Pricing (server SSOT alignment)
+
+    /// Client-side mirrors for server `executionPriceResolver` / feed freshness.
+    struct ExecutionPricing {
+        /// Max age of Parse `MarketData` before execution (seconds). Matches server default 300.
+        static let marketDataMaxAgeSeconds: TimeInterval = 300
     }
 }
