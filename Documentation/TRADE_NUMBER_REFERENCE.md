@@ -1,6 +1,6 @@
 # Trade-Nummer — Referenz (SSOT)
 
-**Stand:** 2026-06-30  
+**Stand:** 2026-07-02  
 **Zielgruppe:** Entwicklung, Admin-Portal, Support, KI/FAQ
 
 ---
@@ -96,6 +96,20 @@ Legacy-Dateinamen (`Trade14`, `Trade001`) werden beim Parsen weiter unterstützt
 
 - Unit: `cloud/utils/__tests__/tradeNumberAllocation.test.js`
 - Nach Backend-Änderungen: `./scripts/deploy-parse-cloud-to-fin1-server.sh` (vgl. `ci-cd.md`)
+
+---
+
+## Commit-Scope & CI (Wellen trennen)
+
+Die Trade-Number-Welle betrifft **nur** Trade-Referenzen (`tradeNumber` / `tradeNumberYear`, Formatierung, Server-Vergabe, Admin-Anzeige). **Nicht** Teil dieser Welle:
+
+| Thema | Typische Dateien | Eigene Welle / Commit |
+|--------|------------------|------------------------|
+| Mindest-Kaufbetrag Trader (`minTraderBuyOrderAmount`) | `BuyOrderViewModel.swift`, `BuyOrderValidator.swift`, `BuyOrderView*.swift` | Global-Config + iOS-Validierung (siehe [`COMMISSION_OVERRIDE_REFERENCE.md`](COMMISSION_OVERRIDE_REFERENCE.md)) |
+| Per-user Overrides (Commission, Service Charge, Depot-Limit) | `usersRequest*.js`, `User*OverrideCard.tsx` | Commission-Override-Welle (`8538f1e`) |
+| Growth / Acquisition | `SignUp*`, `admin/growth/*` | Growth G1 |
+
+**CI-Vorfall (2026-07-02, GitHub Actions #187):** Commit `8fe4518` (trade-numbers) enthielt versehentlich `BuyOrderViewModel`-Änderungen mit Parameter `traderLegGrossAmount`, aber **ohne** passendes `BuyOrderValidator`-Update im selben Commit → Build-Fehler `extra argument 'traderLegGrossAmount' in call` (Exit 65). Behoben in `8538f1e` (Commission-Override, `BuyOrderValidator` + Views). **Regel:** Vor Push alle drei Xcode-Konfigurationen bauen (`Release`, `Staging`, `Prod`) oder `git diff` auf offensichtlich fremde Dateien prüfen.
 
 ---
 

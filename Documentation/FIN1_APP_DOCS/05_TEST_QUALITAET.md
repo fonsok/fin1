@@ -108,6 +108,8 @@ Credentials: `BA_PASSWORD` in `scripts/.env.server`; optional `SMOKE_APPROVER_PA
 
 Ausführung: `cd backend/parse-server && npm test -- --testPathPattern='usersRequestCommission|usersRequestAppService|usersRequestOpenDepot|resolveCommission|resolveAppService|resolveMaxOpenDepot|overrideEffective|commissionRateSnapshot|traderOpenDepot'`
 
+**CI-Hinweis (2026-07-02):** GitHub Actions **#187** (`feat(trade-numbers)`, Commit `8fe4518`) scheiterte am iOS-Build, weil `BuyOrderViewModel` bereits `traderLegGrossAmount` übergab, `BuyOrderValidator` aber erst in `8538f1e` angepasst war. Kein Trade-Number-Bug — **Wellen vermischt**. Vor Merge: `Release`/`Staging`/`Prod`-Build oder gezieltes `git diff` auf fremde Dateien. Details: [`../COMMISSION_OVERRIDE_REFERENCE.md`](../COMMISSION_OVERRIDE_REFERENCE.md) (Mindest-Kaufbetrag), [`../TRADE_NUMBER_REFERENCE.md`](../TRADE_NUMBER_REFERENCE.md) § Commit-Scope.
+
 **iOS (`FIN1Tests/`):**
 
 | Datei | Abdeckung |

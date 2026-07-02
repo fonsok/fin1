@@ -107,6 +107,21 @@ cd backend/parse-server && npm test -- --testPathPattern='usersRequestCommission
 
 ---
 
+## Globaler Mindest-Kaufbetrag (Trader) — iOS-Validierung
+
+Parameter **`minTraderBuyOrderAmount`** (Admin → Konfiguration → Finanzen, 4-Augen) begrenzt den **Trader-eigenen** Kaufleg bei `executePairedBuy`. Pool-Mirror (Investoren-Kapital) ist ausgenommen.
+
+| Komponente | Rolle |
+|------------|--------|
+| Backend | `minTraderBuyOrderAmount.js`, `orderTriggerBeforeSave.js`, `tradingPairedBuyExecution.js` |
+| iOS | `BuyOrderViewModel.traderLegEstimatedCost`, `showMinBuyOrderWarning`, `canPlaceOrder` |
+| iOS | `BuyOrderValidator.validateOrderPlacement(..., traderLegGrossAmount:)` — blockt Placement unter Minimum |
+| iOS UI | `BuyOrderView` / `BuyOrderView+Sections` — Warnhinweis |
+
+**Commit-Hygiene:** Diese iOS-Dateien gehören **nicht** in die Trade-Number-Welle. In `8fe4518` war `BuyOrderViewModel` fälschlich mit committed; der Validator-Nachzug in `8538f1e` behebt den Build. Siehe auch [`TRADE_NUMBER_REFERENCE.md`](TRADE_NUMBER_REFERENCE.md) § Commit-Scope.
+
+---
+
 ## Verwandte Dokumentation
 
 - Globale 4-Augen-Konfiguration: [`CONFIGURATION_4EYES_DEPLOYMENT.md`](CONFIGURATION_4EYES_DEPLOYMENT.md)
