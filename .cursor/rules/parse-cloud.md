@@ -109,4 +109,6 @@ Modultabellen: `Documentation/BOOKING_AND_BELEG_SSOT.md`, `Documentation/ACCOUNT
 
 **Trade-Nummern:** Vergabe und Anzeige (`YYYY-NNN`, Europe/Berlin, pro Trader/Jahr) — `utils/tradeNumberAllocation.js`, SSOT via `SequenceCounter`. Spec: [`Documentation/TRADE_NUMBER_REFERENCE.md`](../Documentation/TRADE_NUMBER_REFERENCE.md).
 
+**Per-user Overrides:** Commission-Bundle, App Service Charge, Depot-Limit — Resolver in `configHelper/resolve*.js`, 4-Augen via `usersRequest*`. Spec: [`Documentation/COMMISSION_OVERRIDE_REFERENCE.md`](../Documentation/COMMISSION_OVERRIDE_REFERENCE.md).
+
 Kurzfassung für Leser im Repo: [`Documentation/ENGINEERING_GUIDE.md`](../Documentation/ENGINEERING_GUIDE.md) → Abschnitt *Parse Cloud: Modularisierung und Refactor-Policy*.

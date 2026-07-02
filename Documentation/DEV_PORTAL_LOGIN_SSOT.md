@@ -52,7 +52,8 @@ Die **Dev-Login-Box** auf `/admin/login` (nur `import.meta.env.DEV`) liest diese
 ## 4. Smoke / SSH-Tunnel vom Mac
 
 - **LAN:** `./scripts/smoke-admin-get-user-details.sh` (liest `BA_PASSWORD` aus `scripts/.env.server`).
-- **Commission 4-Augen E2E:** `./scripts/smoke-commission-rate-bundle-e2e.sh` (admin beantragt → finance genehmigt → Revert; optional `SMOKE_APPROVER_PASSWORD` wenn Approver-Passwort abweicht).
+- **Commission 4-Augen E2E (global):** `./scripts/smoke-commission-rate-bundle-e2e.sh` (admin beantragt → finance genehmigt → Revert; optional `SMOKE_APPROVER_PASSWORD` wenn Approver-Passwort abweicht).
+- **Per-user Overrides 4-Augen E2E:** `./scripts/smoke-user-commission-rate-bundle-e2e.sh`, `./scripts/smoke-user-app-service-charge-e2e.sh`, `./scripts/smoke-user-open-depot-limit-e2e.sh` (Antrag auf Benutzer-Detail → zweiter Admin genehmigt → `getUserDetails` prüft Controls → Revert). SSOT: [`COMMISSION_OVERRIDE_REFERENCE.md`](COMMISSION_OVERRIDE_REFERENCE.md).
 - **Legal App-Name 4-Augen E2E:** `./scripts/smoke-legal-app-name-e2e.sh` (`legalAppName` via `requestConfigurationChange` → `approveRequest` → Revert).
 - **Nach Deploy (automatisch):** Parse-Cloud-Deploy und Admin-Portal-Deploy rufen `./scripts/post-deploy-smoke.sh` auf (`POST_DEPLOY_SMOKE=0` zum Überspringen; Profile: `full` | `admin` | `parse`).
 - **SSH-Tunnel** (Terminal 1 offen lassen): `ssh -L 8443:127.0.0.1:443 io@192.168.178.20`  

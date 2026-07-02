@@ -76,6 +76,37 @@ Ausführung: `cd backend/parse-server && npm test -- --testPathPattern='onboardi
 | Skript | Abdeckung |
 |--------|-----------|
 | `scripts/run-smoke-signup-role-immutability.sh` | Retail-Rolle nach `POST /users` nicht änderbar (Progress-Blob + `PUT /users`) |
+| `scripts/smoke-growth-dashboard.sh` | `getGrowthDashboard` Contract (`schemaVersion` 2, Aktivierung, AUM, Umsatz) |
+| `scripts/smoke-user-acquisition-e2e.sh` | `recordUserAcquisition` Idempotenz (Retail-Session) |
+| `scripts/smoke-marketing-spend-import.sh` | `importMarketingSpend` dryRun + Import + CAC im Dashboard |
+
+Teil von `scripts/post-deploy-smoke.sh` (Profile `admin` / `full`).
+
+**Per-user Overrides (Commission / Service Charge / Depot-Limit, 4-Augen):**
+
+| Skript | Abdeckung |
+|--------|-----------|
+| `scripts/smoke-user-commission-rate-bundle-e2e.sh` | `requestUserCommissionRateBundleChange` → `approveRequest` → `getUserDetails.commissionControls` → Revert (Trader) |
+| `scripts/smoke-user-app-service-charge-e2e.sh` | `requestUserAppServiceChargeChange` → Approve → `appServiceChargeControls` → Revert (Investor) |
+| `scripts/smoke-user-open-depot-limit-e2e.sh` | `requestUserOpenDepotLimitChange` → Approve → `openDepotLimitControls` → Revert (Trader) |
+
+Credentials: `BA_PASSWORD` in `scripts/.env.server`; optional `SMOKE_APPROVER_PASSWORD`, `SMOKE_TRADER_EMAIL`. SSOT: [`../COMMISSION_OVERRIDE_REFERENCE.md`](../COMMISSION_OVERRIDE_REFERENCE.md), [`../DEV_PORTAL_LOGIN_SSOT.md`](../DEV_PORTAL_LOGIN_SSOT.md).
+
+**Backend (Jest, Resolver + Request-Handler):**
+
+| Datei | Abdeckung |
+|-------|-----------|
+| `cloud/functions/admin/__tests__/usersRequestCommissionRateBundle.test.js` | Antrag, Validierung, `clearOverride` |
+| `cloud/functions/admin/__tests__/usersRequestAppServiceCharge.test.js` | Antrag Service Charge |
+| `cloud/functions/admin/__tests__/usersRequestOpenDepotLimit.test.js` | Antrag Depot-Limit |
+| `cloud/utils/configHelper/__tests__/resolveCommissionRateBundle.test.js` | Resolver-Kette Commission |
+| `cloud/utils/configHelper/__tests__/resolveAppServiceChargeRate.test.js` | Resolver Service Charge |
+| `cloud/utils/configHelper/__tests__/resolveMaxOpenDepotPositions.test.js` | Resolver Depot-Limit |
+| `cloud/utils/configHelper/__tests__/overrideEffectiveFrom.test.js` | `effectiveFrom`-Scheduling |
+| `cloud/utils/configHelper/__tests__/traderOpenDepotLimits.test.js` | `assertTraderCanOpenNewDepotPosition` |
+| `cloud/utils/accountingHelper/__tests__/commissionRateSnapshot.test.js` | Investment-Snapshot |
+
+Ausführung: `cd backend/parse-server && npm test -- --testPathPattern='usersRequestCommission|usersRequestAppService|usersRequestOpenDepot|resolveCommission|resolveAppService|resolveMaxOpenDepot|overrideEffective|commissionRateSnapshot|traderOpenDepot'`
 
 **iOS (`FIN1Tests/`):**
 

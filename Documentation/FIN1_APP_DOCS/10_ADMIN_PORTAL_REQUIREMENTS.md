@@ -1,6 +1,6 @@
 # FIN1 Admin-Web-Portal: Dokumentation
 
-> **Datum:** 2026-07-01 (Ergänzung: **Growth & Marketing** `/growth`, Attribution, Marketing-Spend/CAC) · zuvor 2026-06-25 (Ergänzung: **Anzeige** → „Trader-Depot: Investment-Pool Status anzeigen“, iOS Depot-Kachel) · zuvor 2026-05-02 (Ergänzung: **System**-Seite Health/Smoke, **App Ledger** Summen/User-Filter; siehe unten „Stand 2026-05“) · zuvor 2026-04-15 (**Legal Branding / `{{APP_NAME}}`**: kanonische Pflege unter **Konfiguration → Systemparameter** (`legalAppName`, 4‑Augen); AGB & Rechtstexte nur Hinweis/Link; `updateLegalBranding` deprecated) (**vorher 2026-04-04:** Benutzer-Detailseite: Trading-/Investment-Übersicht und Kontoauszug ausführlich dokumentiert; zuvor Payload/`getUserDetails`; 2026-04-03 Freigaben: Typ-Filter, Listen-Sortierung / Parse-Datum / Deploy-Check in §5; 2026-04-01 Hilfe & Anleitung; 2026-03-28 KYB-Status CSR, Vitest/ESLint/CI, `getCompanyKyb*`)
+> **Datum:** 2026-07-02 (Ergänzung: **Benutzer-Detail** → per-user Overrides Commission / App Service Charge / Depot-Limit, 4-Augen) · zuvor 2026-07-01 (Ergänzung: **Growth & Marketing** `/growth`, Attribution, Marketing-Spend/CAC) · zuvor 2026-06-25 (Ergänzung: **Anzeige** → „Trader-Depot: Investment-Pool Status anzeigen“, iOS Depot-Kachel) · zuvor 2026-05-02 (Ergänzung: **System**-Seite Health/Smoke, **App Ledger** Summen/User-Filter; siehe unten „Stand 2026-05“) · zuvor 2026-04-15 (**Legal Branding / `{{APP_NAME}}`**: kanonische Pflege unter **Konfiguration → Systemparameter** (`legalAppName`, 4‑Augen); AGB & Rechtstexte nur Hinweis/Link; `updateLegalBranding` deprecated) (**vorher 2026-04-04:** Benutzer-Detailseite: Trading-/Investment-Übersicht und Kontoauszug ausführlich dokumentiert; zuvor Payload/`getUserDetails`; 2026-04-03 Freigaben: Typ-Filter, Listen-Sortierung / Parse-Datum / Deploy-Check in §5; 2026-04-01 Hilfe & Anleitung; 2026-03-28 KYB-Status CSR, Vitest/ESLint/CI, `getCompanyKyb*`)
 > **Status:** MVP Implementiert ✅
 > **URL:** `https://192.168.178.24/admin/`
 
@@ -93,7 +93,7 @@ Ein web-basiertes Administrations-Portal für FIN1, das rollen-basierte Zugriffs
 
 **Route:** `userId` = Parse **`objectId`** des `_User` (Link aus der Benutzerliste).
 
-**Frontend:** `admin-portal/src/pages/Users/UserDetail.tsx` (TanStack Query `getUserDetails`), Unterkomponenten in `pages/Users/components/` (`AccountStatementCard`, `InvestmentTable`, `UserTradeCard`, `UserActionModal`, `UserShared`).
+**Frontend:** `admin-portal/src/pages/Users/UserDetail.tsx` (TanStack Query `getUserDetails`), Unterkomponenten in `pages/Users/components/` (`AccountStatementCard`, `InvestmentTable`, `UserTradeCard`, `UserCommissionRateOverrideCard`, `UserAppServiceChargeOverrideCard`, `UserOpenDepotLimitOverrideCard`, `UserActionModal`, `UserShared`).
 
 **Backend:** `getUserDetails` in `backend/parse-server/cloud/functions/admin/users.js` (Berechtigung `getUserDetails`). Aggregiert u. a.:
 
@@ -105,6 +105,24 @@ Ein web-basiertes Administrations-Portal für FIN1, das rollen-basierte Zugriffs
 | Investor | `Investment` zu `investorId` = `objectId` **oder** `user:<email>` | Karte **Investment-Übersicht** (KPIs inkl. reserviert/aktiv/abgeschlossen), Tabellen **Ongoing** / **Completed** (`InvestmentTable`) |
 | Kontoauszug | `AccountStatement` mit `userId` = **`user:<email>`** (stableId), Anfangssaldo aus **`loadConfig`/ aktiver `Configuration`-Zeile** (`initialAccountBalance`; ohne Konfiguration **0 €**) | Karte **Cash Balance & Kontoauszug** bzw. **Account Balance & Kontoauszug** (`AccountStatementCard`): siehe Unterabschnitt **Kontoauszug** unten |
 | Aktivitäten | `AuditLog` mit `resourceId` = `userId` (objectId), neueste zuerst | Karte **Letzte Aktivitäten** (sofern Einträge vorhanden) |
+| **Individuelle Overrides** | `_User`-Felder + `configHelper`-Resolver (siehe [`../COMMISSION_OVERRIDE_REFERENCE.md`](../COMMISSION_OVERRIDE_REFERENCE.md)) | Drei einklappbare Karten (4-Augen): **Erfolgsprovision**, **App Service Charge** (nur Investor), **Depot-Positionslimit** (nur Trader) |
+
+#### Individuelle Overrides (4-Augen, nutzerbezogen)
+
+**SSOT:** [`Documentation/COMMISSION_OVERRIDE_REFERENCE.md`](../COMMISSION_OVERRIDE_REFERENCE.md)
+
+**Komponenten:** `UserCommissionRateOverrideCard`, `UserAppServiceChargeOverrideCard`, `UserOpenDepotLimitOverrideCard` (`pages/Users/components/`).
+
+| Karte | Rolle | Cloud Function (Antrag) | Freigabe-Typ |
+|-------|-------|-------------------------|--------------|
+| Erfolgsprovision (Bundle) | `trader` / `investor` | `requestUserCommissionRateBundleChange` | `user_commission_rate_bundle_change` |
+| App Service Charge | `investor` | `requestUserAppServiceChargeChange` | `user_app_service_charge_change` |
+| Max. offene Depot-Positionen | `trader` | `requestUserOpenDepotLimitChange` | `user_open_depot_limit_change` |
+
+- **Anzeige:** Globaler Wert, gespeicherter Override, effektive Rate/Limit (`effectiveRates` / `effectiveRate` / `effectiveLimit`), optional geplanter Override (`pendingOverride` bei `effectiveFrom` in der Zukunft).
+- **Bearbeitung:** Antrag mit Begründung; optional `effectiveFrom`; „Override entfernen“ (`clearOverride`). Backend erzwingt 4-Augen (`createCorrectionRequest`); Approver ≠ Antragsteller.
+- **Runtime:** Resolver-Kette serverseitig (Investment-Snapshot → User-Override → Global); iOS ohne per-user Override-UI.
+- **Smokes (nach Deploy):** `scripts/smoke-user-commission-rate-bundle-e2e.sh`, `scripts/smoke-user-app-service-charge-e2e.sh`, `scripts/smoke-user-open-depot-limit-e2e.sh` (Teil von `post-deploy-smoke.sh`).
 
 #### Trading- und Investment-Übersicht (rollenspezifisch)
 

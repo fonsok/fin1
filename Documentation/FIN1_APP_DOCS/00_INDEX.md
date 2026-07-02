@@ -1,7 +1,7 @@
 ---
 title: "FIN1 App-Dokumentation – Index"
 audience: ["Stakeholder", "Produkt", "Entwicklung", "QA", "Betrieb", "Support", "Compliance"]
-lastUpdated: "2026-06-29"
+lastUpdated: "2026-07-02"
 ---
 
 ## Zweck
@@ -72,6 +72,8 @@ Wenn Dokumente und Code/Configs widersprechen, gilt:
     - **Stand 2026-04-15:** Legal Branding (`{{APP_NAME}}`) kanonisch unter **Konfiguration → Systemparameter** (`legalAppName`, 4‑Augen); AGB & Rechtstexte nur Hinweis/Deep‑Link; `updateLegalBranding` deprecated/blockiert
     - **Stand 2026-04:** Hilfe & Anleitung: **FAQ-Import (Restore)** mit Dry-Run, **Development Maintenance** (`devResetFAQsBaseline`) und ENV `ALLOW_FAQ_HARD_DELETE*` (siehe [`06_BETRIEB_PROZESSE.md`](06_BETRIEB_PROZESSE.md), Runbook § 8.4)
     - **Stand 2026-03:** CSR-Web **KYB-Status** (Firmen, Leserecht), Admin-Navigation **KYB-Status**, Vitest-Helfer, ESLint 9 + CI-Job `admin-portal`
+    - **Stand 2026-07:** **Growth & Marketing** (`/growth`): Aktivierung, AUM, GoB-Umsatz, Attribution, Marketing-Spend/CAC — SSOT [`GROWTH_MARKETING_PHASE1_ATTRIBUTION.md`](../GROWTH_MARKETING_PHASE1_ATTRIBUTION.md)
+    - **Stand 2026-07:** **Per-user Overrides** (Commission, App Service Charge, Depot-Limit, 4-Augen auf Benutzer-Detail) — SSOT [`../COMMISSION_OVERRIDE_REFERENCE.md`](../COMMISSION_OVERRIDE_REFERENCE.md)
     - Server-driven **Hilfe & Anleitung** (FAQs): technischer Tiefgang, Cloud-Code-Deployment, Paging → [`../HELP_N_INSTRUCTIONS_SERVER_DRIVEN.md`](../HELP_N_INSTRUCTIONS_SERVER_DRIVEN.md)
     - Anforderungen pro Rolle
     - Screen-Übersicht

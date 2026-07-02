@@ -162,9 +162,34 @@ Die folgenden Parameter erfordern 4-Augen-Genehmigung:
 
 **Anzeige-Parameter (Kategorie `display`):** Werden im Admin-Portal unter **Konfiguration → Anzeige** gepflegt; iOS liest über `getConfig.display.*` (`ConfigurationService.fetchRemoteDisplayConfig()`). Nach Freigabe: App-Neustart oder erneuter Config-Fetch. Die drei Provisions-Parameter werden im Admin-Portal als **eine Karte** „Erfolgsprovision App + Trader“ bearbeitet (Gesamtprovision + Aufteilungs-Dropdown). Technisch bleiben drei DB-Felder; Änderungen laufen als **ein** 4-Augen-Antrag über `requestCommissionRateBundleChange` (Metadaten-Key `commissionRateBundle`). Validierung: `traderCommissionRate + appCommissionRate` muss **exakt** `investorCommissionRateTotal` entsprechen.
 
+**Per-user Overrides (zusätzlich zur globalen Konfiguration):** Admin-Portal **Benutzer → Details** — individuelle Erfolgsprovision (Trader/Investor), App Service Charge (Investor), max. offene Depot-Positionen (Trader). Anträge: `requestUserCommissionRateBundleChange`, `requestUserAppServiceChargeChange`, `requestUserOpenDepotLimitChange` → Freigabe wie andere Korrekturanträge (`approveRequest`). Runtime-Resolver: `resolveCommissionRateBundle`, `resolveAppServiceChargeRate`, `resolveMaxOpenDepotPositions`. Vollständige Spec: [`COMMISSION_OVERRIDE_REFERENCE.md`](COMMISSION_OVERRIDE_REFERENCE.md).
+
 ---
 
-## Workflow
+## Per-user Overrides (Benutzer-Detail)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  1. Admin A öffnet Benutzer-Detail, ändert Override-Karte                  │
+│       ↓                                                                     │
+│  2. Portal ruft requestUser*Change auf (Commission / Service Charge /     │
+│     Depot-Limit)                                                            │
+│       ↓                                                                     │
+│  3. Backend erstellt FourEyesRequest (requestType: user_*_change)           │
+│       ↓                                                                     │
+│  4. Admin B genehmigt unter /approvals                                      │
+│       ↓                                                                     │
+│  5. approve.js schreibt Override-Felder auf Parse _User                     │
+│       ↓                                                                     │
+│  6. Settlement / Investment-Trigger / Paired Buy nutzen Resolver          │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Smokes:** `scripts/smoke-user-commission-rate-bundle-e2e.sh`, `scripts/smoke-user-app-service-charge-e2e.sh`, `scripts/smoke-user-open-depot-limit-e2e.sh` (in `post-deploy-smoke.sh`).
+
+---
+
+## Workflow (globale Konfiguration)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
