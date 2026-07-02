@@ -30,7 +30,8 @@
 | Release-Build `FIN1` Release / Simulator | ✅ | Lokal verifiziert |
 | Git push `main` | ✅ | `origin/main` @ `c0de3b9` |
 | GitHub CI (`build-test-lint` + Smokes) | ✅ | Run #183, ~65 min |
-| **iOS App Gerät / TestFlight** | 📱 | **Jetzt** — siehe unten |
+| **TestFlight Upload** | 🟡 | Hochgeladen — Apple **Processing** (gelb); Install wenn grün |
+| Geräte-Kurztest (nach Processing) | ⏳ | Market-Buy `865985` ohne Upsert |
 
 **Kein weiterer Backend-Deploy** für diese Welle.
 
@@ -41,7 +42,8 @@
 1. `git pull` / Branch **`main`** @ `c0de3b9`.
 2. Xcode → Scheme **FIN1** (Staging-Parse = iobox `.20`).
 3. **Product → Run** auf physischem Gerät — Kurztest Market-Buy (siehe Abnahme).
-4. **Product → Archive** → Distribute → **TestFlight** (oder Ad-Hoc intern).
+4. **Product → Archive** → Distribute → **TestFlight** — ✅ erledigt (2026-07-02).
+5. Warten bis Build in TestFlight **grün** (Processing abgeschlossen), dann intern installieren + Kurztest.
 
 ### Kurztest vor Upload (empfohlen)
 
@@ -79,4 +81,14 @@
 
 ## Ergebnis
 
-**Go für iOS-Release** — Backend live, Abnahme dokumentiert, CI grün. **Nächster Schritt:** Archive → TestFlight → Kurztest auf Gerät.
+**Geschlossen (2026-07-02)** — Welle formal abgeschlossen.
+
+| Gate | Status |
+|------|--------|
+| Backend iobox | ✅ |
+| Abnahme Phase 8–9 | ✅ |
+| CI `main` | ✅ |
+| TestFlight Upload | 🟡 Processing (Apple) |
+| Post-Processing Gerätetest | ⏳ nach grünem Build |
+
+Kein weiterer Server-Deploy. Offene Punkte nur Backlog (Slice 4, optional Konsole-Log).

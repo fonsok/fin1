@@ -119,12 +119,15 @@
 
 | Feld | Wert |
 |------|------|
-| **Datum** | 2026-07-02 |
+| **Datum Abnahme** | 2026-07-02 |
+| **Datum Welle geschlossen** | 2026-07-02 |
 | **Umgebung** | iobox (`192.168.178.20`) |
-| **iOS** | Unit-Tests + API-Mirror; Simulator-Geschäftsfall Phase 8 (2026-07-01) |
+| **iOS** | Unit-Tests + API-Mirror; TestFlight hochgeladen (Processing 🟡) |
+| **Git-Ref** | `c0de3b9` (+ Docs `44223a9`) |
 | **Automatisierter Check** | ✅ feed-first 2-Szenario + 3 Unit-Tests |
 | **Backend-Deploy** | ✅ Parse Cloud (intent-only + Feed Slice 1–3) |
-| **Ergebnis** | **Go** — Phase 8–9 abgenommen |
+| **CI** | ✅ GitHub `main` |
+| **Ergebnis** | **Geschlossen** — Phase 8–9 Welle abgeschlossen |
 
 **Bemerkungen:**
 
@@ -159,13 +162,15 @@
 
 ---
 
-## 7) Nächste Schritte nach Abnahme
+## 7) Welle geschlossen (2026-07-02)
 
-| # | Aktion | Priorität |
-|---|--------|-----------|
-| 1 | iOS Release (TestFlight/intern) mit `c0de3b9` | **Jetzt** — CI grün |
-| 2 | Optional: Simulator-Konsole für Szenario A manuell bestätigen | Niedrig |
+| # | Aktion | Status |
+|---|--------|--------|
+| 1 | iOS TestFlight Upload (`c0de3b9`) | ✅ Hochgeladen — 🟡 Processing |
+| 2 | Geräte-Kurztest nach grünem Build | ⏳ Optional |
 | 3 | Echter Market-Data-Service (`backend/market-data/`) | Backlog (Slice 4) |
 | 4 | P0 #2 Fees/Belege | Backlog |
 
-**Parse-Cloud-Deploy:** Stand 2026-07-02 live auf iobox — kein weiterer Deploy für diese Welle erforderlich.
+**Parse-Cloud-Deploy:** Stand 2026-07-02 live auf iobox — kein weiterer Deploy für diese Welle.
+
+**Nächste Produktwelle (separat):** Growth Attribution G1 — Code noch nicht auf `main`; eigener Commit → CI → TestFlight.
