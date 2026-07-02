@@ -20,6 +20,7 @@ final class MockParseAPIClient: ParseAPIClientProtocol, @unchecked Sendable {
     var lastQuery: [String: Any]?
     var lastFunctionName: String?
     var lastFunctionParameters: [String: Any]?
+    var functionCallNames: [String] = []
 
     // MARK: - Mock Data
 
@@ -136,9 +137,20 @@ final class MockParseAPIClient: ParseAPIClientProtocol, @unchecked Sendable {
         self.callFunctionCalled = true
         self.lastFunctionName = name
         self.lastFunctionParameters = parameters
+        self.functionCallNames.append(name)
 
         if self.shouldThrowError {
             throw self.errorToThrow
+        }
+
+        if name == "upsertMarketDataQuote",
+           let params = parameters,
+           let synthesized: T = decodeFromJSONDictionary([
+               "symbol": (params["symbol"] as? String) ?? "",
+               "price": (params["price"] as? Double) ?? 0,
+               "publishedAt": mockCreatedAt
+           ]) {
+            return synthesized
         }
 
         // Tests that do not explicitly set mockFunctionResult can still succeed for
@@ -222,6 +234,7 @@ final class MockParseAPIClient: ParseAPIClientProtocol, @unchecked Sendable {
         self.lastQuery = nil
         self.lastFunctionName = nil
         self.lastFunctionParameters = nil
+        self.functionCallNames = []
         self.shouldThrowError = false
     }
 

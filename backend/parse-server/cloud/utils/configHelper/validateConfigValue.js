@@ -120,6 +120,13 @@ function validateConfigValue(paramName, value) {
       integer: true,
       errorMsg: 'Max. Teil-Verkäufe muss 0, 1, 2 oder 3 sein (0 = nur Vollverkauf)',
     },
+    maxTraderOpenDepotPositions: {
+      type: 'number',
+      min: 1,
+      max: 50,
+      integer: true,
+      errorMsg: 'Max. offene Depot-Positionen muss eine ganze Zahl zwischen 1 und 50 sein',
+    },
     minimumCashReserve: {
       type: 'number',
       min: 0.01,
@@ -222,6 +229,12 @@ function validateConfigValue(paramName, value) {
       min: 0,
       max: 50000000.0,
       errorMsg: 'Pool-Mirror-Buy-Obergrenze muss zwischen 0 € (deaktiviert) und 50.000.000,00 € liegen',
+    },
+    minTraderBuyOrderAmount: {
+      type: 'number',
+      min: 0,
+      max: 1000000.0,
+      errorMsg: 'Mindest-Kaufbetrag (Trader) muss zwischen 0 € (deaktiviert) und 1.000.000,00 € liegen',
     },
     daily_transaction_limit: {
       type: 'number',

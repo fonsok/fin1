@@ -64,7 +64,7 @@ final class OrderAPIServiceTests: XCTestCase {
             "orderNumber": "ORD-456",
             "status": "submitted",
             "executionPrice": 99.5,
-            "priceSource": "client_quote_validated",
+            "priceSource": "server_market_data",
             "grossAmount": 995.0,
             "totalFees": 6.0,
             "netAmount": 989.0,
@@ -76,9 +76,12 @@ final class OrderAPIServiceTests: XCTestCase {
 
         // Then
         XCTAssertTrue(self.mockAPIClient.callFunctionCalled)
+        XCTAssertEqual(self.mockAPIClient.functionCallNames, ["upsertMarketDataQuote", "executeSellOrder"])
         XCTAssertEqual(self.mockAPIClient.lastFunctionName, "executeSellOrder")
         XCTAssertEqual(self.mockAPIClient.lastFunctionParameters?["tradeId"] as? String, "trade-abc")
         XCTAssertEqual(self.mockAPIClient.lastFunctionParameters?["clientOrderIntentId"] as? String, sellOrder.id)
+        XCTAssertNil(self.mockAPIClient.lastFunctionParameters?["price"])
+        XCTAssertNil(self.mockAPIClient.lastFunctionParameters?["clientQuotedAt"])
         XCTAssertEqual(savedOrder.id, "server-sell-order-id-456")
         XCTAssertEqual(savedOrder.symbol, sellOrder.symbol)
         XCTAssertEqual(savedOrder.quantity, sellOrder.quantity)

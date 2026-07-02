@@ -511,6 +511,14 @@ final class OrderAPIService: OrderAPIServiceProtocol {
             throw AppError.validationError("Ungültige Sell-Order-Parameter.")
         }
 
+        if Self.isMarketOrderInstruction(order.orderInstruction) {
+            try await MarketDataQuotePublisher.publishBeforeMarketExecution(
+                symbol: order.symbol,
+                indicativePrice: order.price,
+                via: self.apiClient
+            )
+        }
+
         let result: ExecuteSellOrderResult = try await apiClient.callFunction(
             "executeSellOrder",
             parameters: payload
@@ -545,14 +553,17 @@ final class OrderAPIService: OrderAPIServiceProtocol {
         )
     }
 
+    private static func isMarketOrderInstruction(_ instruction: String?) -> Bool {
+        let normalized = (instruction ?? "market").trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return normalized.isEmpty || normalized == "market"
+    }
+
     private static func buildExecuteSellOrderPayload(order: OrderSell, tradeId: String?) -> [String: Any] {
         var payload: [String: Any] = [
             "symbol": order.symbol,
             "quantity": Int(order.quantity),
-            "price": order.price,
             "orderInstruction": order.orderInstruction ?? "market",
-            "clientOrderIntentId": order.id,
-            "clientQuotedAt": Self.iso8601NowString()
+            "clientOrderIntentId": order.id
         ]
         if let tradeId, !tradeId.isEmpty {
             payload["tradeId"] = tradeId

@@ -31,6 +31,8 @@ const DEFAULT_CONFIG = {
     initialAccountBalance: 0.0,
     /** 0 = nur Vollverkauf; 1–3 = max. Teil-Verkäufe vor Abschluss (Trader-Leg). */
     maxTraderPartialSells: 3,
+    /** Max. gleichzeitig offene Trader-Depot-Positionen (Restmenge > 0). */
+    maxTraderOpenDepotPositions: 5,
   },
   limits: {
     minDeposit: 10.0,
@@ -39,14 +41,16 @@ const DEFAULT_CONFIG = {
     maxInvestment: 100000.0,
     /** 0 = keine Obergrenze; sonst max. Brutto (EUR) pro Pool-Mirror-Buy-Leg und max. reserviertes Pool-Kapital je Trader. */
     maxPoolMirrorBuyOrderAmount: 0,
+    /** Mindest-Brutto (EUR) pro Trader-Kauforder (TRADER-Leg); 0 = deaktiviert. Pool-Mirror-Leg unberührt. */
+    minTraderBuyOrderAmount: 300,
     dailyTransactionLimit: 10000.0,
     weeklyTransactionLimit: 50000.0,
     monthlyTransactionLimit: 200000.0,
-    /** Max age of clientQuotedAt for market executePairedBuy (seconds). Aligns with iOS price-validity window. */
+    /** @deprecated Intent-only execution (P0): market orders use MarketData only; unused. */
     executionPriceMaxQuoteAgeSeconds: 30,
     /** Max age of Parse MarketData row when used as execution reference (seconds). */
     executionPriceMarketDataMaxAgeSeconds: 300,
-    /** Max deviation client vs MarketData in basis points (100 = 1%). */
+    /** @deprecated Intent-only execution: client price tolerance no longer applied. */
     executionPriceToleranceBps: 100,
   },
   display: {

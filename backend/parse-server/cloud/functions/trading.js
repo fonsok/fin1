@@ -29,6 +29,7 @@ const {
   handleGetUserCashBalance,
 } = require('./tradingSettlementReads');
 const { handleGetUserDocumentInbox } = require('./userDocumentInbox');
+const { handleUpsertMarketDataQuote } = require('./upsertMarketDataQuote');
 
 // Get trader's open trades
 Parse.Cloud.define('getOpenTrades', async (request) => {
@@ -101,13 +102,11 @@ Parse.Cloud.define('placeOrder', async (request) => {
   const {
     symbol,
     quantity,
-    price,
     side,
     orderType,
     limitPrice,
     stopPrice,
     tradeId,
-    clientQuotedAt,
   } = request.params;
 
   if (!symbol) throw new Parse.Error(Parse.Error.INVALID_VALUE, 'Symbol required');
@@ -128,7 +127,7 @@ Parse.Cloud.define('placeOrder', async (request) => {
     }
   }
 
-  let executionPrice = Number(price || limitPrice || 0);
+  let executionPrice = Number(limitPrice || 0);
   const Order = Parse.Object.extend('Order');
   const order = new Order();
   order.set('traderId', getUserStableId(user));
@@ -136,20 +135,14 @@ Parse.Cloud.define('placeOrder', async (request) => {
   order.set('side', side);
   order.set('orderType', orderType);
   order.set('quantity', quantity);
-  order.set('price', price);
   order.set('limitPrice', limitPrice);
   order.set('stopPrice', stopPrice);
-  if (clientQuotedAt) {
-    order.set('clientQuotedAt', clientQuotedAt);
-  }
 
   if (side === 'buy' || side === 'sell') {
     const priceMeta = await resolveOrderExecutionPrice({
       symbol,
       orderType,
       limitPrice,
-      clientPrice: price,
-      clientQuotedAt,
     });
     applyExecutionPriceMetaToOrder(order, priceMeta);
     executionPrice = priceMeta.executionPrice;
@@ -170,6 +163,8 @@ Parse.Cloud.define('placeOrder', async (request) => {
     status: order.get('status'),
   };
 });
+
+Parse.Cloud.define('upsertMarketDataQuote', handleUpsertMarketDataQuote);
 
 Parse.Cloud.define('executePairedBuy', handleExecutePairedBuy);
 

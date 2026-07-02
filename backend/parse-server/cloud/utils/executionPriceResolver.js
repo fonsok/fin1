@@ -33,24 +33,20 @@ async function fetchLatestMarketDataPrice(symbol) {
 }
 
 /**
- * Authoritative execution price for paired buy (server-side SSOT).
- * Limit orders use limitPrice; market orders prefer fresh MarketData, else validated client quote.
+ * Authoritative execution price (server-side SSOT, intent-only).
+ * Market orders: fresh Parse MarketData only — no client price fallback.
+ * Limit orders: limitPrice only.
  */
 async function resolvePairedBuyExecutionPrice({
   symbol,
   orderInstruction = 'market',
   limitPrice = null,
-  clientPrice,
-  clientQuotedAt = null,
 }) {
   const config = await loadConfig(true);
   const limits = config.limits || {};
-  const maxQuoteAgeSec = Number(limits.executionPriceMaxQuoteAgeSeconds ?? 30);
   const marketDataMaxAgeSec = Number(limits.executionPriceMarketDataMaxAgeSeconds ?? 300);
-  const toleranceBps = Number(limits.executionPriceToleranceBps ?? 100);
 
   const instruction = String(orderInstruction).toLowerCase();
-  const submittedClientPrice = Number(clientPrice);
 
   if (instruction === 'limit') {
     const lp = Number(limitPrice);
@@ -60,7 +56,7 @@ async function resolvePairedBuyExecutionPrice({
     return {
       executionPrice: round4(lp),
       priceSource: 'limit_price',
-      clientSubmittedPrice: Number.isFinite(submittedClientPrice) ? round4(submittedClientPrice) : null,
+      clientSubmittedPrice: null,
       serverReferencePrice: round4(lp),
       priceSnapshotAt: new Date().toISOString(),
       clientQuotedAt: null,
@@ -71,58 +67,29 @@ async function resolvePairedBuyExecutionPrice({
     throw new Parse.Error(Parse.Error.INVALID_VALUE, 'orderInstruction must be market or limit');
   }
 
-  let quoteAt = null;
-  if (clientQuotedAt != null && clientQuotedAt !== '') {
-    quoteAt = new Date(clientQuotedAt);
-    if (Number.isNaN(quoteAt.getTime())) {
-      throw new Parse.Error(Parse.Error.INVALID_VALUE, 'invalid clientQuotedAt');
-    }
-    const ageMs = Date.now() - quoteAt.getTime();
-    if (ageMs > maxQuoteAgeSec * 1000) {
-      throw new Parse.Error(
-        Parse.Error.INVALID_VALUE,
-        'price quote expired — refresh market data and retry',
-      );
-    }
-    if (ageMs < -5000) {
-      throw new Parse.Error(Parse.Error.INVALID_VALUE, 'clientQuotedAt must not be in the future');
-    }
-  }
-
   const marketSnap = await fetchLatestMarketDataPrice(symbol);
-  if (marketSnap) {
-    const mdAgeMs = Date.now() - marketSnap.timestamp.getTime();
-    if (mdAgeMs <= marketDataMaxAgeSec * 1000) {
-      if (Number.isFinite(submittedClientPrice) && submittedClientPrice > 0) {
-        if (absBpsDiff(marketSnap.price, submittedClientPrice) > toleranceBps) {
-          throw new Parse.Error(
-            Parse.Error.INVALID_VALUE,
-            `client price does not match server MarketData (reference=${round4(marketSnap.price)})`,
-          );
-        }
-      }
-      return {
-        executionPrice: round4(marketSnap.price),
-        priceSource: 'server_market_data',
-        clientSubmittedPrice: Number.isFinite(submittedClientPrice) ? round4(submittedClientPrice) : null,
-        serverReferencePrice: round4(marketSnap.price),
-        priceSnapshotAt: marketSnap.timestamp.toISOString(),
-        clientQuotedAt: quoteAt ? quoteAt.toISOString() : null,
-      };
-    }
+  if (!marketSnap) {
+    throw new Parse.Error(
+      Parse.Error.INVALID_VALUE,
+      'no market data for symbol — cannot execute market order',
+    );
   }
 
-  if (!Number.isFinite(submittedClientPrice) || submittedClientPrice <= 0) {
-    throw new Parse.Error(Parse.Error.INVALID_VALUE, 'valid price required');
+  const mdAgeMs = Date.now() - marketSnap.timestamp.getTime();
+  if (mdAgeMs > marketDataMaxAgeSec * 1000) {
+    throw new Parse.Error(
+      Parse.Error.INVALID_VALUE,
+      'market data stale — refresh and retry',
+    );
   }
 
   return {
-    executionPrice: round4(submittedClientPrice),
-    priceSource: 'client_quote_validated',
-    clientSubmittedPrice: round4(submittedClientPrice),
-    serverReferencePrice: marketSnap ? round4(marketSnap.price) : null,
-    priceSnapshotAt: new Date().toISOString(),
-    clientQuotedAt: quoteAt ? quoteAt.toISOString() : null,
+    executionPrice: round4(marketSnap.price),
+    priceSource: 'server_market_data',
+    clientSubmittedPrice: null,
+    serverReferencePrice: round4(marketSnap.price),
+    priceSnapshotAt: marketSnap.timestamp.toISOString(),
+    clientQuotedAt: null,
   };
 }
 
@@ -132,22 +99,18 @@ function orderTypeToInstruction(orderType) {
 }
 
 /**
- * Shared resolver for placeOrder and Order beforeSave (trader-only buys).
+ * Shared resolver for placeOrder and Order beforeSave (trader-only buys/sells).
  */
 async function resolveOrderExecutionPrice({
   symbol,
   orderType = 'market',
   limitPrice = null,
-  clientPrice,
-  clientQuotedAt = null,
 }) {
   const instruction = orderTypeToInstruction(orderType);
   return resolvePairedBuyExecutionPrice({
     symbol,
     orderInstruction: instruction,
-    limitPrice: instruction === 'limit' ? (limitPrice ?? clientPrice) : null,
-    clientPrice,
-    clientQuotedAt,
+    limitPrice: instruction === 'limit' ? limitPrice : null,
   });
 }
 

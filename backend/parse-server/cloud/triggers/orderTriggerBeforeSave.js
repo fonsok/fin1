@@ -49,22 +49,35 @@ Parse.Cloud.beforeSave('Order', async (request) => {
     order.set('remainingQuantity', order.get('quantity'));
     order.set('timeInForce', order.get('timeInForce') || 'day');
 
-    // Server-authoritative execution price for standalone buy/sell legs (ADR-019).
+    // Server-authoritative execution price for standalone buy/sell legs (ADR-019, intent-only).
     // Paired buys set executionPriceSource in executePairedBuy; skip those rows.
     if (
       (side === 'buy' || side === 'sell')
       && !order.get('executionPriceSource')
       && !order.get('pairExecutionId')
     ) {
-      const clientPrice = Number(order.get('price') || order.get('limitPrice') || 0);
       const priceMeta = await resolveOrderExecutionPrice({
         symbol: order.get('symbol'),
         orderType: order.get('orderType'),
         limitPrice: order.get('limitPrice'),
-        clientPrice,
-        clientQuotedAt: order.get('clientQuotedAt'),
       });
       applyExecutionPriceMetaToOrder(order, priceMeta);
+    }
+
+    if (side === 'buy') {
+      const legType = String(order.get('legType') || '').trim().toUpperCase();
+      const isMirrorPoolLeg = legType === 'MIRROR_POOL' || order.get('isMirrorPoolOrder') === true;
+      if (!isMirrorPoolLeg) {
+        const {
+          getMinTraderBuyOrderAmount,
+          assertTraderBuyOrderMeetsMinimum,
+        } = require('../utils/configHelper/minTraderBuyOrderAmount');
+        const minAmount = await getMinTraderBuyOrderAmount();
+        const qty = Number(order.get('quantity') || 0);
+        const price = Number(order.get('price') || order.get('limitPrice') || 0);
+        const gross = Number(order.get('totalAmount') || 0) || qty * price;
+        assertTraderBuyOrderMeetsMinimum(gross, minAmount);
+      }
     }
   }
 

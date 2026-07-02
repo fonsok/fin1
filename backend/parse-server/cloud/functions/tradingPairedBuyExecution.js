@@ -3,6 +3,8 @@
 const { getUserStableId } = require('./tradingIdentity');
 const { capMirrorPoolQuantityForBuy } = require('../utils/poolMirrorBuyCap');
 const { resolvePairedBuyExecutionPrice } = require('../utils/executionPriceResolver');
+const { getMinTraderBuyOrderAmount, assertTraderBuyOrderMeetsMinimum } = require('../utils/configHelper/minTraderBuyOrderAmount');
+const { assertTraderCanOpenNewDepotPosition } = require('../utils/configHelper/traderOpenDepotLimits');
 
 /**
  * Atomic paired buy: trader leg + mirror-pool leg, idempotent via clientOrderIntentId.
@@ -16,7 +18,6 @@ async function handleExecutePairedBuy(request) {
 
   const {
     symbol,
-    price,
     orderInstruction = 'market',
     limitPrice = null,
     optionDirection = null,
@@ -27,7 +28,6 @@ async function handleExecutePairedBuy(request) {
     clientOrderIntentId,
     traderQuantity,
     mirrorPoolQuantity,
-    clientQuotedAt = null,
   } = request.params || {};
 
   if (!symbol || typeof symbol !== 'string') {
@@ -50,8 +50,6 @@ async function handleExecutePairedBuy(request) {
     symbol,
     orderInstruction,
     limitPrice,
-    clientPrice: price,
-    clientQuotedAt,
   });
   const executionPrice = priceResolution.executionPrice;
 
@@ -109,18 +107,22 @@ async function handleExecutePairedBuy(request) {
     };
   }
 
+  await assertTraderCanOpenNewDepotPosition(stableId);
+
+  const minTraderBuyAmount = await getMinTraderBuyOrderAmount();
+  assertTraderBuyOrderMeetsMinimum(Number(traderQuantity) * executionPrice, minTraderBuyAmount);
+
   const execution = new PairedExecution();
   execution.set('traderId', stableId);
   execution.set('clientOrderIntentId', intentId);
   execution.set('symbol', symbol);
   execution.set('price', executionPrice);
   execution.set('priceSource', priceResolution.priceSource);
-  execution.set('clientSubmittedPrice', priceResolution.clientSubmittedPrice);
+  if (priceResolution.clientSubmittedPrice != null) {
+    execution.set('clientSubmittedPrice', priceResolution.clientSubmittedPrice);
+  }
   execution.set('serverReferencePrice', priceResolution.serverReferencePrice);
   execution.set('priceSnapshotAt', priceResolution.priceSnapshotAt);
-  if (priceResolution.clientQuotedAt) {
-    execution.set('clientQuotedAt', priceResolution.clientQuotedAt);
-  }
   execution.set('status', 'PREPARED');
   execution.set('requestedAt', new Date().toISOString());
   await execution.save(null, { useMasterKey: true });

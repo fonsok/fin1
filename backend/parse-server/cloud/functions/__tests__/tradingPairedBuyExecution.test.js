@@ -17,12 +17,21 @@ jest.mock('../../utils/poolMirrorBuyCap', () => ({
 jest.mock('../../utils/executionPriceResolver', () => ({
   resolvePairedBuyExecutionPrice: jest.fn(async () => ({
     executionPrice: 1.5,
-    priceSource: 'client_quote_validated',
-    clientSubmittedPrice: 1.5,
+    priceSource: 'server_market_data',
+    clientSubmittedPrice: null,
     serverReferencePrice: 1.5,
     priceSnapshotAt: new Date().toISOString(),
-    clientQuotedAt: new Date().toISOString(),
+    clientQuotedAt: null,
   })),
+}));
+
+jest.mock('../../utils/configHelper/minTraderBuyOrderAmount', () => ({
+  getMinTraderBuyOrderAmount: jest.fn(async () => 0),
+  assertTraderBuyOrderMeetsMinimum: jest.fn(),
+}));
+
+jest.mock('../../utils/configHelper/traderOpenDepotLimits', () => ({
+  assertTraderCanOpenNewDepotPosition: jest.fn(async () => {}),
 }));
 
 function makeUser(role = 'trader') {
@@ -65,12 +74,10 @@ function makeOrderLeg({ id, legType, pairExecutionId }) {
 function baseParams(overrides = {}) {
   return {
     symbol: 'WKN-BUY',
-    price: 1.5,
     orderInstruction: 'market',
     traderQuantity: 10,
     mirrorPoolQuantity: 0,
     clientOrderIntentId: 'intent-new',
-    clientQuotedAt: new Date().toISOString(),
     ...overrides,
   };
 }

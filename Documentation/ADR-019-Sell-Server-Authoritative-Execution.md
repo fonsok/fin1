@@ -1,6 +1,6 @@
 # ADR-019 – Sell: Server-Authoritative Execution (Symmetrie zu Paired Buy)
 
-- **Status:** Accepted (Phase 1a–2, 3a–3b implemented 2026-06-17)
+- **Status:** Accepted (Phase 1a–2, 3a–3b implemented 2026-06-17; Phase 8 intent-only 2026-07-01)
 - **Datum:** 2026-06-17
 - **Bezug:** `BACKEND_CALCULATION_MIGRATION.md`, `executionPriceResolver.js`, `executePairedBuy`, ADR-018, Gap-Analyse Monetary SSOT (2026-06)
 
@@ -8,17 +8,18 @@
 
 Käufe mit Pool-Spiegel laufen über **`executePairedBuy`**: Intent (Menge, Symbol, Order-Typ), Server löst den Ausführungspreis via **`resolvePairedBuyExecutionPrice`** auf und persistiert Orders mit `executionPriceSource` / `serverReferencePrice`.
 
-**Verkäufe** liefen bislang über **`OrderAPIService.saveSellOrder`** → Parse `Order` `beforeSave`, aber **`orderTriggerBeforeSave` wendete `resolveOrderExecutionPrice` nur auf `side === 'buy'` an**. Der Client setzte `price`, `grossAmount` und `totalAmount` aus UI-Schätzungen (`estimatedProceeds`). Das widerspricht dem Zielbild „Server = mathematische Wahrheit“ und der Buy-Symmetrie.
+**Verkäufe** liefen bis Phase 8 über **`OrderAPIService.saveSellOrder`** → **`executeSellOrder`**, mit optionalem Client-Preis-Hint in älteren Builds. Seit Phase 8 gilt **intent-only** auch für Buy/Sell (siehe unten).
 
-Dies ist **kein** „Client↔Server-Doppelrechner mit Cent-Gate“, sondern **ein autoritativer Server-Pfad** mit optionalem Client-Preis-Hint (wie bei Buy).
+Dies ist **kein** „Client↔Server-Doppelrechner mit Cent-Gate“, sondern **ein autoritativer Server-Pfad** mit Parse-`MarketData` als Ausführungsreferenz.
 
 ## Entscheidung
 
 ### Phase 1a (jetzt) — `Order.beforeSave` für Sell
 
 1. **`orderTriggerBeforeSave`:** `resolveOrderExecutionPrice` + `applyExecutionPriceMetaToOrder` für **neue** Sell-Orders, wenn weder `executionPriceSource` noch `pairExecutionId` gesetzt sind (gleiche Ausnahme wie Buy).
-2. **iOS `ParseOrderInput.from(sellOrder:)`:** `clientQuotedAt` mitsenden (wie Buy), damit Market-Orders eine frische Quote und MarketData-Toleranzprüfung erhalten.
-3. **UI:** `estimatedProceeds` / „Erlös (geschätzt)“ bleiben reine Vorschau; Buchungsrelevant ist der nach `beforeSave` persistierte Order-Satz.
+2. **UI:** `estimatedProceeds` / „Erlös (geschätzt)“ bleiben reine Vorschau; Buchungsrelevant ist der nach `beforeSave` / `executeSellOrder` persistierte Order-Satz.
+
+> **Hinweis Phase 8:** `clientQuotedAt` und Client-`price` in Execute-Payloads sind **entfernt** (intent-only). Legacy `ParseOrderInput` kann `clientQuotedAt` noch bei direktem Order-Create mitsenden; Ausführung ignoriert Client-Preis für Market-Orders.
 
 ### Phase 1b (implemented 2026-06-17) — `executeSellOrder` Cloud Function
 
@@ -83,6 +84,25 @@ Async GL posting: `AccountStatement` + `SettlementOutbox` in Mongo-Transaction; 
 
 **Nicht ändern:** `defaultConfig.js` auf `true` setzen — Flag nur über live Config / Admin.
 
+### Phase 8 — Intent-only execution (implemented 2026-07-01)
+
+**Motivation:** Client-`price` / `clientQuotedAt` in `executePairedBuy` und `executeSellOrder` erlaubten implizit einen zweiten Preispfad (`client_quote_validated`). Das widerspricht dem SSOT-Ziel und der bewussten Ablehnung eines Client↔Server-Cent-Gates (siehe Nicht-Ziele).
+
+**Entscheidung:**
+
+1. **Execute-Payloads** enthalten nur Intent: `symbol`, `quantity`/`traderQuantity`, `orderInstruction`, optional `limitPrice`, `clientOrderIntentId` — **kein** `price`, **kein** `clientQuotedAt`.
+2. **`executionPriceResolver`:** Market-Orders lesen **ausschließlich** frische Parse-`MarketData` (max. Alter: `executionPriceMarketDataMaxAgeSeconds`, default 300s). Limit-Orders: `limitPrice` only. Kein `client_quote_validated`-Fallback.
+3. **Interim — `upsertMarketDataQuote`:** Bis ein serverseitiger Marktdaten-Feed existiert (`MARKET_DATA_UPDATES_IMPLEMENTATION.md`), publiziert iOS vor Market-Orders den **Anzeigekurs** via Cloud Function in `MarketData` (append-only). Der Server führt weiterhin nur aus, was er aus `MarketData` liest — nicht aus dem Execute-Payload. **Nicht** als Doppelrechner; Brücke für Demo/Mock-Umgebung.
+4. **Ops/E2E:** Smokes seeden `MarketData` per Master-Key (`scripts/smoke-*-e2e.sh`, `e2e-execute-paired-buy.sh`).
+
+**Akzeptanz:**
+
+- [x] `executionPriceResolver` ohne Client-Preis-Fallback (Jest)
+- [x] iOS sendet kein `price`/`clientQuotedAt` in `executePairedBuy` / `executeSellOrder`
+- [x] iOS ruft `upsertMarketDataQuote` vor Market-Buy/Sell auf
+- [ ] Produktions-Feed: serverseitiger Market-Data-Service (ersetzt Phase-8-Brücke)
+
+**Konsequenz:** Alte iOS-Builds, die noch `price` mitsenden, sind harmlos (Server ignoriert). Market-Orders **ohne** frische `MarketData` schlagen fehl (`no market data for symbol`).
 
 - Saldo-UI an `UserCashBalance` / `getAccountStatement` koppeln (→ Phase 3)
 
@@ -108,7 +128,6 @@ Async GL posting: `AccountStatement` + `SettlementOutbox` in Mongo-Transaction; 
 ## Akzeptanzkriterien Phase 1a
 
 - [x] Neue Sell-`Order` ohne `executionPriceSource` erhalten Server-`price` + `grossAmount`
-- [x] iOS sendet `clientQuotedAt` bei Sell-Create
 - [x] Regressionstests für Monetary Server-Only Policy (iOS)
 - [ ] Staging: Sell-Invoice `grossAmount` = Server-`executionPrice` × `quantity` (manuell)
 
@@ -123,6 +142,8 @@ Async GL posting: `AccountStatement` + `SettlementOutbox` in Mongo-Transaction; 
 | Thema | Pfad |
 |-------|------|
 | Preis-Resolver | `backend/parse-server/cloud/utils/executionPriceResolver.js` |
+| Market quote publish (Phase 8 interim) | `backend/parse-server/cloud/functions/upsertMarketDataQuote.js` |
+| iOS quote publish | `FIN1/Shared/Services/MarketDataQuotePublisher.swift` |
 | Order beforeSave | `backend/parse-server/cloud/triggers/orderTriggerBeforeSave.js` |
 | iOS Sell persist | `FIN1/Features/Trader/Services/OrderAPIService.swift` |
 | Paired Buy SSOT | `backend/parse-server/cloud/functions/tradingPairedBuyExecution.js` |

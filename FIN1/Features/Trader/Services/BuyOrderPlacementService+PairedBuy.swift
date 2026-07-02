@@ -17,7 +17,6 @@ extension BuyOrderPlacementService {
     ) async throws -> BuyOrderPlacementResult {
         var payload: [String: Any] = [
             "symbol": searchResult.wkn,
-            "price": executedPrice,
             "orderInstruction": orderMode.rawValue,
             "clientOrderIntentId": clientOrderIntentId,
             "traderQuantity": traderQuantity,
@@ -39,7 +38,6 @@ extension BuyOrderPlacementService {
         if let denomination = searchResult.denomination {
             payload["denomination"] = denomination
         }
-        payload["clientQuotedAt"] = BuyOrderPlacementService.iso8601Now()
 
         guard JSONSerialization.isValidJSONObject(payload) else {
             return BuyOrderPlacementResult(
@@ -47,6 +45,14 @@ extension BuyOrderPlacementService {
                 error: AppError.validationError(
                     "Ungültige Auftragsparameter (Numerik oder Format). Bitte Ansicht neu laden und erneut versuchen."
                 )
+            )
+        }
+
+        if orderMode == .market {
+            try await MarketDataQuotePublisher.publishBeforeMarketExecution(
+                symbol: searchResult.wkn,
+                indicativePrice: executedPrice,
+                via: parseAPIClient
             )
         }
 
@@ -84,8 +90,9 @@ extension BuyOrderPlacementService {
 
         let pairId = executionResult.pairExecutionId ?? "unknown"
         let underlyingAsset = searchResult.underlyingAsset ?? "N/A"
+        let serverPrice = executionResult.traderLegPrice(fallback: executedPrice)
         self.logOrderPlacedCompliance(
-            description: "Paired buy committed: trader=\(traderQuantity), mirror=\(mirrorPoolQuantity) for \(underlyingAsset) @ €\(Self.formattedPrice(executedPrice))",
+            description: "Paired buy committed: trader=\(traderQuantity), mirror=\(mirrorPoolQuantity) for \(underlyingAsset) @ €\(Self.formattedPrice(serverPrice))",
             notes: "PairExecutionId: \(pairId), Mode: \(orderMode.rawValue), Symbol: \(searchResult.wkn)"
         )
 
@@ -94,7 +101,7 @@ extension BuyOrderPlacementService {
                traderId: traderId,
                searchResult: searchResult,
                quantity: traderQuantity,
-               executedPrice: executedPrice,
+               executedPrice: serverPrice,
                orderMode: orderMode,
                limit: limit
            ) {
@@ -135,6 +142,15 @@ private struct ExecutePairedBuyResult: Decodable {
         self.idempotentReplay = try c.decodeIfPresent(Bool.self, forKey: .idempotentReplay)
         self.status = try c.decodeIfPresent(String.self, forKey: .status) ?? ""
         self.orders = try c.decodeIfPresent([ExecutePairedBuyOrderLeg].self, forKey: .orders)
+    }
+
+    func traderLegPrice(fallback: Double) -> Double {
+        guard let leg = orders?.first(where: {
+            ($0.legType ?? "").uppercased() == "TRADER"
+        }), let price = leg.price, price > 0 else {
+            return fallback
+        }
+        return price
     }
 
     func traderLegOrder(

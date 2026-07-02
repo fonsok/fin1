@@ -33,7 +33,6 @@ async function handleExecuteSellOrder(request) {
 
   const {
     symbol,
-    price,
     orderInstruction = 'market',
     limitPrice = null,
     clientOrderIntentId,
@@ -45,7 +44,6 @@ async function handleExecuteSellOrder(request) {
     underlyingAsset = null,
     wkn = null,
     strike = null,
-    clientQuotedAt = null,
   } = request.params || {};
 
   if (!symbol || typeof symbol !== 'string') {
@@ -84,8 +82,6 @@ async function handleExecuteSellOrder(request) {
     symbol,
     orderType,
     limitPrice,
-    clientPrice: price,
-    clientQuotedAt,
   });
   const executionPrice = priceResolution.executionPrice;
 

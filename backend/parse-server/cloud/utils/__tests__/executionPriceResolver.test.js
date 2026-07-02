@@ -9,12 +9,38 @@ const {
 jest.mock('../configHelper/index.js', () => ({
   loadConfig: jest.fn(async () => ({
     limits: {
-      executionPriceMaxQuoteAgeSeconds: 30,
       executionPriceMarketDataMaxAgeSeconds: 300,
-      executionPriceToleranceBps: 100,
     },
   })),
 }));
+
+function mockParseWithMarketData({ price = 42.5, timestamp = new Date(), noData = false } = {}) {
+  const marketRow = noData
+    ? null
+    : {
+      get(key) {
+        if (key === 'price') return price;
+        if (key === 'timestamp') return timestamp;
+        return undefined;
+      },
+    };
+
+  global.Parse = {
+    Query: jest.fn(() => ({
+      equalTo: jest.fn().mockReturnThis(),
+      descending: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      first: jest.fn().mockResolvedValue(marketRow),
+    })),
+    Error: class extends Error {
+      constructor(code, message) {
+        super(message);
+        this.code = code;
+      }
+      static get INVALID_VALUE() { return 400; }
+    },
+  };
+}
 
 describe('executionPriceResolver', () => {
   beforeEach(() => {
@@ -26,7 +52,6 @@ describe('executionPriceResolver', () => {
       symbol: 'ABC123',
       orderType: 'limit',
       limitPrice: 3.25,
-      clientPrice: 9.99,
     });
     expect(result.executionPrice).toBe(3.25);
     expect(result.priceSource).toBe('limit_price');
@@ -37,65 +62,40 @@ describe('executionPriceResolver', () => {
       symbol: 'ABC123',
       orderInstruction: 'limit',
       limitPrice: 2.5,
-      clientPrice: 9.99,
     });
     expect(result.executionPrice).toBe(2.5);
     expect(result.priceSource).toBe('limit_price');
   });
 
-  test('market order validates fresh client quote when no MarketData', async () => {
-    const query = {
-      equalTo: jest.fn().mockReturnThis(),
-      descending: jest.fn().mockReturnThis(),
-      limit: jest.fn().mockReturnThis(),
-      first: jest.fn().mockResolvedValue(null),
-    };
-    global.Parse = {
-      Query: jest.fn(() => query),
-      Error: class extends Error {
-        constructor(code, message) {
-          super(message);
-          this.code = code;
-        }
-        static get INVALID_VALUE() { return 400; }
-      },
-    };
+  test('market order uses fresh server MarketData (intent-only)', async () => {
+    mockParseWithMarketData({ price: 100 });
 
-    const now = new Date().toISOString();
     const result = await resolvePairedBuyExecutionPrice({
       symbol: 'E2E-PAIRED-WKN',
       orderInstruction: 'market',
-      clientPrice: 100,
-      clientQuotedAt: now,
     });
     expect(result.executionPrice).toBe(100);
-    expect(result.priceSource).toBe('client_quote_validated');
+    expect(result.priceSource).toBe('server_market_data');
+    expect(result.clientSubmittedPrice).toBeNull();
   });
 
-  test('rejects stale client quote', async () => {
-    global.Parse = {
-      Query: jest.fn(() => ({
-        equalTo: jest.fn().mockReturnThis(),
-        descending: jest.fn().mockReturnThis(),
-        limit: jest.fn().mockReturnThis(),
-        first: jest.fn().mockResolvedValue(null),
-      })),
-      Error: class extends Error {
-        constructor(code, message) {
-          super(message);
-          this.code = code;
-        }
-        static get INVALID_VALUE() { return 400; }
-      },
-    };
+  test('rejects market order when MarketData is missing', async () => {
+    mockParseWithMarketData({ noData: true });
 
-    const stale = new Date(Date.now() - 60_000).toISOString();
     await expect(resolvePairedBuyExecutionPrice({
       symbol: 'WKN1',
       orderInstruction: 'market',
-      clientPrice: 1.5,
-      clientQuotedAt: stale,
-    })).rejects.toThrow(/expired/i);
+    })).rejects.toThrow(/no market data/i);
+  });
+
+  test('rejects stale MarketData', async () => {
+    const stale = new Date(Date.now() - 400_000);
+    mockParseWithMarketData({ price: 50, timestamp: stale });
+
+    await expect(resolvePairedBuyExecutionPrice({
+      symbol: 'WKN1',
+      orderInstruction: 'market',
+    })).rejects.toThrow(/stale/i);
   });
 
   test('absBpsDiff within 1%', () => {

@@ -58,7 +58,7 @@ function makeOrder(attrs = {}) {
     grossAmount: 500,
     totalFees: 6,
     netAmount: 494,
-    executionPriceSource: 'client_quote_validated',
+    executionPriceSource: 'server_market_data',
     ...attrs,
   }));
   return {
@@ -107,7 +107,15 @@ describe('executeSellOrder (ADR-019 Phase 1b)', () => {
           descending() { return this; },
           limit() { return this; },
           first: jest.fn(async () => {
-            if (className === 'MarketData') return null;
+            if (className === 'MarketData') {
+              return {
+                get(key) {
+                  if (key === 'price') return 50;
+                  if (key === 'timestamp') return new Date();
+                  return undefined;
+                },
+              };
+            }
             if (className === 'Order'
               && chain.filters.clientOrderIntentId === 'intent-replay'
               && chain.filters.side === 'sell') {
@@ -150,10 +158,8 @@ describe('executeSellOrder (ADR-019 Phase 1b)', () => {
       params: {
         symbol: 'WKN-SELL',
         quantity: 10,
-        price: 50,
         orderInstruction: 'market',
         clientOrderIntentId: 'intent-new',
-        clientQuotedAt: new Date().toISOString(),
         tradeId: 'trade-1',
         originalHoldingId: 'holding-1',
       },
@@ -163,7 +169,7 @@ describe('executeSellOrder (ADR-019 Phase 1b)', () => {
     expect(result.orderId).toBeTruthy();
     expect(result.executionPrice).toBe(50);
     expect(result.grossAmount).toBe(500);
-    expect(savedOrder.get('executionPriceSource')).toBe('client_quote_validated');
+    expect(savedOrder.get('executionPriceSource')).toBe('server_market_data');
     expect(savedOrder.get('tradeId')).toBe('trade-1');
   });
 
@@ -173,7 +179,6 @@ describe('executeSellOrder (ADR-019 Phase 1b)', () => {
       params: {
         symbol: 'WKN-SELL',
         quantity: 10,
-        price: 50,
         clientOrderIntentId: 'intent-replay',
       },
     });
@@ -189,7 +194,6 @@ describe('executeSellOrder (ADR-019 Phase 1b)', () => {
       params: {
         symbol: 'WKN',
         quantity: 1,
-        price: 1,
         clientOrderIntentId: 'x',
       },
     })).rejects.toThrow(/Trader role required/i);

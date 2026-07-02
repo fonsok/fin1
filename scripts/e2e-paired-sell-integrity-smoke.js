@@ -143,6 +143,22 @@ async function pollHealth(parseBase, appId, masterKey, timeoutMs) {
   throw err;
 }
 
+async function ensureMarketData(parseBase, appId, masterKey, symbol, price) {
+  await parseRequest({
+    parseBase,
+    appId,
+    masterKey,
+    method: 'POST',
+    path: '/classes/MarketData',
+    body: {
+      symbol,
+      price,
+      exchange: 'E2E',
+      timestamp: { __type: 'Date', iso: new Date().toISOString() },
+    },
+  });
+}
+
 async function runSeedFlow(parseBase, appId, sessionToken, masterKey) {
   const intentId = `e2e-smoke-${Date.now()}-${process.pid}`;
   const symbol = `${process.env.E2E_SMOKE_SYMBOL_PREFIX || 'E2E-SMOKE'}-${Date.now()}`;
@@ -150,10 +166,11 @@ async function runSeedFlow(parseBase, appId, sessionToken, masterKey) {
   const traderQuantity = 1;
   const mirrorPoolQuantity = 1;
 
+  await ensureMarketData(parseBase, appId, masterKey, symbol, price);
+
   console.log(`[e2e] executePairedBuy symbol=${symbol} intent=${intentId}`);
   const buyResult = await cloudFunction(parseBase, appId, { sessionToken }, 'executePairedBuy', {
     symbol,
-    price,
     orderInstruction: 'market',
     clientOrderIntentId: intentId,
     traderQuantity,
@@ -193,13 +210,11 @@ async function runSeedFlow(parseBase, appId, sessionToken, masterKey) {
 
   const tradeId = trade.objectId;
   const sellQty = Number(trade.remainingQuantity || trade.quantity || traderQuantity);
-  const sellPrice = price + 5;
 
   console.log(`[e2e] placeOrder sell tradeId=${tradeId} qty=${sellQty}`);
   const sellOrder = await cloudFunction(parseBase, appId, { sessionToken }, 'placeOrder', {
     symbol,
     quantity: sellQty,
-    price: sellPrice,
     side: 'sell',
     orderType: 'market',
     tradeId,

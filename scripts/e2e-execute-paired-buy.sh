@@ -46,17 +46,32 @@ print(tok)
 
 echo "[e2e] Login OK"
 
+curl -sk -X POST "${PARSE_URL}/classes/MarketData" \
+  -H "X-Parse-Application-Id: ${APP_ID}" \
+  -H "X-Parse-Session-Token: ${SESSION}" \
+  -H "Content-Type: application/json" \
+  -d "$(python3 -c '
+import json
+from datetime import datetime, timezone
+print(json.dumps({
+  "symbol": "E2E-PAIRED-WKN",
+  "price": 100.0,
+  "exchange": "E2E",
+  "timestamp": {"__type": "Date", "iso": datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")},
+}))
+')" >/dev/null
+
+echo "[e2e] MarketData seeded for E2E-PAIRED-WKN"
+
 PAYLOAD="$(python3 -c '
 import json, os
 print(json.dumps({
   "symbol": "E2E-PAIRED-WKN",
-  "price": 100.0,
   "orderInstruction": "market",
   "clientOrderIntentId": os.environ["INTENT_ID"],
   "traderQuantity": 1,
   "mirrorPoolQuantity": 0,
   "description": "E2E paired buy script",
-  "clientQuotedAt": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z"),
 }))
 ')"
 

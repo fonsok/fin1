@@ -45,16 +45,32 @@ WORKDIR="$(mktemp -d)"
 trap 'rm -rf "${WORKDIR}"' EXIT
 
 START_EPOCH="$(date +%s)"
+export PAIRED_LOAD_PRICE="${PRICE}"
+
+curl -sk -X POST "${PARSE_URL}/classes/MarketData" \
+  -H "X-Parse-Application-Id: ${APP_ID}" \
+  -H "X-Parse-Session-Token: ${SESSION}" \
+  -H "Content-Type: application/json" \
+  -d "$(python3 -c "
+import json, os
+from datetime import datetime, timezone
+print(json.dumps({
+  'symbol': 'LOAD-PAIRED-WKN',
+  'price': float(os.environ.get('PAIRED_LOAD_PRICE', '100')),
+  'exchange': 'LOAD',
+  'timestamp': {'__type': 'Date', 'iso': datetime.now(timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z')},
+}))
+")" >/dev/null
+
+echo "[load] MarketData seeded for LOAD-PAIRED-WKN @ ${PRICE}"
 
 for i in $(seq 1 "${CONCURRENCY}"); do
   (
     export INTENT="load-paired-${START_EPOCH}-${i}-$$"
-    export PAIRED_LOAD_PRICE="${PRICE}"
     PAYLOAD="$(python3 -c '
 import json, os
 print(json.dumps({
   "symbol": "LOAD-PAIRED-WKN",
-  "price": float(os.environ.get("PAIRED_LOAD_PRICE", "100")),
   "orderInstruction": "market",
   "clientOrderIntentId": os.environ["INTENT"],
   "traderQuantity": 1,
