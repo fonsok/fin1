@@ -1,7 +1,7 @@
 # Release — iOS Intent-only + Market-Data Feed (ADR-019 Phase 8–9)
 
 **Typ:** iOS-Release (Backend bereits deployed auf iobox)  
-**Git-Ref:** `b7528cc` auf `main` (lokal, noch nicht gepusht)  
+**Git-Ref:** `c0de3b9` auf `origin/main`  
 **Parse-Umgebung:** iobox `https://192.168.178.20/parse` (Default in App)
 
 ---
@@ -15,6 +15,8 @@
 | `c8c4cfb` | Server Market-Data-Feed + iOS feed-first |
 | `b408068` | Feed: Mock-Katalog + kürzlich gehandelte WKNs |
 | `b7528cc` | Release-Abnahme Phase 8–9 + Unit-Test-Fix |
+| `4d98a60` | iOS-Release-Runbook |
+| `c0de3b9` | CI file-size baseline (Trading) |
 
 ---
 
@@ -25,9 +27,10 @@
 | Parse Cloud deploy (intent-only + Feed) | ✅ | Live auf iobox (2026-07-02) |
 | Post-Deploy-Smoke full profile | ✅ | Feed + Upsert E2E grün |
 | iOS feed-first Check (automatisiert) | ✅ | API-Mirror + 3 Unit-Tests |
-| Release-Build `FIN1` Release / Simulator | ✅ | `./scripts/caffeinate-build.sh --mode build --config Release` |
-| Git push `main` | ⏳ | Vor TestFlight: `git push origin main` |
-| **iOS App Gerät / TestFlight** | 📱 | Manuell — siehe unten |
+| Release-Build `FIN1` Release / Simulator | ✅ | Lokal verifiziert |
+| Git push `main` | ✅ | `origin/main` @ `c0de3b9` |
+| GitHub CI (`build-test-lint` + Smokes) | ✅ | Run #183, ~65 min |
+| **iOS App Gerät / TestFlight** | 📱 | **Jetzt** — siehe unten |
 
 **Kein weiterer Backend-Deploy** für diese Welle.
 
@@ -35,7 +38,7 @@
 
 ## iOS-Build (Gerät / TestFlight)
 
-1. `git pull` / Branch **`main`** @ `b7528cc` (oder neuer).
+1. `git pull` / Branch **`main`** @ `c0de3b9`.
 2. Xcode → Scheme **FIN1** (Staging-Parse = iobox `.20`).
 3. **Product → Run** auf physischem Gerät — Kurztest Market-Buy (siehe Abnahme).
 4. **Product → Archive** → Distribute → **TestFlight** (oder Ad-Hoc intern).
@@ -76,4 +79,4 @@
 
 ## Ergebnis
 
-**Go für iOS-Release** — Backend live, Abnahme dokumentiert, Release-Build grün. Nächster manueller Schritt: **Archive → TestFlight**.
+**Go für iOS-Release** — Backend live, Abnahme dokumentiert, CI grün. **Nächster Schritt:** Archive → TestFlight → Kurztest auf Gerät.

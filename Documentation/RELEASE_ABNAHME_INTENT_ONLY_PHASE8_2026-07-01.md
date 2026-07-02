@@ -163,7 +163,7 @@
 
 | # | Aktion | Priorität |
 |---|--------|-----------|
-| 1 | iOS Release (TestFlight/intern) mit `b408068`+ | Jetzt |
+| 1 | iOS Release (TestFlight/intern) mit `c0de3b9` | **Jetzt** — CI grün |
 | 2 | Optional: Simulator-Konsole für Szenario A manuell bestätigen | Niedrig |
 | 3 | Echter Market-Data-Service (`backend/market-data/`) | Backlog (Slice 4) |
 | 4 | P0 #2 Fees/Belege | Backlog |
