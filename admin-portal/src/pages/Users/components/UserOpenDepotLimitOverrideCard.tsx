@@ -38,17 +38,14 @@ export function UserOpenDepotLimitOverrideCard({
 }: UserOpenDepotLimitOverrideCardProps) {
   const queryClient = useQueryClient();
   const muted = adminMuted(isDark);
+  const applicable = openDepotLimitControls?.applicable === true;
 
-  if (!openDepotLimitControls?.applicable) {
-    return null;
-  }
-
-  const globalLimit = openDepotLimitControls.globalLimit;
-  const storedOverride = openDepotLimitControls.storedOverride;
-  const currentOverride = openDepotLimitControls.userOverride;
-  const pendingOverride = openDepotLimitControls.pendingOverride;
-  const effectiveLimit = openDepotLimitControls.effectiveLimit;
-  const openDepotPositions = openDepotLimitControls.openDepotPositions;
+  const globalLimit = openDepotLimitControls?.globalLimit;
+  const storedOverride = openDepotLimitControls?.storedOverride;
+  const currentOverride = openDepotLimitControls?.userOverride;
+  const pendingOverride = openDepotLimitControls?.pendingOverride;
+  const effectiveLimit = openDepotLimitControls?.effectiveLimit;
+  const openDepotPositions = openDepotLimitControls?.openDepotPositions ?? 0;
 
   const [limitInput, setLimitInput] = useState('');
   const [effectiveFromInput, setEffectiveFromInput] = useState('');
@@ -65,9 +62,12 @@ export function UserOpenDepotLimitOverrideCard({
   };
 
   useEffect(() => {
+    if (!applicable) {
+      return;
+    }
     resetDraft();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- re-seed when controls change
-  }, [openDepotLimitControls]);
+  }, [openDepotLimitControls, applicable]);
 
   const parsedLimit = Math.floor(Number(limitInput.replace(',', '.')));
 
@@ -105,6 +105,10 @@ export function UserOpenDepotLimitOverrideCard({
       setUiError(backendMessage || 'Antrag konnte nicht erstellt werden.');
     },
   });
+
+  if (!applicable) {
+    return null;
+  }
 
   const collapsedSummary = `${formatLimitValue(effectiveLimit)} · offen: ${openDepotPositions}`;
 

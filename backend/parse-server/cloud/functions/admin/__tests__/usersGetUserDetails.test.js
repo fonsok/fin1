@@ -98,6 +98,48 @@ describe('handleGetUserDetails integration', () => {
         investorCollectionBills: [],
       })),
     }));
+    jest.doMock('../usersCommissionControls', () => ({
+      loadUserCommissionControls: jest.fn(async (user) => ({
+        globalRates: {
+          investorCommissionRateTotal: 0.1,
+          traderCommissionRate: 0.05,
+          appCommissionRate: 0.05,
+        },
+        storedOverride: null,
+        userOverride: null,
+        pendingOverride: null,
+        applicableOverrideRole: user.get('role') === 'trader' || user.get('role') === 'investor'
+          ? user.get('role')
+          : null,
+        effectiveRates: null,
+      })),
+    }));
+    jest.doMock('../usersAppServiceChargeControls', () => ({
+      loadUserAppServiceChargeControls: jest.fn(async () => ({
+        globalRate: 0.02,
+        storedOverride: null,
+        userOverride: null,
+        pendingOverride: null,
+        effectiveFrom: null,
+        applicable: false,
+        accountType: 'individual',
+        effectiveRate: null,
+        source: null,
+      })),
+    }));
+    jest.doMock('../usersOpenDepotLimitControls', () => ({
+      loadUserOpenDepotLimitControls: jest.fn(async (user) => ({
+        globalLimit: 5,
+        storedOverride: null,
+        userOverride: null,
+        pendingOverride: null,
+        effectiveFrom: null,
+        applicable: user.get('role') === 'trader',
+        effectiveLimit: 5,
+        source: 'global',
+        openDepotPositions: 0,
+      })),
+    }));
 
     // eslint-disable-next-line global-require
     return require('../usersGetUserDetails').handleGetUserDetails;
