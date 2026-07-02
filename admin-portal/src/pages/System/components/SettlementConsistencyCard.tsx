@@ -2,6 +2,7 @@ import clsx from 'clsx';
 import type { ReactNode } from 'react';
 import { Badge, Card } from '../../../components/ui';
 import { formatDateTime } from '../../../utils/format';
+import { formatTradeNumberHash } from '../../../utils/tradeNumberFormat';
 import {
   listRowStripeClasses,
   tableBodyDivideClasses,
@@ -22,6 +23,7 @@ export type SettlementConsistencyStatus = {
   mismatchSamples: Array<{
     tradeId: string;
     tradeNumber?: number | string;
+    tradeNumberYear?: number | null;
     investmentId: string;
     investorId: string;
     expected: { grossReturn: number; commission: number; taxTotal: number };
@@ -109,7 +111,14 @@ export function SettlementConsistencyCard({
             <tbody className={tableBodyDivideClasses(isDark)}>
               {settlementConsistency.mismatchSamples.slice(0, 8).map((sample, index) => (
                 <tr key={`${sample.tradeId}-${sample.investmentId}`} className={listRowStripeClasses(isDark, index)}>
-                  <td className={clsx('px-3 py-2 text-sm', adminEmphasisSoft(isDark))}>{sample.tradeNumber ? `#${sample.tradeNumber}` : sample.tradeId}</td>
+                  <td className={clsx('px-3 py-2 text-sm', adminEmphasisSoft(isDark))}>
+                    {sample.tradeNumber
+                      ? formatTradeNumberHash(
+                        Number(sample.tradeNumber),
+                        sample.tradeNumberYear,
+                      )
+                      : sample.tradeId}
+                  </td>
                   <td className={clsx('px-3 py-2 text-sm', adminEmphasisSoft(isDark))}>{sample.investmentId}</td>
                   <td className={clsx('px-3 py-2 text-sm', Math.abs(sample.diff.grossReturn) <= settlementConsistency.epsilon ? '' : 'text-red-500')}>
                     {sample.diff.grossReturn.toFixed(2)}

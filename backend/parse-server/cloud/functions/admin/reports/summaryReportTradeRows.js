@@ -141,6 +141,7 @@ function mapTradeRow(trade, investorIdsFromPool = null, traderName = null, feeCo
   return {
     tradeId: trade.id,
     tradeNumber: trade.get('tradeNumber') || 0,
+    tradeNumberYear: trade.get('tradeNumberYear') || null,
     symbol: trade.get('symbol') || buyOrder.symbol || 'N/A',
     traderId: trade.get('traderId') || '',
     traderName: traderName || trade.get('traderName') || 'N/A',

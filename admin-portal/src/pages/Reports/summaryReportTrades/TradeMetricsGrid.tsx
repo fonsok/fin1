@@ -1,5 +1,6 @@
 import clsx from 'clsx';
 import { formatCurrency, formatCurrencyPerShare, formatNumber } from '../../../utils/format';
+import { formatTradeNumberHash } from '../../../utils/tradeNumberFormat';
 import {
   adminBodyStrong,
   adminCaption,
@@ -27,7 +28,7 @@ export function TradeMetricsGrid({
       <div>
         <p className={clsx('text-xs', adminCaption(isDark))}>Trade-Nr.</p>
         <p className={clsx('font-mono', adminBodyStrong(isDark))}>
-          #{String(snap.tradeNumber).padStart(3, '0')}
+          {formatTradeNumberHash(snap.tradeNumber, snap.tradeNumberYear, snap.createdAt)}
         </p>
       </div>
       <div>

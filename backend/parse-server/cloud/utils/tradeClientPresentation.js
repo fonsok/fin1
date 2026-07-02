@@ -1,6 +1,10 @@
 'use strict';
 
 const { resolveTradeRealizedGrossProfit } = require('../triggers/tradeRealizedGrossProfit');
+const {
+  resolveTradeNumberYear,
+  resolveTradeNumberPresentation,
+} = require('./tradeNumberAllocation');
 
 /**
  * Normalizes Parse Trade rows for iOS `ParseTrade` / `ParseOrderBuy` decoding.
@@ -85,10 +89,16 @@ function normalizeTradeForClient(trade) {
     updatedAt,
     completedAt: json.completedAt != null ? isoOrNow(json.completedAt) : json.completedAt,
     tradeNumber: json.tradeNumber != null ? json.tradeNumber : trade.get('tradeNumber'),
+    tradeNumberYear: json.tradeNumberYear != null ? json.tradeNumberYear : trade.get('tradeNumberYear'),
     traderId: String(json.traderId || trade.get('traderId') || ''),
     symbol: String(json.symbol || trade.get('symbol') || ''),
     status: String(json.status || trade.get('status') || 'active'),
   };
+
+  const presentation = resolveTradeNumberPresentation(trade);
+  if (presentation.formattedTradeNumber) {
+    normalized.formattedTradeNumber = presentation.formattedTradeNumber;
+  }
 
   if (json.buyOrder || trade.get('buyOrder')) {
     normalized.buyOrder = normalizeBuyOrderSnapshot(json.buyOrder || trade.get('buyOrder'), trade);

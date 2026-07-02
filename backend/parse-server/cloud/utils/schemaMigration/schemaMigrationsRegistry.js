@@ -4,6 +4,7 @@ const { putParseSchemaFields } = require('./putParseSchemaFields');
 const { createAdminListSearchIndexes } = require('./createAdminListSearchIndexes');
 const { createOnboardingIndexes } = require('./createOnboardingIndexes');
 const { backfillInvestmentTraderUsername } = require('./backfillInvestmentTraderUsername');
+const { backfillTradeNumberYear } = require('./backfillTradeNumberYear');
 
 /**
  * Zentrale, versionierte Schema-Migrationen (Reihenfolge = Ausführungsreihenfolge).
@@ -223,9 +224,77 @@ const SCHEMA_MIGRATIONS = [
     },
   },
   {
+    migrationId: 'gob_investment_commission_snapshot_v1',
+    title: 'Investment: commissionRateBundleSnapshot (GoB / Provisions-Lock-in bei Reservierung)',
+    apply: () => putParseSchemaFields('Investment', {
+      /**
+       * GoB: Erfolgsprovision-Bundle eingefroren bei Reservierung (inkl. source).
+       * Settlement liest vor Live-Overrides via `readInvestmentCommissionRateSnapshot`.
+       */
+      commissionRateBundleSnapshot: { type: 'Object' },
+    }),
+  },
+  {
     migrationId: 'onboarding_signup_indexes_v1',
     title: 'OnboardingProgress/Audit/VerificationCode indexes (signup load)',
     apply: () => createOnboardingIndexes(),
+  },
+  {
+    migrationId: 'trade_number_year_v1',
+    title: 'Trade: tradeNumberYear (annual per-trader sequence) + compound unique index',
+    apply: async () => {
+      const schemaResult = await putParseSchemaFields('Trade', {
+        tradeNumberYear: { type: 'Number' },
+      });
+
+      const backfill = await backfillTradeNumberYear();
+
+      const uri = process.env.PARSE_SERVER_DATABASE_URI;
+      if (!uri || typeof uri !== 'string' || !uri.trim()) {
+        return {
+          ok: schemaResult && schemaResult.ok === true,
+          schema: schemaResult,
+          backfill,
+          index: 'skipped',
+          reason: 'PARSE_SERVER_DATABASE_URI missing',
+        };
+      }
+
+      const { MongoClient } = require('mongodb');
+      const client = new MongoClient(uri.trim(), { maxPoolSize: 2 });
+      const legacyIndex = 'traderId_1_tradeNumber_1';
+      const compoundIndex = 'traderId_1_tradeNumberYear_1_tradeNumber_1';
+      await client.connect();
+      try {
+        const coll = client.db().collection('Trade');
+        try {
+          await coll.dropIndex(legacyIndex);
+        } catch (dropErr) {
+          const msg = dropErr && dropErr.message ? String(dropErr.message) : '';
+          if (!msg.includes('index not found')) {
+            // ignore missing legacy index
+          }
+        }
+        const existing = (await coll.indexes()).find((i) => i.name === compoundIndex);
+        if (!(existing && existing.unique === true && existing.sparse === true)) {
+          if (existing) {
+            try { await coll.dropIndex(compoundIndex); } catch (_) { void _; }
+          }
+          await coll.createIndex(
+            { traderId: 1, tradeNumberYear: 1, tradeNumber: 1 },
+            { unique: true, sparse: true, name: compoundIndex },
+          );
+        }
+        return {
+          ok: schemaResult && schemaResult.ok === true,
+          schema: schemaResult,
+          backfill,
+          index: 'traderId_tradeNumberYear_tradeNumber_unique_sparse',
+        };
+      } finally {
+        await client.close();
+      }
+    },
   },
 ];
 

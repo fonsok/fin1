@@ -1,7 +1,7 @@
 ---
 title: "FIN1 – Produktseitige Merkmale für KI-Verständnis & FAQ-Beschreibungen"
 audience: ["Produkt", "Support", "CSR", "Content", "KI/LLM-Integration"]
-lastUpdated: "2026-04-04"
+lastUpdated: "2026-06-30"
 ---
 
 > **Dokumentations-Stand:** Begriffe „Portfolio“ (→ Investments/Investments & Performance) und „Plattform-Übersicht“ (→ App-Übersicht, slug `app_overview`) sind in Code und Doku vereinheitlicht (siehe 13_PORTFOLIO_BEGRIFF_ERSETZUNG.md).
@@ -56,7 +56,7 @@ Diese Themen sind bereits in **07_USER_GUIDE.md** und im **FAQ-Export** (scripts
   - Wie führe ich einen Trade aus? (Order platzieren, Bestätigung)
   - Welche Instrumente? **Derivate** (z. B. Optionsscheine, Knock-Outs, Bonus-/Faktor-Zertifikate u. ä.); Suche und Auswahl typischerweise über **WKN/ISIN**. **Kein** eigenständiger Handel mit Kassamarkt-Aktien, Spot-Forex oder Rohstoff-Cash — ggf. erscheinen Einzelaktien/Indizes/FX nur als **Basiswerte** der Derivate.
   - Wie werden Handelsgebühren berechnet? (Preview, Breakdown in Rechnungen)
-  - Was ist die Trade-Nummer? (eindeutige Referenz)
+  - Was ist die Trade-Nummer? — **Menschlich lesbare Referenz** pro Trade im Format **`YYYY-NNN`** (z. B. `2026-001`). Die Sequenz gilt **pro Trader** und **startet jedes Kalenderjahr neu** (Zeitzone Europe/Berlin). Sie erscheint in Depot, Trade-Details, Rechnungen und Belegen; die technische Verknüpfung im System nutzt weiterhin die interne Trade-ID. Vollständige Spec: [`../TRADE_NUMBER_REFERENCE.md`](../TRADE_NUMBER_REFERENCE.md).
   - Depot: Was ist das? (Holdings, laufende Orders, Depotwert)
   - Laufende Orders vs. Bestand (Holdings)
   - Verkauf einer Position (Sell Order → Abzug aus Bestand, Gewinn/Verlust)

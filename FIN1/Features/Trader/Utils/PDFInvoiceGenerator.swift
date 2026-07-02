@@ -186,8 +186,8 @@ struct PDFInvoiceGenerator {
             ("Transaktionsart:", invoice.transactionType?.displayName ?? invoice.type.displayName)
         ]
 
-        if let tradeNumber = invoice.tradeNumber {
-            details.append(("Trade-Nummer:", String(format: "%03d", tradeNumber)))
+        if let formatted = invoice.formattedTradeNumber {
+            details.append(("Trade-Nummer:", formatted))
         }
 
         if let tradeId = invoice.tradeId {
@@ -295,8 +295,8 @@ struct PDFInvoiceGenerator {
     }
 
     private static func documentSubtitle(for invoice: Invoice) -> String? {
-        if let tradeNumber = invoice.tradeNumber {
-            return "zu Trade #\(String(format: "%03d", tradeNumber))"
+        if let formatted = invoice.formattedTradeNumber {
+            return "zu Trade #\(formatted)"
         }
         return nil
     }

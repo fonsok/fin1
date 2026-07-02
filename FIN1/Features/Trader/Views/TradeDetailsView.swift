@@ -128,7 +128,7 @@ struct TradeDetailsView: View {
                             HStack {
                                 Text("Trade Nr.").tradeDetailsLabelStyle()
                                 Spacer()
-                                Text(self.viewModel.tradeNumberText)
+                                Text(self.viewModel.trade.displayTradeNumber)
                                     .font(ResponsiveDesign.bodyFont())
                                     .fontWeight(.semibold)
                                     .foregroundColor(AppTheme.fontColor)
@@ -292,7 +292,8 @@ struct TradeDetailsView: View {
     NavigationStack {
         TradeDetailsView(viewModel: TradeDetailsViewModel(trade: TradeOverviewItem(
             tradeId: "test-id",
-            tradeNumber: 12_345,
+            tradeNumber: 1,
+            tradeNumberYear: 2_026,
             startDate: Date(),
             endDate: Date(),
             profitLoss: 150.0,

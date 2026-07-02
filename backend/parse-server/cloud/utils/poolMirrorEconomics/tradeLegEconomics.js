@@ -202,6 +202,7 @@ function tradeEconomicsSnapshot(trade, participations = null, options = {}) {
   const base = {
     tradeId: trade.id,
     tradeNumber: trade.get('tradeNumber') || 0,
+    tradeNumberYear: trade.get('tradeNumberYear') || null,
     symbol: instrument.symbol || 'N/A',
     description: trade.get('description') || '',
     status: trade.get('status') || 'unknown',

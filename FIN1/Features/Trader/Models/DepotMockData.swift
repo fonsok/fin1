@@ -16,6 +16,16 @@ struct DepotHolding: Identifiable {
     /// Set when buy used `executePairedBuy`; links TRADER + MIRROR_POOL legs.
     let pairExecutionId: String?
     let position: Int
+    /// Trader trade number (001, 002, …) for depot position label.
+    let tradeNumber: Int?
+    /// Calendar year for annual trade-number reset (e.g. 2026 → 2026-001).
+    let tradeNumberYear: Int?
+    var formattedTradeNumberLabel: String? {
+        guard let tradeNumber, tradeNumber > 0 else { return nil }
+        let label = TradeNumberFormatting.display(number: tradeNumber, year: self.tradeNumberYear)
+        return label.isEmpty ? nil : label
+    }
+
     let valuationDate: String
     let wkn: String
     let strike: Double
@@ -41,6 +51,8 @@ struct DepotHolding: Identifiable {
         tradeId: String = "",
         pairExecutionId: String? = nil,
         position: Int,
+        tradeNumber: Int? = nil,
+        tradeNumberYear: Int? = nil,
         valuationDate: String,
         wkn: String,
         strike: Double,
@@ -62,6 +74,8 @@ struct DepotHolding: Identifiable {
         self.tradeId = tradeId
         self.pairExecutionId = pairExecutionId
         self.position = position
+        self.tradeNumber = tradeNumber
+        self.tradeNumberYear = tradeNumberYear
         self.valuationDate = valuationDate
         self.wkn = wkn
         self.strike = strike
@@ -104,7 +118,9 @@ struct DepotHolding: Identifiable {
         completedOrder: OrderBuy,
         position: Int,
         tradeId: String? = nil,
-        pairExecutionId: String? = nil
+        pairExecutionId: String? = nil,
+        tradeNumber: Int? = nil,
+        tradeNumberYear: Int? = nil
     ) -> DepotHolding {
         let designation: String
         if let optionDirection = completedOrder.optionDirection, let underlyingAsset = completedOrder.underlyingAsset {
@@ -119,6 +135,8 @@ struct DepotHolding: Identifiable {
             tradeId: tradeId ?? completedOrder.id,
             pairExecutionId: pairExecutionId,
             position: position,
+            tradeNumber: tradeNumber,
+            tradeNumberYear: tradeNumberYear,
             valuationDate: Date().formatted(date: .numeric, time: .omitted),
             wkn: completedOrder.wkn ?? completedOrder.symbol,
             strike: completedOrder.strike ?? 0.0,
@@ -147,6 +165,8 @@ struct DepotHolding: Identifiable {
             tradeId: self.tradeId,
             pairExecutionId: self.pairExecutionId,
             position: self.position,
+            tradeNumber: self.tradeNumber,
+            tradeNumberYear: self.tradeNumberYear,
             valuationDate: self.valuationDate,
             wkn: self.wkn,
             strike: self.strike,

@@ -1,5 +1,7 @@
 # Trade Numbering System Implementation Summary
 
+> **⚠️ Veraltet (2026-06):** Dieses Dokument beschreibt das **alte** Modell (global 001/002 ohne Jahres-Reset, lokale iOS-Vergabe). Aktuelle Spec: [`Documentation/TRADE_NUMBER_REFERENCE.md`](../../../../../Documentation/TRADE_NUMBER_REFERENCE.md).
+
 ## Overview
 Implemented a user-friendly trade numbering system for the FIN1 app that displays simple, sequential trade numbers (001, 002, 003...) while maintaining UUIDs for internal system linking and proper matching.
 

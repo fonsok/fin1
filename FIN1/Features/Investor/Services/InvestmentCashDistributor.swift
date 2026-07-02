@@ -148,8 +148,14 @@ enum InvestmentCashDistributor {
                 default:
                     break
                 }
-                if let tn = entry.tradeNumber, !tradeNumbers.contains(String(format: "%03d", tn)) {
-                    tradeNumbers.append(String(format: "%03d", tn))
+                if let tn = entry.tradeNumber {
+                    let formatted = TradeNumberFormatting.display(
+                        number: tn,
+                        year: TradeNumberFormatting.calendarYear(for: entry.createdAtDate ?? Date())
+                    )
+                    if !tradeNumbers.contains(formatted) {
+                        tradeNumbers.append(formatted)
+                    }
                 }
             }
 

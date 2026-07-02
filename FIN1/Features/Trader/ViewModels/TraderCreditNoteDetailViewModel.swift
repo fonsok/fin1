@@ -225,7 +225,7 @@ final class TraderCreditNoteDetailViewModel: ObservableObject {
     }
 
     private func applyTradeContext(_ trade: Trade) {
-        self.tradeReferenceLabel = String(format: "Trade #%03d", trade.tradeNumber)
+        self.tradeReferenceLabel = TradeNumberFormatting.labeled(number: trade.tradeNumber, year: trade.resolvedTradeNumberYear)
         let symbol = trade.symbol.trimmingCharacters(in: .whitespacesAndNewlines)
         let description = trade.description.trimmingCharacters(in: .whitespacesAndNewlines)
         if !symbol.isEmpty, !description.isEmpty, symbol.caseInsensitiveCompare(description) != .orderedSame {

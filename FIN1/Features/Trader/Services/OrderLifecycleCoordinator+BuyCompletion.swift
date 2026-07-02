@@ -88,7 +88,8 @@ extension OrderLifecycleCoordinator {
                 await self.tradingNotificationService.generateInvoiceAndNotification(
                     for: order,
                     tradeId: trade.id,
-                    tradeNumber: trade.tradeNumber
+                    tradeNumber: trade.tradeNumber,
+                    tradeNumberYear: trade.resolvedTradeNumberYear
                 )
             }
 

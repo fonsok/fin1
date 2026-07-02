@@ -84,6 +84,7 @@ async function enrichTradesWithInvestors(trades, formatDate) {
     return {
       objectId: t.id,
       tradeNumber: t.get('tradeNumber'),
+      tradeNumberYear: t.get('tradeNumberYear'),
       symbol: t.get('symbol'),
       description: t.get('description'),
       status: t.get('status'),

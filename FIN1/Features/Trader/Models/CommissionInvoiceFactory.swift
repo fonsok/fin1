@@ -89,7 +89,9 @@ extension Invoice {
         // Build description with trade numbers
         let commissionDescription = CommissionInvoiceDescriptionBuilder.buildTradeDescription(
             baseText: "Trader-Provision für Trades",
-            tradeNumbers: tradeNumbers
+            tradeReferences: commissions.map {
+                (number: $0.tradeNumber, year: TradeNumberFormatting.calendarYear(for: $0.createdAt))
+            }
         )
 
         // Commission item (net amount) - positive for credit note
@@ -110,6 +112,9 @@ extension Invoice {
 
         // Use first trade number for single trade, nil for multiple (detail is in description)
         let primaryTradeNumber = tradeNumbers.count == 1 ? tradeNumbers.first : nil
+        let primaryTradeNumberYear = tradeNumbers.count == 1
+            ? commissions.first.map { TradeNumberFormatting.calendarYear(for: $0.createdAt) }
+            : nil
 
         return Invoice(
             invoiceNumber: invoiceNumber,
@@ -118,6 +123,7 @@ extension Invoice {
             customerInfo: customerInfo,
             items: items,
             tradeNumber: primaryTradeNumber,
+            tradeNumberYear: primaryTradeNumberYear,
             taxNote: InvoiceNotes.serviceChargeTaxNote,
             legalNote: InvoiceNotes.legalNote,
             dueDate: Calendar.current.date(byAdding: .day, value: 14, to: Date()),
@@ -152,7 +158,12 @@ extension Invoice {
         let tradeNumbers = Array(Set(commissions.map { $0.tradeNumber })).sorted()
         let commissionDescription = CommissionInvoiceDescriptionBuilder.buildTradeDescription(
             baseText: "Trader-Provision für Trades",
-            tradeNumbers: tradeNumbers
+            tradeReferences: tradeNumbers.map { number in
+                let commission = commissions.first { $0.tradeNumber == number }
+                let year = commission.map { TradeNumberFormatting.calendarYear(for: $0.createdAt) }
+                    ?? TradeNumberFormatting.calendarYear()
+                return (number: number, year: year)
+            }
         )
 
         // Commission item (net amount) - negative for invoice (debit)
@@ -188,19 +199,27 @@ extension Invoice {
 /// Helper for building commission invoice descriptions
 enum CommissionInvoiceDescriptionBuilder {
 
-    /// Builds a trade description string with formatted trade numbers
-    /// - Parameters:
-    ///   - baseText: The base description text
-    ///   - tradeNumbers: Array of trade numbers to include
-    /// - Returns: Formatted description string
-    static func buildTradeDescription(baseText: String, tradeNumbers: [Int]) -> String {
+    /// Builds a trade description string with year-qualified trade numbers.
+    static func buildTradeDescription(
+        baseText: String,
+        tradeReferences: [(number: Int, year: Int)]
+    ) -> String {
         var description = baseText
 
-        guard !tradeNumbers.isEmpty else {
+        let uniqueReferences = tradeReferences.reduce(into: [(number: Int, year: Int)]()) { result, ref in
+            guard ref.number > 0 else { return }
+            if !result.contains(where: { $0.number == ref.number && $0.year == ref.year }) {
+                result.append(ref)
+            }
+        }
+
+        guard !uniqueReferences.isEmpty else {
             return description
         }
 
-        let formattedTradeNumbers = tradeNumbers.map { String(format: "%03d", $0) }
+        let formattedTradeNumbers = uniqueReferences.map {
+            TradeNumberFormatting.display(number: $0.number, year: $0.year)
+        }
 
         if formattedTradeNumbers.count == 1 {
             description += "\nTrade #\(formattedTradeNumbers[0])."

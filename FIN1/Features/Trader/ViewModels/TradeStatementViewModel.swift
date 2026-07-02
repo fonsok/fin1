@@ -274,7 +274,7 @@ final class TradeStatementViewModel: ObservableObject {
                 print("🔧 TradeStatementViewModel: PDF generated successfully, size: \(pdfData.count) bytes")
 
                 // Save PDF to Documents folder for sharing
-                let fileName = "Collection_Bill_Trade_\(String(format: "%03d", trade.tradeNumber))_\(Date().timeIntervalSince1970)"
+                let fileName = "Collection_Bill_Trade_\(self.trade.formattedTradeNumber)_\(Date().timeIntervalSince1970)"
                 let fileURL = try await pdfService.savePDFToDocuments(pdfData, fileName: fileName)
 
                 self.isGeneratingPDF = false

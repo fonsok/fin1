@@ -92,6 +92,26 @@ final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
         return Double(self.limit.replacingOccurrences(of: ",", with: "."))
     }
 
+    /// Gross EUR for the trader-owned buy leg only (pool-mirror portion excluded).
+    var traderLegEstimatedCost: Double {
+        let price = self.limitPrice ?? self.currentPriceValue
+        let traderQty = self.investmentOrderCalculation?.traderQuantity ?? max(Int(self.quantity), 0)
+        return OrderCashAmount.grossAmount(quantity: traderQty, briefPricePerPiece: price)
+    }
+
+    var showMinBuyOrderWarning: Bool {
+        let minimum = self.configurationService.minTraderBuyOrderAmount
+        guard minimum > 0 else { return false }
+        return self.traderLegEstimatedCost + 1e-6 < minimum
+    }
+
+    var minBuyOrderWarningMessage: String {
+        let minimum = self.configurationService.minTraderBuyOrderAmount
+        return "Der Trader-Anteil muss mindestens \(minimum.formattedAsLocalizedCurrency()) betragen "
+            + "(aktuell: \(self.traderLegEstimatedCost.formattedAsLocalizedCurrency())). "
+            + "Investoren-Kapital (Pool-Mirror) ist hiervon ausgenommen."
+    }
+
     var canPlaceOrder: Bool {
         return self.validator.validateOrderPlacement(
             quantity: self.quantity,
@@ -99,6 +119,7 @@ final class BuyOrderViewModel: ObservableObject, LimitOrderMonitor {
             limit: self.limit,
             priceValidityProgress: self.priceValidityProgress,
             estimatedCost: self.estimatedCost,
+            traderLegGrossAmount: self.traderLegEstimatedCost,
             userService: self.userService,
             cashBalanceService: self.cashBalanceService,
             configurationService: self.configurationService,

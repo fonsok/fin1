@@ -43,6 +43,7 @@ final class InvestorCollectionBillNetSellAmountTests: XCTestCase {
         let item = InvestorInvestmentStatementItem(
             id: "trade-1",
             tradeNumber: 1,
+            tradeNumberYear: 2_026,
             symbol: "ABC",
             tradeDate: Date(),
             buyQuantity: 261,

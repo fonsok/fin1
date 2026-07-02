@@ -3,7 +3,8 @@
 /** Same keys as backend/scripts/clear-investments-trades-documents.js (INV, CB, CN, EB*, ORD, TXN). */
 const TRADING_SEQUENCE_KEY_PATTERNS = [
   /^Investment::investmentNumber::INV::/,
-  /^Document::accountingDocumentNumber::(CB|CN|EBP|EBR|EIR|EBT)::\d{4}$/,
+  /^Trade::tradeNumber::/,
+  /^Document::accountingDocumentNumber::(CB|CN|EBP|EBR|EIR|EBT|EAP|TBC|TSC|TFS|TED)::\d{4}$/,
   /^Order::orderNumber::ORD::\d{4}$/,
   /^WalletTransaction::transactionNumber::TXN::\d{4}$/,
 ];

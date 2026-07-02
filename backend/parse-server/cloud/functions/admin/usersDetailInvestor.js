@@ -71,6 +71,7 @@ async function mapInvestmentsForAdminDetail(investments, formatDate, canonicalBy
     let investTradeCount = i.get('numberOfTrades') || 0;
 
     let tradeNumber = null;
+    let tradeNumberYear = null;
     let tradeSymbol = null;
     let tradeStatus = null;
     let tradeCompletedAt = null;
@@ -105,6 +106,7 @@ async function mapInvestmentsForAdminDetail(investments, formatDate, canonicalBy
         try {
           const trade = await new Parse.Query('Trade').get(tradeId, { useMasterKey: true });
           tradeNumber = trade.get('tradeNumber');
+          tradeNumberYear = trade.get('tradeNumberYear');
           tradeSymbol = trade.get('symbol');
           tradeStatus = trade.get('status');
           tradeCompletedAt = formatDate(trade.get('completedAt'));
@@ -161,6 +163,7 @@ async function mapInvestmentsForAdminDetail(investments, formatDate, canonicalBy
       activatedAt: formatDate(i.get('activatedAt')),
       completedAt: formatDate(i.get('completedAt')),
       tradeNumber,
+      tradeNumberYear,
       tradeSymbol,
       tradeStatus,
       tradeCompletedAt,

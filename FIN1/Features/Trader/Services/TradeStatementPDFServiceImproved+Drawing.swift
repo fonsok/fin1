@@ -27,7 +27,7 @@ extension TradeStatementPDFServiceImproved {
         y += PDFStylingImproved.headerFont.lineHeight + 8
 
         let tradeAttributes = PDFTextAttributesImproved.bodyAttributes()
-        let tradeNumberText = "Trade #\(String(format: "%03d", trade.tradeNumber))"
+        let tradeNumberText = TradeNumberFormatting.labeled(number: trade.tradeNumber, year: trade.resolvedTradeNumberYear)
         tradeNumberText.draw(at: CGPoint(x: PDFStylingImproved.margin, y: y), withAttributes: tradeAttributes)
         let dateFormatter = DateFormatter()
         dateFormatter.dateStyle = .medium

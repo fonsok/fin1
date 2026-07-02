@@ -21,11 +21,14 @@ struct DocumentNamingUtility {
     // MARK: - Document Naming Methods
 
     /// Generates a collection bill document name for traders
-    /// Format: TraderCollectionBill_Trade{Number}_{YYYYMMDD}_{Hash8}.pdf
+    /// Format: TraderCollectionBill_Trade2026-001_{YYYYMMDD}_{Hash8}.pdf
     static func traderCollectionBillName(for trade: Trade) -> String {
         let dateString = self.dateFormatter.string(from: Date())
         let hash = self.generateHash8()
-        return "TraderCollectionBill_Trade\(trade.tradeNumber)_\(dateString)_\(hash).pdf"
+        let token = trade.formattedTradeNumber.isEmpty
+            ? String(trade.tradeNumber)
+            : trade.formattedTradeNumber
+        return "TraderCollectionBill_Trade\(token)_\(dateString)_\(hash).pdf"
     }
 
     /// Generates a collection bill document name for investors

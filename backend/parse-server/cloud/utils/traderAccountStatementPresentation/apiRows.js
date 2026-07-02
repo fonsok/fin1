@@ -1,5 +1,6 @@
 'use strict';
 
+const { formatTradeNumberForDisplay } = require('../tradeNumberAllocation');
 const { iso } = require('./shared');
 
 function timelineRowMatchesEntryType(row, entryType) {
@@ -9,9 +10,8 @@ function timelineRowMatchesEntryType(row, entryType) {
 
 function buildTraderDisplayApiRow(event, canonicalUserId) {
   const tradeNumber = event.tradeNumber;
-  const tradeNumberPadded = tradeNumber != null
-    ? String(tradeNumber).padStart(3, '0')
-    : null;
+  const tradeNumberYear = event.tradeNumberYear;
+  const formattedTradeNumber = formatTradeNumberForDisplay(tradeNumber, tradeNumberYear);
 
   return {
     objectId: event.objectId,
@@ -21,10 +21,11 @@ function buildTraderDisplayApiRow(event, canonicalUserId) {
     balanceBefore: event.balanceBefore,
     balanceAfter: event.balanceAfter,
     tradeId: event.tradeId,
-    tradeNumber: tradeNumberPadded != null ? Number(tradeNumber) : null,
+    tradeNumber: tradeNumber != null ? Number(tradeNumber) : null,
+    tradeNumberYear: tradeNumberYear != null ? Number(tradeNumberYear) : null,
     investmentId: null,
     investmentNumber: null,
-    businessReference: tradeNumberPadded ? `TRD-${tradeNumberPadded}` : null,
+    businessReference: formattedTradeNumber ? `TRD-${formattedTradeNumber}` : null,
     description: event.description,
     source: event.source,
     referenceDocumentId: event.referenceDocumentId,

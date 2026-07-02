@@ -39,7 +39,7 @@ struct TraderCollectionBillBelegSnapshotView: View {
                     .foregroundColor(DocumentDesignSystem.textColorSecondary)
             }
 
-            Text("Trade #\(self.trade.tradeNumber)")
+            Text("Trade #\(self.trade.formattedTradeNumber)")
                 .font(ResponsiveDesign.captionFont())
                 .foregroundColor(DocumentDesignSystem.textColorSecondary)
         }

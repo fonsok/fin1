@@ -90,7 +90,14 @@ final class TradeMatchingService: TradeMatchingServiceProtocol, @unchecked Senda
         var positionCounter = 1
         return depotTrades.map { trade in
             defer { positionCounter += 1 }
-            return DepotHolding.from(completedOrder: trade.buyOrder, position: positionCounter)
+            return DepotHolding.from(
+                completedOrder: trade.buyOrder,
+                position: positionCounter,
+                tradeId: trade.id,
+                pairExecutionId: trade.pairExecutionId,
+                tradeNumber: trade.tradeNumber,
+                tradeNumberYear: trade.tradeNumberYear
+            )
         }
     }
 

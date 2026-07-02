@@ -6,11 +6,12 @@ struct CollectionBillByNumberViewWrapper: View {
     @StateObject private var viewModel: CollectionBillByNumberViewModel
     @Environment(\.appServices) private var services
 
-    init(tradeNumber: Int) {
+    init(tradeNumber: Int, tradeNumberYear: Int? = nil) {
         // Note: We need to initialize with a placeholder, then reconfigure with env services
         // This is a common pattern when environment values aren't available in init
         self._viewModel = StateObject(wrappedValue: CollectionBillByNumberViewModel(
             tradeNumber: tradeNumber,
+            tradeNumberYear: tradeNumberYear,
             tradeLifecycleService: TradeLifecycleService(),
             tradingStatisticsService: TradingStatisticsService(),
             invoiceService: InvoiceService()
@@ -58,6 +59,7 @@ struct CollectionBillByNumberViewWrapper: View {
         // Use services from environment for actual loading
         let properViewModel = CollectionBillByNumberViewModel(
             tradeNumber: viewModel.tradeNumber,
+            tradeNumberYear: self.viewModel.tradeNumberYear,
             services: self.services
         )
         await properViewModel.loadTrade()
@@ -73,9 +75,10 @@ struct CollectionBillByNumberViewWrapper: View {
 struct CollectionBillByNumberView: View {
     @StateObject private var viewModel: CollectionBillByNumberViewModel
 
-    init(tradeNumber: Int, services: AppServices) {
+    init(tradeNumber: Int, tradeNumberYear: Int? = nil, services: AppServices) {
         self._viewModel = StateObject(wrappedValue: CollectionBillByNumberViewModel(
             tradeNumber: tradeNumber,
+            tradeNumberYear: tradeNumberYear,
             services: services
         ))
     }

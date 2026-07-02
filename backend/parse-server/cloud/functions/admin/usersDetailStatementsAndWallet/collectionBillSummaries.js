@@ -3,6 +3,7 @@
 const { collectLedgerUserIdCandidates } = require('../../tradingIdentity');
 const { listInvestorInvestmentIds } = require('../../../utils/investorAccountStatementMerge');
 const { round2 } = require('../../../utils/accountingHelper/shared');
+const { getTradeNumberCalendarYear } = require('../../../utils/tradeNumberAllocation');
 
 function dedupeParseDocumentsById(rows) {
   const seen = new Set();
@@ -39,6 +40,11 @@ function pickCollectionBillFeeComponents(buyFees, sellFees) {
   return out;
 }
 
+function parseTradeNumberYearFromDocumentName(name) {
+  const match = String(name || '').match(/Trade(\d{4})-(\d{3})/);
+  return match ? Number(match[1]) : null;
+}
+
 function mapInvestorCollectionBillDocumentToSummary(doc, formatDate) {
   const meta = doc.get('metadata') || {};
   const buyLeg = meta.buyLeg || {};
@@ -50,6 +56,11 @@ function mapInvestorCollectionBillDocumentToSummary(doc, formatDate) {
     documentNumber: doc.get('accountingDocumentNumber') || null,
     tradeId: doc.get('tradeId') || null,
     tradeNumber: doc.get('tradeNumber') ?? null,
+    tradeNumberYear: meta.tradeNumberYear
+      ?? parseTradeNumberYearFromDocumentName(doc.get('name'))
+      ?? (doc.get('tradeNumber') != null
+        ? getTradeNumberCalendarYear(doc.get('createdAt') || new Date())
+        : null),
     investmentId: investmentIdFromDocument(doc),
     createdAt: formatDate(doc.get('createdAt')),
     transferAmount: round2(Number(meta.transferAmount) || 0),

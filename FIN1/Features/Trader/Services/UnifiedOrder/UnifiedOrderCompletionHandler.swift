@@ -48,7 +48,8 @@ final class UnifiedOrderCompletionHandler: @unchecked Sendable {
             await self.tradingNotificationService.generateInvoiceAndNotification(
                 for: order,
                 tradeId: trade.id,
-                tradeNumber: trade.tradeNumber
+                tradeNumber: trade.tradeNumber,
+                tradeNumberYear: trade.resolvedTradeNumberYear
             )
         }
     }
@@ -71,7 +72,8 @@ final class UnifiedOrderCompletionHandler: @unchecked Sendable {
                 await self.tradingNotificationService.generateInvoiceAndNotification(
                     for: order,
                     tradeId: updatedTrade.id,
-                    tradeNumber: updatedTrade.tradeNumber
+                    tradeNumber: updatedTrade.tradeNumber,
+                    tradeNumberYear: updatedTrade.resolvedTradeNumberYear
                 )
 
                 // Check if trade is now fully completed and generate Collection Bill
@@ -85,17 +87,16 @@ final class UnifiedOrderCompletionHandler: @unchecked Sendable {
             await self.tradingNotificationService.generateInvoiceAndNotification(
                 for: order,
                 tradeId: nil,
-                tradeNumber: nil
+                tradeNumber: nil,
+                tradeNumberYear: nil
             )
         }
     }
 
     /// Creates a trade from a buy order
     func createTrade(from buyOrder: OrderBuy) async throws -> Trade {
-        // CRITICAL: Use per-trader trade numbering for proper isolation
-        // Each trader has their own sequence starting from 1
-        let tradeNumber = self.tradeNumberService.generateNextTradeNumber(for: buyOrder.traderId)
-        let initialTrade = Trade.from(buyOrder: buyOrder, tradeNumber: tradeNumber)
+        // Server assigns tradeNumber/tradeNumberYear atomically on upsert (local counter is cache-only).
+        let initialTrade = Trade.from(buyOrder: buyOrder, tradeNumber: 0)
 
         // Save to Parse Server if available
         let finalTrade: Trade
@@ -114,6 +115,10 @@ final class UnifiedOrderCompletionHandler: @unchecked Sendable {
         } else {
             print("⚠️ UnifiedOrderCompletionHandler: No tradeAPIService - trade only saved locally")
             finalTrade = initialTrade
+        }
+
+        if finalTrade.tradeNumber > 0 {
+            self.tradeNumberService.synchronizeTradeNumbers(from: [finalTrade])
         }
 
         // Update cash balance

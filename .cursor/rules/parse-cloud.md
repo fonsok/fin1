@@ -107,4 +107,6 @@ Referenz (schmal + sauber): `settlementCore.js` (1 Export), `repair.js` (1 Expor
 
 Modultabellen: `Documentation/BOOKING_AND_BELEG_SSOT.md`, `Documentation/ACCOUNT_STATEMENT_ARCHITECTURE.md`.
 
+**Trade-Nummern:** Vergabe und Anzeige (`YYYY-NNN`, Europe/Berlin, pro Trader/Jahr) — `utils/tradeNumberAllocation.js`, SSOT via `SequenceCounter`. Spec: [`Documentation/TRADE_NUMBER_REFERENCE.md`](../Documentation/TRADE_NUMBER_REFERENCE.md).
+
 Kurzfassung für Leser im Repo: [`Documentation/ENGINEERING_GUIDE.md`](../Documentation/ENGINEERING_GUIDE.md) → Abschnitt *Parse Cloud: Modularisierung und Refactor-Policy*.

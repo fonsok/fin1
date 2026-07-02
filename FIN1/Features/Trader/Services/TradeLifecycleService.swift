@@ -172,10 +172,8 @@ final class TradeLifecycleService: TradeLifecycleServiceProtocol, ServiceLifecyc
     // Note: Trade is created AFTER buy order completes, not when order is placed
 
     func createNewTrade(buyOrder: OrderBuy) async throws -> Trade {
-        // CRITICAL: Use per-trader trade numbering for proper isolation
-        // Each trader has their own sequence starting from 1
-        let tradeNumber = self.tradeNumberService?.generateNextTradeNumber(for: buyOrder.traderId) ?? 0
-        let initialTrade = Trade.from(buyOrder: buyOrder, tradeNumber: tradeNumber)
+        // Server assigns tradeNumber/tradeNumberYear atomically on upsert (local counter is cache-only).
+        let initialTrade = Trade.from(buyOrder: buyOrder, tradeNumber: 0)
 
         // Save to Parse Server if available and get updated trade (with server-assigned ID if any)
         let finalTrade: Trade
@@ -190,6 +188,10 @@ final class TradeLifecycleService: TradeLifecycleServiceProtocol, ServiceLifecyc
             }
         } else {
             finalTrade = initialTrade
+        }
+
+        if finalTrade.tradeNumber > 0 {
+            self.tradeNumberService?.synchronizeTradeNumbers(from: [finalTrade])
         }
 
         await MainActor.run {

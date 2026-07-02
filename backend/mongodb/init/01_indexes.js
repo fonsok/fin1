@@ -148,7 +148,7 @@ db.PairedExecution.createIndex({ "traderId": 1, "status": 1 });
 db.PairedExecution.createIndex({ "status": 1, "effectsApplied": 1 });
 
 print('Creating indexes for Trade...');
-db.Trade.createIndex({ "traderId": 1, "tradeNumber": 1 }, { unique: true, sparse: true, name: "traderId_1_tradeNumber_1" });
+db.Trade.createIndex({ "traderId": 1, "tradeNumberYear": 1, "tradeNumber": 1 }, { unique: true, sparse: true, name: "traderId_1_tradeNumberYear_1_tradeNumber_1" });
 db.Trade.createIndex({ "traderId": 1 });
 db.Trade.createIndex({ "traderId": 1, "status": 1 });
 db.Trade.createIndex({ "status": 1 });
@@ -420,6 +420,22 @@ db.Announcement.createIndex({ "type": 1 });
 print('Creating indexes for AppVersion...');
 db.AppVersion.createIndex({ "platform": 1, "version": 1, "buildNumber": 1 }, { unique: true });
 db.AppVersion.createIndex({ "platform": 1, "status": 1 });
+
+// ============================================================================
+// GROWTH / MARKETING (Phase 1 attribution)
+// ============================================================================
+
+print('Creating indexes for UserAcquisition...');
+db.UserAcquisition.createIndex({ "userId": 1 }, { unique: true });
+db.UserAcquisition.createIndex({ "acquisitionChannel": 1, "capturedAt": -1 });
+db.UserAcquisition.createIndex({ "utmCampaign": 1, "capturedAt": -1 });
+db.UserAcquisition.createIndex({ "referralCode": 1 }, { sparse: true });
+db.UserAcquisition.createIndex({ "userRole": 1, "capturedAt": -1 });
+
+print('Creating indexes for MarketingSpendEntry...');
+db.MarketingSpendEntry.createIndex({ "periodStart": 1, "periodEnd": 1 });
+db.MarketingSpendEntry.createIndex({ "acquisitionChannel": 1, "periodStart": -1 });
+db.MarketingSpendEntry.createIndex({ "utmCampaign": 1, "periodStart": -1 });
 
 // ============================================================================
 // ADMIN COLLECTIONS

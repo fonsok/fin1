@@ -24,9 +24,12 @@ struct TradeTableRowData: Identifiable {
         // Use display number if provided (for sequential numbering in filtered views),
         // otherwise use the stored trade number with 3-digit formatting (001, 002, 003...)
         if let displayNumber = displayNumber {
-            self.tradeNumber = String(format: "%03d", displayNumber)
+            self.tradeNumber = TradeNumberFormatting.display(
+                number: displayNumber,
+                year: TradeNumberFormatting.calendarYear(for: trade.startDate)
+            )
         } else {
-            self.tradeNumber = String(format: "%03d", trade.tradeNumber)
+            self.tradeNumber = trade.displayTradeNumber
         }
 
         // Trade Start Date

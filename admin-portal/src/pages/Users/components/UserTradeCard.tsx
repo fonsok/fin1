@@ -2,6 +2,7 @@ import { useState } from 'react';
 import clsx from 'clsx';
 import { Badge, getStatusVariant } from '../../../components/ui';
 import { formatDateTime, formatCurrency, getStatusDisplay } from '../../../utils/format';
+import { formatTradeNumberHash } from '../../../utils/tradeNumberFormat';
 import { useTheme } from '../../../context/ThemeContext';
 import { listRowStripeClasses } from '../../../utils/tableStriping';
 import type { TradeItem, TradeInvestor } from '../../../api/admin';
@@ -37,10 +38,12 @@ export function UserTradeCard({ trade }: { trade: TradeItem }) {
         role={hasInvestors ? 'button' : undefined}
         tabIndex={hasInvestors ? 0 : undefined}
         aria-expanded={hasInvestors ? expanded : undefined}
-        aria-label={hasInvestors ? `Trade ${trade.tradeNumber}, Investoren ${expanded ? 'einklappen' : 'anzeigen'}` : undefined}
+        aria-label={hasInvestors ? `Trade ${formatTradeNumberHash(trade.tradeNumber, trade.tradeNumberYear, trade.createdAt)}, Investoren ${expanded ? 'einklappen' : 'anzeigen'}` : undefined}
       >
         <div className="flex items-center gap-4 min-w-0">
-          <span className="font-mono font-bold text-fin1-primary shrink-0">#{trade.tradeNumber}</span>
+          <span className="font-mono font-bold text-fin1-primary shrink-0">
+            {formatTradeNumberHash(trade.tradeNumber, trade.tradeNumberYear, trade.createdAt)}
+          </span>
           <div className="min-w-0">
             <p className={clsx('font-medium font-mono text-sm', adminPrimary(isDark))}>
               {trade.symbol}

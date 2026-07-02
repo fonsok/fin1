@@ -16,6 +16,7 @@ final class CollectionBillByNumberViewModel: ObservableObject {
     // MARK: - Dependencies
 
     let tradeNumber: Int
+    let tradeNumberYear: Int?
     private let tradeLifecycleService: any TradeLifecycleServiceProtocol
     private let tradingStatisticsService: any TradingStatisticsServiceProtocol
     private let invoiceService: any InvoiceServiceProtocol
@@ -32,6 +33,7 @@ final class CollectionBillByNumberViewModel: ObservableObject {
 
     init(
         tradeNumber: Int,
+        tradeNumberYear: Int? = nil,
         tradeLifecycleService: any TradeLifecycleServiceProtocol,
         tradingStatisticsService: any TradingStatisticsServiceProtocol,
         invoiceService: any InvoiceServiceProtocol,
@@ -39,6 +41,7 @@ final class CollectionBillByNumberViewModel: ObservableObject {
         blocksInvoiceSynthesis: Bool = false
     ) {
         self.tradeNumber = tradeNumber
+        self.tradeNumberYear = tradeNumberYear
         self.tradeLifecycleService = tradeLifecycleService
         self.tradingStatisticsService = tradingStatisticsService
         self.invoiceService = invoiceService
@@ -47,9 +50,10 @@ final class CollectionBillByNumberViewModel: ObservableObject {
     }
 
     /// Convenience initializer using AppServices
-    convenience init(tradeNumber: Int, services: AppServices) {
+    convenience init(tradeNumber: Int, tradeNumberYear: Int? = nil, services: AppServices) {
         self.init(
             tradeNumber: tradeNumber,
+            tradeNumberYear: tradeNumberYear,
             tradeLifecycleService: services.tradeLifecycleService,
             tradingStatisticsService: services.tradingStatisticsService,
             invoiceService: services.invoiceService,
@@ -80,7 +84,13 @@ final class CollectionBillByNumberViewModel: ObservableObject {
             print("   - Trade #\(trade.tradeNumber) (ID: \(trade.id), Status: \(trade.status.rawValue))")
         }
 
-        if let foundTrade = completedTrades.first(where: { $0.tradeNumber == tradeNumber }) {
+        let currentYear = TradeNumberFormatting.calendarYear()
+        let resolvedYear = self.tradeNumberYear ?? currentYear
+        if let foundTrade = completedTrades.first(where: {
+            $0.tradeNumber == tradeNumber && $0.resolvedTradeNumberYear == resolvedYear
+        }) ?? (tradeNumberYear == nil ? completedTrades.first(where: {
+            $0.tradeNumber == tradeNumber && $0.resolvedTradeNumberYear == currentYear
+        }) : nil) ?? completedTrades.first(where: { $0.tradeNumber == tradeNumber }) {
             print("✅ Found trade: ID=\(foundTrade.id), Number=\(foundTrade.tradeNumber)")
 
             // Convert Trade to TradeOverviewItem
@@ -90,6 +100,7 @@ final class CollectionBillByNumberViewModel: ObservableObject {
             let tradeOverview = TradeOverviewItem(
                 tradeId: foundTrade.id,
                 tradeNumber: foundTrade.tradeNumber,
+                tradeNumberYear: foundTrade.tradeNumberYear,
                 startDate: foundTrade.createdAt,
                 endDate: foundTrade.completedAt ?? foundTrade.updatedAt,
                 profitLoss: foundTrade.currentPnL ?? 0,

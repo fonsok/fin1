@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import clsx from 'clsx';
 import { Card, CardHeader, AccountStatementEntryBadge } from '../../../components/ui';
 import { formatDateTime, formatCurrency } from '../../../utils/format';
+import { formatTradeNumberHash } from '../../../utils/tradeNumberFormat';
 import { useTheme } from '../../../context/ThemeContext';
 import { listRowStripeClasses } from '../../../utils/tableStriping';
 import type { AccountStatementData, AccountStatementEntryItem, InvestorCollectionBillSummary } from '../../../api/admin';
@@ -245,7 +246,7 @@ function StatementRow({ entry, idx, isDark }: { entry: AccountStatementEntryItem
         <div>{entry.description}</div>
         {entry.tradeNumber != null && (
           <div className={clsx('text-xs', adminMuted(isDark))}>
-            Trade #{entry.tradeNumber}
+            Trade {formatTradeNumberHash(entry.tradeNumber, entry.tradeNumberYear, entry.createdAt)}
           </div>
         )}
       </td>

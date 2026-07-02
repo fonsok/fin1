@@ -2,18 +2,13 @@
 
 const { getUserStableId } = require('./tradingIdentity');
 const { assertProductAccessEligible } = require('../utils/productAccessGate');
+const {
+  allocateNextTradeNumberForTrader,
+  getTradeNumberCalendarYear,
+  resolveTradeNumberYear,
+} = require('../utils/tradeNumberAllocation');
 
 const PARSE_OBJECT_ID_PATTERN = /^[A-Za-z0-9]{10}$/;
-
-async function allocateNextTradeNumberForTrader(traderId) {
-  const q = new Parse.Query('Trade');
-  q.equalTo('traderId', traderId);
-  q.descending('tradeNumber');
-  q.limit(1);
-  const last = await q.first({ useMasterKey: true });
-  const lastNumber = Number(last?.get('tradeNumber') || 0);
-  return Number.isFinite(lastNumber) ? lastNumber + 1 : 1;
-}
 
 async function resolveTradeForUpsert(Trade, stableId, trade) {
   const incomingObjectId = String(trade.objectId || '').trim();
@@ -38,8 +33,12 @@ async function resolveTradeForUpsert(Trade, stableId, trade) {
   }
 
   if (Number.isFinite(trade.tradeNumber)) {
+    const tradeNumberYear = Number.isFinite(trade.tradeNumberYear)
+      ? Number(trade.tradeNumberYear)
+      : getTradeNumberCalendarYear();
     const byNumber = await new Parse.Query(Trade)
       .equalTo('traderId', stableId)
+      .equalTo('tradeNumberYear', tradeNumberYear)
       .equalTo('tradeNumber', trade.tradeNumber)
       .first({ useMasterKey: true });
     if (byNumber) return byNumber;
@@ -69,10 +68,16 @@ async function handleUpsertTrade(request) {
   }
 
   if (isNewTrade) {
-    const nextTradeNumber = await allocateNextTradeNumberForTrader(stableId);
-    target.set('tradeNumber', nextTradeNumber);
+    const allocation = await allocateNextTradeNumberForTrader(stableId);
+    target.set('tradeNumber', allocation.tradeNumber);
+    target.set('tradeNumberYear', allocation.tradeNumberYear);
   } else if (Number.isFinite(trade.tradeNumber)) {
     target.set('tradeNumber', trade.tradeNumber);
+    if (Number.isFinite(trade.tradeNumberYear)) {
+      target.set('tradeNumberYear', trade.tradeNumberYear);
+    } else if (!target.get('tradeNumberYear')) {
+      target.set('tradeNumberYear', resolveTradeNumberYear(target));
+    }
   }
 
   if (typeof trade.symbol === 'string') target.set('symbol', trade.symbol);

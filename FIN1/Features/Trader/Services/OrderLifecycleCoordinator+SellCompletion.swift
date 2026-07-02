@@ -64,7 +64,8 @@ extension OrderLifecycleCoordinator {
             await self.tradingNotificationService.generateInvoiceAndNotification(
                 for: order,
                 tradeId: trade.id,
-                tradeNumber: trade.tradeNumber
+                tradeNumber: trade.tradeNumber,
+                tradeNumberYear: trade.resolvedTradeNumberYear
             )
 
             await self.syncTraderSellDocumentsIntoInboxAfterSell(for: trade)
@@ -118,7 +119,12 @@ extension OrderLifecycleCoordinator {
 
             await self.tradingNotificationService.showSellConfirmation(for: trade)
         } else {
-            await self.tradingNotificationService.generateInvoiceAndNotification(for: order, tradeId: nil, tradeNumber: nil)
+            await self.tradingNotificationService.generateInvoiceAndNotification(
+                for: order,
+                tradeId: nil,
+                tradeNumber: nil,
+                tradeNumberYear: nil
+            )
         }
     }
 }

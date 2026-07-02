@@ -15,6 +15,8 @@ struct HoldingCard: View {
     var body: some View {
         CardContainer(
             position: self.holding.position,
+            showPositionLabel: false,
+            tradeNumberLabel: self.holding.formattedTradeNumberLabel,
             showWatchlistIcon: false,
             isInWatchlist: self.services.traderService.isInWatchlist(self.holding.wkn),
             onPapersheetTapped: {

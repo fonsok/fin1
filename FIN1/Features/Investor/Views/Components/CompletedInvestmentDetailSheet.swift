@@ -338,7 +338,7 @@ struct CompletedInvestmentDetailSheet: View {
     private func tradeLineRow(_ line: CompletedInvestmentDetailViewModel.TradeLineItem) -> some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(6)) {
             HStack {
-                Text("Trade #\(String(format: "%03d", line.tradeNumber)) – \(line.symbol)")
+                Text("Trade #\(line.formattedTradeNumber) – \(line.symbol)")
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(AppTheme.fontColor)
 

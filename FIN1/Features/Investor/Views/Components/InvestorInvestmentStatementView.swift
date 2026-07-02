@@ -202,7 +202,7 @@ struct InvestorInvestmentStatementView: View {
     private func statementSection(for item: InvestorInvestmentStatementItem) -> some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(12)) {
             HStack {
-                Text("\(self.viewModel.investment.traderName) – Trade #\(String(format: "%03d", item.tradeNumber))")
+                Text("\(self.viewModel.investment.traderName) – Trade #\(item.formattedTradeNumber)")
                     .font(ResponsiveDesign.headlineFont())
                     .foregroundColor(DocumentDesignSystem.textColor)
                 Spacer()

@@ -197,7 +197,9 @@ enum InvestorAccountStatementBuilder {
 
         var subtitle: String?
         if let tradeNumber = entry.tradeNumber {
-            subtitle = String(format: "Trade #%03d", tradeNumber)
+            let year = entry.tradeNumberYear
+                ?? TradeNumberFormatting.calendarYear(for: occurredAt)
+            subtitle = TradeNumberFormatting.labeled(number: tradeNumber, year: year)
         }
 
         var metadata: [String: String] = ["source": entry.source ?? "backend", "backendEntryType": entry.entryType]
@@ -209,7 +211,11 @@ enum InvestorAccountStatementBuilder {
         } else if let businessReference = entry.businessReference, !businessReference.isEmpty {
             metadata["businessReference"] = businessReference
         }
-        if let tradeNumber = entry.tradeNumber { metadata["tradeNumber"] = String(format: "%03d", tradeNumber) }
+        if let tradeNumber = entry.tradeNumber {
+            let year = entry.tradeNumberYear
+                ?? TradeNumberFormatting.calendarYear(for: occurredAt)
+            metadata["tradeNumber"] = TradeNumberFormatting.display(number: tradeNumber, year: year)
+        }
         if let referenceDocumentId = entry.referenceDocumentId, !referenceDocumentId.isEmpty {
             metadata["referenceDocumentId"] = referenceDocumentId
         }

@@ -210,10 +210,17 @@ struct OngoingTradeCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
-            HStack {
-                Text("Trade #\(self.trade.tradeNumber)")
-                    .font(ResponsiveDesign.headlineFont())
-                    .foregroundColor(AppTheme.fontColor)
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
+                    Text("Trade Nr.")
+                        .font(ResponsiveDesign.captionFont())
+                        .fontWeight(.thin)
+                        .foregroundColor(AppTheme.secondaryText)
+
+                    Text(self.trade.displayTradeNumber)
+                        .font(ResponsiveDesign.headlineFont())
+                        .foregroundColor(AppTheme.fontColor)
+                }
 
                 Spacer()
 

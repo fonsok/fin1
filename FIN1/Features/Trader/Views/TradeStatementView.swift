@@ -94,7 +94,7 @@ struct TradeStatementView: View {
                             TradeStatementHeaderView(
                                 depotNumber: displayProperties.depotNumber,
                                 depotHolder: displayProperties.depotHolder,
-                                tradeNumber: self.viewModel.trade.tradeNumber
+                                tradeNumberLabel: self.viewModel.trade.formattedTradeNumber
                             )
                         }
 

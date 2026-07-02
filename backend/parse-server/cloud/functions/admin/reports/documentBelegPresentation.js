@@ -2,6 +2,10 @@
 
 const { round2 } = require('../../../utils/accountingHelper/shared');
 const {
+  formatTradeNumberForDisplay,
+  getTradeNumberCalendarYear,
+} = require('../../../utils/tradeNumberAllocation');
+const {
   traderCollectionBillDisplaySections,
   formatTraderCollectionBillSummaryText,
 } = require('../../../utils/accountingHelper/traderCollectionBillBelegSnapshot');
@@ -70,11 +74,28 @@ function formatPartyRow(label, userId, partyDisplayName) {
   return { label, value: name ? `${name} · ${uid}` : uid };
 }
 
+function parseTradeNumberYearFromDocumentName(name) {
+  const match = String(name || '').match(/Trade(\d{4})-(\d{3})/);
+  return match ? Number(match[1]) : null;
+}
+
+function adminTradeRefLabel(doc, tradeNumberYear = null) {
+  const num = doc.get('tradeNumber');
+  if (num == null || num === '') {
+    return doc.get('tradeId') ? String(doc.get('tradeId')) : '—';
+  }
+  const year = tradeNumberYear
+    ?? parseTradeNumberYearFromDocumentName(doc.get('name'))
+    ?? getTradeNumberCalendarYear(doc.get('createdAt') || new Date());
+  const formatted = formatTradeNumberForDisplay(num, year);
+  return formatted ? `#${formatted}` : `#${num}`;
+}
+
 function buildInvestorCollectionBillSections(meta, doc, enrichment = {}) {
   const sections = [];
   pushSection(sections, 'Beleg', [
     { label: 'Belegnummer', value: doc.get('accountingDocumentNumber') || '—' },
-    { label: 'Trade', value: doc.get('tradeNumber') ? `#${doc.get('tradeNumber')}` : doc.get('tradeId') },
+    { label: 'Trade', value: adminTradeRefLabel(doc) },
     { label: 'Investment', value: String(doc.get('investmentId') || '—') },
     formatPartyRow('Investor (User-ID)', doc.get('userId'), enrichment.partyDisplayName),
   ]);
@@ -123,7 +144,7 @@ function buildAppCommissionEigenbelegSections(meta, doc) {
   const konten = meta.buchungskonten || {};
   pushSection(sections, 'Eigenbeleg — Erfolgsprovision Plattform', [
     { label: 'Belegnummer', value: doc.get('accountingDocumentNumber') || '—' },
-    { label: 'Trade', value: doc.get('tradeNumber') ? `#${doc.get('tradeNumber')}` : doc.get('tradeId') },
+    { label: 'Trade', value: adminTradeRefLabel(doc) },
     { label: 'Erfolgsprovision', value: formatEuroDe(meta.appCommissionAmount ?? meta.betrag) },
     {
       label: 'Provisionssatz (Plattform)',
@@ -160,7 +181,7 @@ function buildTraderCreditNoteSections(meta, doc, enrichment = {}) {
   pushSection(sections, 'Gutschrift (Provision)', [
     { label: 'Belegnummer', value: doc.get('accountingDocumentNumber') || '—' },
     formatPartyRow('Trader (User-ID)', doc.get('userId') || meta.traderId, traderName),
-    { label: 'Trade', value: doc.get('tradeNumber') ? `#${doc.get('tradeNumber')}` : '—' },
+    { label: 'Trade', value: adminTradeRefLabel(doc) },
     { label: 'Bruttogewinn (Basis)', value: formatEuroDe(meta.grossProfit) },
     { label: 'Provision gesamt', value: formatEuroDe(meta.commissionAmount) },
     { label: 'Netto', value: formatEuroDe(meta.netProfit) },

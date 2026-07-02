@@ -131,6 +131,9 @@ struct TileData {
 struct CardContainer<Content: View>: View {
     let position: Int
     let positionPrefix: String
+    let showPositionLabel: Bool
+    /// Formatted trade number (e.g. 2026-001) shown in the left column when position label is hidden.
+    let tradeNumberLabel: String?
     let content: Content
     let showWatchlistIcon: Bool
     let isInWatchlist: Bool
@@ -143,6 +146,8 @@ struct CardContainer<Content: View>: View {
     init(
         position: Int,
         positionPrefix: String = "P",
+        showPositionLabel: Bool = true,
+        tradeNumberLabel: String? = nil,
         showWatchlistIcon: Bool = false,
         isInWatchlist: Bool = false,
         showInvoiceIcon: Bool = false,
@@ -154,6 +159,8 @@ struct CardContainer<Content: View>: View {
     ) {
         self.position = position
         self.positionPrefix = positionPrefix
+        self.showPositionLabel = showPositionLabel
+        self.tradeNumberLabel = tradeNumberLabel
         self.showWatchlistIcon = showWatchlistIcon
         self.isInWatchlist = isInWatchlist
         self.showInvoiceIcon = showInvoiceIcon
@@ -168,11 +175,23 @@ struct CardContainer<Content: View>: View {
         HStack(alignment: .top, spacing: ResponsiveDesign.spacing(10)) {
             // Left Side - Position Number with optional Papersheet Icon and optional Watchlist Icon
             VStack(spacing: ResponsiveDesign.spacing(30)) {
-                if !self.positionPrefix.isEmpty {
+                if self.showPositionLabel, !self.positionPrefix.isEmpty {
                     Text("\(self.positionPrefix) \(self.position)")
                         .font(ResponsiveDesign.headlineFont())
                         .fontWeight(.regular)
                         .foregroundColor(AppTheme.fontColor.opacity(0.8))
+                } else if let tradeNumberLabel = self.tradeNumberLabel, !tradeNumberLabel.isEmpty {
+                    VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(4)) {
+                        Text("Trade Nr.")
+                            .font(ResponsiveDesign.captionFont())
+                            .fontWeight(.thin)
+                            .foregroundColor(AppTheme.secondaryText)
+
+                        Text(tradeNumberLabel)
+                            .font(ResponsiveDesign.headlineFont())
+                            .fontWeight(.regular)
+                            .foregroundColor(AppTheme.fontColor.opacity(0.8))
+                    }
                 }
 
                 if self.onPapersheetTapped != nil {
@@ -214,7 +233,7 @@ struct CardContainer<Content: View>: View {
                     .buttonStyle(PlainButtonStyle())
                 }
             }
-            .frame(width: 60)
+            .frame(minWidth: 72, maxWidth: 80, alignment: .leading)
             .padding(.top, ResponsiveDesign.spacing(8)) // Add padding to center with first row of tiles
 
             // Right Side - Content (tiles, etc.)

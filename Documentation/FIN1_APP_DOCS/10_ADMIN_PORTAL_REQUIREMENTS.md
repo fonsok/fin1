@@ -1,6 +1,6 @@
 # FIN1 Admin-Web-Portal: Dokumentation
 
-> **Datum:** 2026-06-25 (Ergänzung: **Anzeige** → „Trader-Depot: Investment-Pool Status anzeigen“, iOS Depot-Kachel) · zuvor 2026-05-02 (Ergänzung: **System**-Seite Health/Smoke, **App Ledger** Summen/User-Filter; siehe unten „Stand 2026-05“) · zuvor 2026-04-15 (**Legal Branding / `{{APP_NAME}}`**: kanonische Pflege unter **Konfiguration → Systemparameter** (`legalAppName`, 4‑Augen); AGB & Rechtstexte nur Hinweis/Link; `updateLegalBranding` deprecated) (**vorher 2026-04-04:** Benutzer-Detailseite: Trading-/Investment-Übersicht und Kontoauszug ausführlich dokumentiert; zuvor Payload/`getUserDetails`; 2026-04-03 Freigaben: Typ-Filter, Listen-Sortierung / Parse-Datum / Deploy-Check in §5; 2026-04-01 Hilfe & Anleitung; 2026-03-28 KYB-Status CSR, Vitest/ESLint/CI, `getCompanyKyb*`)
+> **Datum:** 2026-07-01 (Ergänzung: **Growth & Marketing** `/growth`, Attribution, Marketing-Spend/CAC) · zuvor 2026-06-25 (Ergänzung: **Anzeige** → „Trader-Depot: Investment-Pool Status anzeigen“, iOS Depot-Kachel) · zuvor 2026-05-02 (Ergänzung: **System**-Seite Health/Smoke, **App Ledger** Summen/User-Filter; siehe unten „Stand 2026-05“) · zuvor 2026-04-15 (**Legal Branding / `{{APP_NAME}}`**: kanonische Pflege unter **Konfiguration → Systemparameter** (`legalAppName`, 4‑Augen); AGB & Rechtstexte nur Hinweis/Link; `updateLegalBranding` deprecated) (**vorher 2026-04-04:** Benutzer-Detailseite: Trading-/Investment-Übersicht und Kontoauszug ausführlich dokumentiert; zuvor Payload/`getUserDetails`; 2026-04-03 Freigaben: Typ-Filter, Listen-Sortierung / Parse-Datum / Deploy-Check in §5; 2026-04-01 Hilfe & Anleitung; 2026-03-28 KYB-Status CSR, Vitest/ESLint/CI, `getCompanyKyb*`)
 > **Status:** MVP Implementiert ✅
 > **URL:** `https://192.168.178.24/admin/`
 
@@ -72,6 +72,23 @@ Ein web-basiertes Administrations-Portal für FIN1, das rollen-basierte Zugriffs
 - **Konfiguration / Wallet:** Stufenweise **Wallet-Action-Modes** (global, Rollen, Kontotyp, nutzerbezogen + 4-Augen) ersetzen/ergänzen einfaches Ein/Aus; Admin-Portal-Konfiguration + 4-Augen-Freigaben wie in Cloud Code `wallet.js` / `fourEyes`.
 - **ADR:** [`Documentation/ADR-012-Partial-Sell-Metrics-Finance-Smoke-And-Ops.md`](../ADR-012-Partial-Sell-Metrics-Finance-Smoke-And-Ops.md) (Teil-Sell-Kennzahlen iOS, Smoke-Endpoints, System-Health, Ledger-Totals).
 
+### Stand 2026-07: Growth & Marketing (`/growth`)
+
+- **Navigation:** Sidebar **„Growth & Marketing“** (`admin-portal/src/hooks/usePermissions.ts`, Pfad `/growth`) — sichtbar für Rollen mit Finanz-/Business-Rechten (`business_admin`, analog Finanzen-Dashboard).
+- **Seite:** `admin-portal/src/pages/Growth/GrowthDashboardPage.tsx` — Aktivierung (Investor/Trader-Funnel), AUM, GoB-Plattform-Umsatz, Engagement, Akquisition/Kanäle, CAC nach Marketing-Spend, CSV-Import.
+- **SSOT-Spezifikation:** [`Documentation/GROWTH_MARKETING_PHASE1_ATTRIBUTION.md`](../GROWTH_MARKETING_PHASE1_ATTRIBUTION.md)
+- **Cloud Functions:**
+
+| Function | Permission | Beschreibung |
+|----------|------------|--------------|
+| `getGrowthDashboard` | `getGrowthDashboard` | KPI-Aggregat (`schemaVersion` 2); Parameter `days` (7–365) oder `dateFrom`/`dateTo` |
+| `importMarketingSpend` | `getGrowthDashboard` | CSV-Import `MarketingSpendEntry`; `dryRun: true` zur Validierung |
+
+- **Marketing-Spend CSV** (Pflichtspalten): `periodStart`, `periodEnd`, `amountEur`, `acquisitionChannel` — UI mit Vorlage und „CSV prüfen“ auf der Growth-Seite.
+- **Verwandt:** Onboarding-Funnel (Schritt-für-Schritt) bleibt unter **`/onboarding`** (`getOnboardingFunnel`) — Link von der Growth-Seite.
+- **Smokes (nach Deploy):** `scripts/smoke-growth-dashboard.sh`, `scripts/smoke-user-acquisition-e2e.sh`, `scripts/smoke-marketing-spend-import.sh`
+- **Ops:** `./scripts/ensure-growth-marketing-indexes.sh --remote` (idempotent, `UserAcquisition` + `MarketingSpendEntry`)
+
 ### Benutzer-Detailseite (`/users/:userId`)
 
 **Route:** `userId` = Parse **`objectId`** des `_User` (Link aus der Benutzerliste).
@@ -110,7 +127,7 @@ Ein web-basiertes Administrations-Portal für FIN1, das rollen-basierte Zugriffs
 - **Tabellen** (`InvestmentTable`): Es werden höchstens **10** Investments geladen (neueste zuerst). Aufteilung im UI:
   - **Ongoing Investments:** Status weder `completed` noch `cancelled`
   - **Completed Investments:** Status `completed` oder `cancelled`
-- **Spalten:** Investment-Nr. (gekürzte `objectId`), **Trader** (Name oder `traderId`), **Trade-Nr.** (aus verknüpftem Trade, 3-stellig), **InvestAmount** (Positions-SSOT: Beleg `totalBuyCost` → `poolTradingAmount` → Nominal — `usersDetailInvestor.js`), **Profit**, **Return (%)**, **Beleg / Rechnung** (`docRef`: Referenz aus `Document`, gesucht über `AccountStatement` mit `investmentId` und `entryType` ∈ `investment_profit`, `commission_debit` und gesetztem `referenceDocumentId`), **Status**.
+- **Spalten:** Investment-Nr. (gekürzte `objectId`), **Trader** (Name oder `traderId`), **Trade-Nr.** (aus verknüpftem Trade, Format **`YYYY-NNN`**, z. B. `2026-001`; Felder `tradeNumber` + `tradeNumberYear`), **InvestAmount** (Positions-SSOT: Beleg `totalBuyCost` → `poolTradingAmount` → Nominal — `usersDetailInvestor.js`), **Profit**, **Return (%)**, **Beleg / Rechnung** (`docRef`: Referenz aus `Document`, gesucht über `AccountStatement` mit `investmentId` und `entryType` ∈ `investment_profit`, `commission_debit` und gesetztem `referenceDocumentId`), **Status**.
 - **KPI „Investiert“:** Summe der Positionsbeträge (gleiche SSOT wie Spalte InvestAmount), nicht rohes Nominal.
 
 #### Summary Report (`SummaryReportPage`, Finanzen → Reports)
@@ -127,7 +144,7 @@ Ein web-basiertes Administrations-Portal für FIN1, das rollen-basierte Zugriffs
 - **Titel:** Rolle **Trader** → *„Account Balance & Kontoauszug“*; **alle anderen Rollen** (z. B. Investor) → *„Cash Balance & Kontoauszug“* (`AccountStatementCard`: `userRole === 'trader'`).
 - **Datenherkunft:** Parse-Klasse **`AccountStatement`**, gefiltert mit `userId` = **`user:<email>`** (gleiche stableId wie in der App). Bis zu **100** Einträge, sortiert nach `createdAt` aufsteigend; **Anfangssaldo** wie in **`getUserDetails`**: Wert aus **`loadConfig(true).financial.initialAccountBalance`** (aktive `Configuration`-Zeile bzw. Backend-Default **0 €**). Kein separates „Magic“-Fallback mehr. Autoritative Buchungen durch Backend-Settlement: siehe `Documentation/BACKEND_CALCULATION_MIGRATION.md`.
 - **Summenboxen:** **Anfangssaldo**, **Gutschriften** (Summe positiver `amount`), **Belastungen** (Summe absoluter negativer `amount`), **Nettoveränderung**, **Aktueller Saldo** (laufender Endsaldo nach den geladenen Zeilen).
-- **Tabelle:** Zuerst eine Zeile **Anfangssaldo**, danach pro Eintrag: **Datum**, **Buchungstext** (`description`, optional zweite Zeile **Trade #** aus `tradeNumber`), **Typ** (Badge; deutsche Labels für u. a. `deposit`, `withdrawal`, `investment_activate`, `investment_return`, `investment_refund`, `investment_profit`, `commission_debit`, `commission_credit`, `residual_return`, `trade_buy`, `trade_sell`, `trading_fees` — unbekannte `entryType` werden **roh** angezeigt), Spalten **Belastung** / **Gutschrift** (je nach Vorzeichen von `amount`), **Saldo** (`balanceAfter`), **Beleg** (`referenceDocumentId` oder „—“).
+- **Tabelle:** Zuerst eine Zeile **Anfangssaldo**, danach pro Eintrag: **Datum**, **Buchungstext** (`description`, optional zweite Zeile **Trade #** im Format **`YYYY-NNN`**, aus `tradeNumber` + `tradeNumberYear` bzw. formatiertem Kontoauszugs-Feld), **Typ** (Badge; deutsche Labels für u. a. `deposit`, `withdrawal`, `investment_activate`, `investment_return`, `investment_refund`, `investment_profit`, `commission_debit`, `commission_credit`, `residual_return`, `trade_buy`, `trade_sell`, `trading_fees` — unbekannte `entryType` werden **roh** angezeigt), Spalten **Belastung** / **Gutschrift** (je nach Vorzeichen von `amount`), **Saldo** (`balanceAfter`), **Beleg** (`referenceDocumentId` oder „—“).
 - **Ein-/Ausklappen:** Standard **alle** Einträge sichtbar, wenn höchstens **10** Zeilen; bei mehr als **10** startet die Tabelle mit den **letzten 5** Einträgen und Link **„Alle N Einträge anzeigen“**; nach Aufklappen bei >10 Einträgen **„Weniger anzeigen“**. Keine Einträge → Hinweis *„Keine Kontoauszugseinträge vorhanden.“*
 
 **Aktionen im Header:** Passwort zurücksetzen (`forcePasswordReset`), Sperren (`suspended`) / Reaktivieren (`active`) über `updateUserStatus` — abhängig von `usePermissions` und **keine Sperrung des eigenen Accounts**.
@@ -196,6 +213,7 @@ admin-portal/
 │   │   ├── Audit/            # AuditLogs
 │   │   ├── Templates/        # Response Templates
 │   │   ├── KYBReview/        # Company KYB Prüfung (Review, Detail, Decision, Reset)
+│   │   ├── Growth/           # Growth & Marketing Dashboard, Marketing-Spend CSV-Import
 │   │   └── CSR/              # CSR Web Panel (siehe Abschnitt 10)
 │   │       ├── pages/        # CreateTicket, TicketDetails, etc.
 │   │       ├── components/   # TemplateDropdown, CustomerSelection, etc.
@@ -277,10 +295,12 @@ async function cloudFunction<T>(name: string, params?: Record<string, unknown>):
 | `getCompanyKybSubmissionDetail` | KYB-Status | Detail-Ansicht inkl. Audit-Trail für eine Einreichung |
 | `reviewCompanyKyb` | KYB-Status | Genehmigen, Ablehnen oder Nachbesserung anfordern (nicht CSR) |
 | `resetCompanyKyb` | KYB-Status | Abgelehnte/Nachbesserung-Einreichung auf Entwurf zurücksetzen (nicht CSR) |
+| `getGrowthDashboard` | Growth & Marketing | Aktivierung, AUM, GoB-Umsatz, Akquisition, CAC (`business_admin`) |
+| `importMarketingSpend` | Growth & Marketing | CSV-Import Marketing-Spend (`dryRun` optional) |
 
 **Rollen (Backend, `permissions/constants.js`):** `business_admin` und `compliance` besitzen die vollen KYB-Functions einschließlich `reviewCompanyKyb` / `resetCompanyKyb`. Die Rolle `customer_service` hat **`getCompanyKybSubmissions`** und **`getCompanyKybSubmissionDetail`** (Lesen für Support), nicht jedoch Entscheiden oder Zurücksetzen.
 
-**Hinweis Navigation (Admin-UI):** FAQ unter **„Hilfe & Anleitung“**; Rechtstexte unter **„AGB & Rechtstexte“**; Firmen-KYB unter **„KYB-Status“** (`/kyb-review`, Icon building-office).
+**Hinweis Navigation (Admin-UI):** FAQ unter **„Hilfe & Anleitung“**; Rechtstexte unter **„AGB & Rechtstexte“**; Firmen-KYB unter **„KYB-Status“** (`/kyb-review`); Growth unter **„Growth & Marketing“** (`/growth`).
 
 **Seite Approvals (`/approvals`)** – vier Tabs:
 - **Freigaben erteilen**: Pending Anträge anderer Admins (Genehmigen/Ablehnen)

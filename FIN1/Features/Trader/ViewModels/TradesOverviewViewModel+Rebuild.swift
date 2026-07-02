@@ -97,6 +97,7 @@ extension TradesOverviewViewModel {
         return TradeOverviewItem(
             tradeId: trade.id,
             tradeNumber: trade.tradeNumber,
+            tradeNumberYear: trade.tradeNumberYear,
             startDate: startDate,
             endDate: endDate,
             profitLoss: pnl,
@@ -140,6 +141,7 @@ extension TradesOverviewViewModel {
         selectedTrade = TradeOverviewItem(
             tradeId: trade.id,
             tradeNumber: trade.tradeNumber,
+            tradeNumberYear: trade.tradeNumberYear,
             startDate: startDate,
             endDate: endDate,
             profitLoss: pnl,

@@ -1,6 +1,7 @@
 import clsx from 'clsx';
 import { Badge, getStatusVariant } from '../../../components/ui';
 import { formatCurrency, getStatusDisplay } from '../../../utils/format';
+import { formatTradeNumber } from '../../../utils/tradeNumberFormat';
 import { listRowStripeClasses } from '../../../utils/tableStriping';
 import type { InvestmentItem } from '../../../api/admin';
 
@@ -52,7 +53,9 @@ export function InvestmentTable({ title, items, isDark }: Props) {
                     {inv.traderName || inv.traderId}
                   </td>
                   <td className={clsx('px-3 py-2.5 font-mono', adminEmphasisSoft(isDark))}>
-                    {inv.tradeNumber != null ? String(inv.tradeNumber).padStart(3, '0') : '\u2014'}
+                    {inv.tradeNumber != null
+                      ? formatTradeNumber(inv.tradeNumber, inv.tradeNumberYear, inv.completedAt ?? inv.createdAt)
+                      : '\u2014'}
                   </td>
                   <td className={clsx('px-3 py-2.5 text-right tabular-nums', adminPrimary(isDark))}>
                     {formatCurrency(inv.amount)}

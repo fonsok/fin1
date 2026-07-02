@@ -2,6 +2,10 @@
 
 const { round2 } = require('../accountingHelper/shared');
 const {
+  formatTradeNumberLabel,
+  resolveTradeNumberPresentation,
+} = require('../tradeNumberAllocation');
+const {
   isMirrorPoolOrderLeg,
   isMirrorPoolTradeLeg,
 } = require('../../services/poolMirrorActivation/poolActivationPolicy');
@@ -156,8 +160,13 @@ function buildDisplayEventFromInvoice(invoice, cashLegRows, instrumentContext = 
   );
   const beleg = resolveBackendBelegForInvoice(invoice, cashLegRows, transactionType);
   const netAmount = Math.abs(Number(invoice.get('totalAmount') || 0));
-  const tradeNumber = invoice.get('tradeNumber');
-  const tradeNumberStr = tradeNumber != null ? String(tradeNumber) : '';
+  const tradePresentation = trade
+    ? resolveTradeNumberPresentation(trade)
+    : {
+      tradeNumber: invoice.get('tradeNumber') ?? null,
+      tradeNumberYear: null,
+      label: formatTradeNumberLabel(invoice.get('tradeNumber'), null),
+    };
 
   return {
     objectId: `invoice-display:${invoice.id}:${transactionType}`,
@@ -165,7 +174,8 @@ function buildDisplayEventFromInvoice(invoice, cashLegRows, instrumentContext = 
     amount: signedNetAmount(transactionType, netAmount),
     at: invoiceOccurredAt(invoice),
     tradeId: invoice.get('tradeId') || null,
-    tradeNumber: tradeNumber ?? null,
+    tradeNumber: tradePresentation.tradeNumber ?? null,
+    tradeNumberYear: tradePresentation.tradeNumberYear ?? null,
     referenceDocumentId: beleg.referenceDocumentId,
     referenceDocumentNumber: beleg.referenceDocumentNumber || invoice.get('invoiceNumber') || null,
     description: `Netto ${transactionType === 'sell' ? 'Verkauf' : 'Kauf'} (Rechnung ${invoice.get('invoiceNumber') || ''})`,
@@ -193,6 +203,7 @@ function buildDisplayEventsFromBackendLegs({
   transactionType,
   tradeInstrument,
   instrumentResolvedFromTrade = false,
+  trade = null,
 }) {
   const legGrossTotal = legs.reduce((sum, leg) => sum + Math.abs(Number(leg.get('amount') || 0)), 0);
   if (legGrossTotal <= 0) return [];
@@ -213,7 +224,14 @@ function buildDisplayEventsFromBackendLegs({
 
   const bookingSnapshot = readCustomerDisplaySnapshotFromEntry(representative);
   const instrument = tradeInstrument || { wknOrIsin: '', securitiesDirection: '', underlyingAsset: '' };
-  const tradeNumber = representative.get('tradeNumber');
+  const tradePresentation = trade
+    ? resolveTradeNumberPresentation(trade)
+    : {
+      tradeNumber: representative.get('tradeNumber') ?? null,
+      tradeNumberYear: null,
+      label: formatTradeNumberLabel(representative.get('tradeNumber'), null),
+    };
+  const tradeNumber = tradePresentation.tradeNumber;
   const hasInstrument = Boolean(instrument.wknOrIsin || instrument.securitiesDirection || instrument.underlyingAsset);
 
   const baseEvent = {
@@ -223,14 +241,15 @@ function buildDisplayEventsFromBackendLegs({
     at: representative.get('createdAt') || new Date(),
     tradeId: representative.get('tradeId') || null,
     tradeNumber: tradeNumber ?? null,
+    tradeNumberYear: tradePresentation.tradeNumberYear ?? null,
     referenceDocumentId: representative.get('referenceDocumentId') || null,
     referenceDocumentNumber: representative.get('referenceDocumentNumber') || null,
     description: representative.get('description') || '',
     source: 'customer_display',
     statementTitle: hasInstrument
       ? tradeStatementTitle(transactionType, instrument)
-      : (tradeNumber != null
-        ? `${transactionType === 'sell' ? 'VERKAUF' : 'KAUF'} · Trade #${String(tradeNumber).padStart(3, '0')}`
+      : (tradePresentation.label
+        ? `${transactionType === 'sell' ? 'VERKAUF' : 'KAUF'} · ${tradePresentation.label}`
         : (transactionType === 'sell' ? 'VERKAUF' : 'KAUF')),
     transactionTypeLabel: transactionType,
     wknOrIsin: instrument.wknOrIsin || null,
@@ -265,7 +284,11 @@ function buildNetTradeDisplayEvents(stmtEntries, invoices, instrumentContext = {
   const feesByTradeKey = new Map();
   for (const row of stmtEntries) {
     if (String(row.get('entryType') || '') !== 'trading_fees') continue;
-    for (const key of tradeCoverageKeys(row.get('tradeId'), row.get('tradeNumber'))) {
+    for (const key of tradeCoverageKeys(
+      row.get('tradeId'),
+      row.get('tradeNumber'),
+      row.get('tradeNumberYear'),
+    )) {
       feesByTradeKey.set(key, row);
     }
   }
@@ -290,9 +313,9 @@ function buildNetTradeDisplayEvents(stmtEntries, invoices, instrumentContext = {
     const event = buildDisplayEventFromInvoice(invoice, cashLegRows, instrumentContext);
     if (!event) continue;
     if (event.transactionTypeLabel === 'buy') {
-      if (isTradeCovered(coveredBuy, event.tradeId, event.tradeNumber)) continue;
+      if (isTradeCovered(coveredBuy, event.tradeId, event.tradeNumber, event.tradeNumberYear)) continue;
       events.push(event);
-      markTradeCovered(coveredBuy, event.tradeId, event.tradeNumber);
+      markTradeCovered(coveredBuy, event.tradeId, event.tradeNumber, event.tradeNumberYear);
       continue;
     }
 
@@ -315,7 +338,11 @@ function buildNetTradeDisplayEvents(stmtEntries, invoices, instrumentContext = {
 
   const legsByTrade = new Map();
   for (const leg of cashLegRows) {
-    const key = tradeCoverageKeys(leg.get('tradeId'), leg.get('tradeNumber'))[0]
+    const key = tradeCoverageKeys(
+      leg.get('tradeId'),
+      leg.get('tradeNumber'),
+      leg.get('tradeNumberYear'),
+    )[0]
       || `stmt:${leg.id}`;
     if (!legsByTrade.has(key)) legsByTrade.set(key, []);
     legsByTrade.get(key).push(leg);
@@ -326,8 +353,10 @@ function buildNetTradeDisplayEvents(stmtEntries, invoices, instrumentContext = {
     if (!isTraderCustomerVisibleTrade(tradeId, tradeById, buyOrderByTradeId)) {
       continue;
     }
+    const trade = tradeId ? tradeById.get(tradeId) : null;
     const tradeNumber = legs[0]?.get('tradeNumber') ?? null;
-    const feeKey = tradeCoverageKeys(tradeId, tradeNumber).find((k) => feesByTradeKey.has(k));
+    const tradeNumberYear = trade?.get?.('tradeNumberYear') ?? null;
+    const feeKey = tradeCoverageKeys(tradeId, tradeNumber, tradeNumberYear).find((k) => feesByTradeKey.has(k));
     const feesEntry = feeKey ? feesByTradeKey.get(feeKey) : null;
 
     const buyLegs = legs.filter((leg) => leg.get('entryType') === 'trade_buy');
@@ -335,11 +364,10 @@ function buildNetTradeDisplayEvents(stmtEntries, invoices, instrumentContext = {
     const tradeBuyGross = buyLegs.reduce((sum, leg) => sum + Math.abs(Number(leg.get('amount') || 0)), 0);
     const tradeSellGross = sellLegs.reduce((sum, leg) => sum + Math.abs(Number(leg.get('amount') || 0)), 0);
 
-    const trade = tradeId ? tradeById.get(tradeId) : null;
     const buyOrder = resolveOrderForTradeSide(instrumentContext, tradeId, 'buy');
     const buyInstrument = parseInstrumentFromTrade(trade, buyOrder, { transactionType: 'buy' });
 
-    if (buyLegs.length > 0 && !isTradeCovered(coveredBuy, tradeId, tradeNumber)) {
+    if (buyLegs.length > 0 && !isTradeCovered(coveredBuy, tradeId, tradeNumber, tradeNumberYear)) {
       events.push(...buildDisplayEventsFromBackendLegs({
         legs: buyLegs,
         feesEntry,
@@ -348,6 +376,7 @@ function buildNetTradeDisplayEvents(stmtEntries, invoices, instrumentContext = {
         transactionType: 'buy',
         tradeInstrument: buyInstrument,
         instrumentResolvedFromTrade: Boolean(trade),
+        trade,
       }));
     }
 
@@ -374,6 +403,7 @@ function buildNetTradeDisplayEvents(stmtEntries, invoices, instrumentContext = {
         transactionType: 'sell',
         tradeInstrument: sellInstrument,
         instrumentResolvedFromTrade: Boolean(trade),
+        trade,
       });
       if (!legEvents.length) continue;
       events.push(...legEvents);

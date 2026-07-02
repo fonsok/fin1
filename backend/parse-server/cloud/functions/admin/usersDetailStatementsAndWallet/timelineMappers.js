@@ -53,6 +53,7 @@ function mapTraderTimelineToAdminEntries(timeline, formatDate) {
     balanceAfter: event.balanceAfter,
     tradeId: event.tradeId || undefined,
     tradeNumber: event.tradeNumber ?? undefined,
+    tradeNumberYear: event.tradeNumberYear ?? undefined,
     investmentId: undefined,
     description: event.statementTitle || event.description || event.entryType,
     referenceDocumentId: event.referenceDocumentId || null,

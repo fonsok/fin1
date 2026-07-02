@@ -1,6 +1,7 @@
 import clsx from 'clsx';
 import type { InvestorCollectionBillFeeLine, InvestorCollectionBillSummary } from '../../../api/admin';
 import { formatCurrency, formatCurrencyPerShare, formatDateTime } from '../../../utils/format';
+import { formatTradeNumberHash } from '../../../utils/tradeNumberFormat';
 import { adminBodyStrong, adminMuted, adminPrimary, adminSoft, adminTableBodyDivide } from '../../../utils/adminThemeClasses';
 
 const FEE_LABELS: Record<string, string> = {
@@ -73,7 +74,9 @@ function BillCard({ bill, isDark }: { bill: InvestorCollectionBillSummary; isDar
         <span className={clsx('font-mono text-sm font-medium', adminBodyStrong(isDark))}>{beleg}</span>
         <span className={clsx('text-xs', adminMuted(isDark))}>{formatDateTime(bill.createdAt)}</span>
         {bill.tradeNumber != null && (
-          <span className={clsx('text-xs', adminMuted(isDark))}>Trade #{bill.tradeNumber}</span>
+          <span className={clsx('text-xs', adminMuted(isDark))}>
+            Trade {formatTradeNumberHash(bill.tradeNumber, bill.tradeNumberYear, bill.createdAt)}
+          </span>
         )}
       </div>
 

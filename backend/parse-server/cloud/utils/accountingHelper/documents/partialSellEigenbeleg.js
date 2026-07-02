@@ -3,6 +3,7 @@
 const { generateSequentialNumber } = require('../../helpers');
 const { round2, formatDateCompact, generateShortHash } = require('../shared');
 const { applyBusinessCaseIdToDocument, formatEuroDe, formatDateTimeDe } = require('./shared');
+const { resolveTradeNumberPresentation } = require('../../tradeNumberAllocation');
 
 const PARTIAL_SELL_KONTO_PTR = {
   skr03: '1592',
@@ -56,7 +57,8 @@ async function createPartialSellInternalBeleg({
   const existing = await dup.first({ useMasterKey: true });
   if (existing) return existing;
 
-  const tradeNumber = trade.get('tradeNumber') || '';
+  const tradePresentation = resolveTradeNumberPresentation(trade);
+  const tradeNumber = tradePresentation.tradeNumber;
   const symbol = trade.get('symbol') || '';
   const docNumber = await generateSequentialNumber('EBP', 'Document', 'accountingDocumentNumber');
   const dateStr = formatDateCompact(new Date());
@@ -69,7 +71,7 @@ async function createPartialSellInternalBeleg({
   const accountingSummaryText = [
     `Eigenbeleg ${docNumber} — Teilverkauf Pool-Trade (intern)`,
     '',
-    `Trade #${tradeNumber} (${symbol}), Investment ${investmentNumber || investmentId}`,
+    `Trade ${tradePresentation.label || `#${tradeNumber}`} (${symbol}), Investment ${investmentNumber || investmentId}`,
     `Verkaufte Pool-Stück (Investor-Anteil): ${sellQty != null ? sellQty : '—'}`,
     sellPrice != null ? `Verkaufspreis: ${formatEuroDe(sellPrice)}` : '',
     `Freigegebenes Pool-Kapital (Einstand): ${formatEuroDe(amount)}`,
@@ -102,7 +104,7 @@ async function createPartialSellInternalBeleg({
   const doc = new Document();
   doc.set('userId', investorId);
   doc.set('type', 'investorPartialSellInternal');
-  doc.set('name', `Eigenbeleg_PartialSell_${investmentNumber || investmentId}_Trade${tradeNumber}_${dateStr}_${hash}.pdf`);
+  doc.set('name', `Eigenbeleg_PartialSell_${investmentNumber || investmentId}_Trade${tradePresentation.filenameToken}_${dateStr}_${hash}.pdf`);
   doc.set('investmentId', investmentId);
   doc.set('tradeId', tradeId);
   doc.set('tradeNumber', tradeNumber);

@@ -8,6 +8,10 @@ const {
   assertTraderPartialSellWithinLimit,
   countTraderPartialSellEvents,
 } = require('../utils/configHelper/traderPartialSellLimits');
+const {
+  allocateNextTradeNumberForTrader,
+  resolveTradeNumberYear,
+} = require('../utils/tradeNumberAllocation');
 
 Parse.Cloud.beforeSave('Trade', async (request) => {
   const trade = request.object;
@@ -17,13 +21,29 @@ Parse.Cloud.beforeSave('Trade', async (request) => {
     if (!trade.get('businessCaseId')) {
       trade.set('businessCaseId', newBusinessCaseId());
     }
-    if (!trade.get('tradeNumber')) {
+    const traderId = String(trade.get('traderId') || '').trim();
+    if (traderId) {
+      const existingNumber = Number(trade.get('tradeNumber'));
+      const existingYear = Number(trade.get('tradeNumberYear'));
+      const hasAuthoritativeNumber = Number.isFinite(existingNumber) && existingNumber > 0
+        && Number.isFinite(existingYear) && existingYear > 0;
+      if (!hasAuthoritativeNumber) {
+        const allocation = await allocateNextTradeNumberForTrader(
+          traderId,
+          trade.get('createdAt') || new Date(),
+        );
+        trade.set('tradeNumber', allocation.tradeNumber);
+        trade.set('tradeNumberYear', allocation.tradeNumberYear);
+      }
+    } else if (!trade.get('tradeNumber')) {
       const lastTrade = await new Parse.Query('Trade')
         .descending('tradeNumber')
         .first({ useMasterKey: true });
-
       const nextNumber = lastTrade ? (lastTrade.get('tradeNumber') || 0) + 1 : 1;
       trade.set('tradeNumber', nextNumber);
+      trade.set('tradeNumberYear', resolveTradeNumberYear(trade));
+    } else if (!trade.get('tradeNumberYear')) {
+      trade.set('tradeNumberYear', resolveTradeNumberYear(trade));
     }
 
     if (!trade.get('status')) {
@@ -133,5 +153,9 @@ Parse.Cloud.beforeSave('Trade', async (request) => {
       trade.set('netProfit', calculatedProfit - tradingFees);
       console.log(`📊 Trade update: grossProfit=${calculatedProfit}, tradingFees=${tradingFees}, netProfit=${calculatedProfit - tradingFees}`);
     }
+  }
+
+  if (trade.get('tradeNumber') && !trade.get('tradeNumberYear')) {
+    trade.set('tradeNumberYear', resolveTradeNumberYear(trade));
   }
 });

@@ -38,6 +38,7 @@ async function bookTraderCommissionCreditIfDue({
   netTradingProfit,
   investorBreakdown,
   businessCaseId,
+  commissionRate: commissionRateOverride,
 }) {
   if (
     totalCommission <= 0
@@ -48,7 +49,9 @@ async function bookTraderCommissionCreditIfDue({
     return null;
   }
 
-  const commissionRate = await getTraderCommissionRate();
+  const commissionRate = Number.isFinite(commissionRateOverride)
+    ? commissionRateOverride
+    : await getTraderCommissionRate();
   const config = await loadConfig();
   const taxConfig = config.tax || {};
   const traderProfile = await resolveUserTaxProfile(traderId);

@@ -9,7 +9,7 @@ Statt Atlas Search nutzt FIN1 **MongoDB Text Indexes** auf dem Feld `adminSearch
 | `adminSearchBlob` | Denormalisiert: Nr., Namen, IDs, Symbol — lowercase, max. 512 Zeichen |
 | `beforeSave` Investment/Trade | Blob wird bei jedem Save aktualisiert |
 | `$text` in Aggregate (`summaryReportMongoMatch`) | Indexierte Volltextsuche |
-| Präfix/Equality | `INV-*` → `investmentNumber`, reine Ziffern → `tradeNumber`, Symbole → `symbol` |
+| Präfix/Equality | `INV-*` → `investmentNumber`, reine Ziffern → `tradeNumber`, Symbole → `symbol`; im `adminSearchBlob` auch **`YYYY-NNN`** (Trade-Anzeige) |
 
 Schema-Migration: `admin_list_search_v1` (Parse-Feld + Index-Anlage via `PARSE_SERVER_DATABASE_URI`).
 
@@ -54,4 +54,4 @@ node scripts/monitor-admin-list-search-health.js   # CI / mit PARSE_* env
 
 - Suchbegriff max. **80** Zeichen (wie Beleg-Suche).
 - `$text` findet Wörter, keine beliebigen Substrings mitten im Token — Prefix-Fallback findet nur **Anfang** des `adminSearchBlob`.
-- Präfix auf `investmentNumber` (`INV-…`) und Equality auf `tradeNumber` bleiben indexiert.
+- Präfix auf `investmentNumber` (`INV-…`) und Equality auf `tradeNumber` bleiben indexiert. Trade-**Anzeige** im Format `YYYY-NNN` — Spec: [`TRADE_NUMBER_REFERENCE.md`](./TRADE_NUMBER_REFERENCE.md).

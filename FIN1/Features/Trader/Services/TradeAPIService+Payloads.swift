@@ -7,6 +7,7 @@ extension TradeAPIService {
 
         var payload: [String: Any] = [
             "tradeNumber": trade.tradeNumber,
+            "tradeNumberYear": trade.resolvedTradeNumberYear,
             "traderId": trade.traderId,
             "symbol": trade.symbol,
             "description": trade.description,

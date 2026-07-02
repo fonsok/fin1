@@ -352,6 +352,7 @@ function calculateRiskClass(experienceScore, knowledgeScore, frequencyScore, des
 // ============================================================================
 
 module.exports = {
+  allocateSequentialCounter,
   generateSequentialNumber,
   generateTicketNumber,
   generateInvestorInvestmentNumber,

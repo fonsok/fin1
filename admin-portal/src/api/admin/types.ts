@@ -57,6 +57,7 @@ export interface TradeInvestor {
 export interface TradeItem {
   objectId: string;
   tradeNumber: number;
+  tradeNumberYear?: number | null;
   symbol: string;
   description?: string;
   status: string;
@@ -95,6 +96,7 @@ export interface InvestmentItem {
   activatedAt?: string;
   completedAt?: string;
   tradeNumber?: number | null;
+  tradeNumberYear?: number | null;
   tradeSymbol?: string | null;
   tradeStatus?: string | null;
   tradeCompletedAt?: string | null;
@@ -110,6 +112,7 @@ export interface AccountStatementEntryItem {
   balanceAfter: number;
   tradeId?: string;
   tradeNumber?: number;
+  tradeNumberYear?: number | null;
   investmentId?: string;
   description: string;
   referenceDocumentId?: string | null;
@@ -166,6 +169,7 @@ export interface InvestorCollectionBillSummary {
   documentNumber: string | null;
   tradeId: string | null;
   tradeNumber: number | null;
+  tradeNumberYear?: number | null;
   investmentId: string | null;
   createdAt: string;
   transferAmount: number;

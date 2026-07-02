@@ -19,7 +19,7 @@ final class TradeStatementPDFServiceImproved: TradeStatementPDFServiceProtocol {
         let pdfMetaData: [String: Any] = [
             kCGPDFContextCreator as String: "\(LegalIdentity.platformName) Trading App",
             kCGPDFContextAuthor as String: LegalIdentity.companyLegalName,
-            kCGPDFContextTitle as String: "Collection Bill Trade \(String(format: "%03d", trade.tradeNumber))"
+            kCGPDFContextTitle as String: "Collection Bill Trade \(trade.formattedTradeNumber)"
         ]
 
         let format = UIGraphicsPDFRendererFormat()

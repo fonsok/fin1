@@ -3,6 +3,7 @@
 const { generateSequentialNumber } = require('../../helpers');
 const { round2, formatDateCompact, generateShortHash } = require('../shared');
 const { applyBusinessCaseIdToDocument, formatEuroDe, formatDateTimeDe } = require('./shared');
+const { resolveTradeNumberPresentation } = require('../../tradeNumberAllocation');
 
 const DOC_TYPE = 'appCommissionEigenbeleg';
 /** @deprecated Renamed from appCommissionInternalEigenbeleg; kept for idempotency lookup only. */
@@ -30,6 +31,7 @@ function buildAppCommissionEigenbelegAccountingSummary({
   amount,
   belegDatum,
   tradeNumber,
+  tradeLabel,
   tradeId,
   traderId,
   appCommissionRate,
@@ -42,7 +44,7 @@ function buildAppCommissionEigenbelegAccountingSummary({
     `Eigenbeleg ${docNumber}`,
     '',
     '1. Anlass / Geschäftsvorfall',
-    `Erfolgsprovision der Plattform aus Trade #${tradeNumber || tradeId || '—'} (interne Ertragsrealisierung).`,
+    `Erfolgsprovision der Plattform aus ${tradeLabel || `Trade #${tradeNumber || tradeId || '—'}`} (interne Ertragsrealisierung).`,
     '',
     '2. Betrag und Währung',
     `${formatEuroDe(amount)} (EUR)`,
@@ -92,7 +94,8 @@ async function createAppCommissionEigenbeleg({
   const existing = await dup.first({ useMasterKey: true });
   if (existing) return existing;
 
-  const tradeNumber = trade.get?.('tradeNumber') ?? trade.tradeNumber ?? '';
+  const tradePresentation = resolveTradeNumberPresentation(trade);
+  const tradeNumber = tradePresentation.tradeNumber;
   const symbol = trade.get?.('symbol') ?? trade.symbol ?? '';
   const ownerId = String(traderId || trade.get?.('traderId') || '').trim();
   const docNumber = await generateSequentialNumber('EAP', 'Document', 'accountingDocumentNumber');
@@ -107,6 +110,7 @@ async function createAppCommissionEigenbeleg({
     amount,
     belegDatum,
     tradeNumber,
+    tradeLabel: tradePresentation.label,
     tradeId,
     traderId: ownerId,
     appCommissionRate: rate,
@@ -117,7 +121,7 @@ async function createAppCommissionEigenbeleg({
   const doc = new Document();
   doc.set('userId', ownerId || 'platform');
   doc.set('type', DOC_TYPE);
-  doc.set('name', `Eigenbeleg_AppProvision_Trade${tradeNumber || tradeId}_${dateStr}_${hash}.pdf`);
+  doc.set('name', `Eigenbeleg_AppProvision_Trade${tradePresentation.filenameToken || tradeId}_${dateStr}_${hash}.pdf`);
   doc.set('tradeId', tradeId);
   doc.set('tradeNumber', tradeNumber);
   doc.set('accountingDocumentNumber', docNumber);

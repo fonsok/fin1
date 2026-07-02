@@ -49,7 +49,9 @@ final class HoldingsConversionService: HoldingsConversionServiceProtocol, @unche
             completedOrder: trade.buyOrder,
             position: position,
             tradeId: trade.id,
-            pairExecutionId: trade.pairExecutionId
+            pairExecutionId: trade.pairExecutionId,
+            tradeNumber: trade.tradeNumber,
+            tradeNumberYear: trade.tradeNumberYear
         )
 
         // Apply partial sales from sellOrders array (primary source of truth)
@@ -98,6 +100,8 @@ final class HoldingsConversionService: HoldingsConversionServiceProtocol, @unche
             tradeId: holding.tradeId,
             pairExecutionId: holding.pairExecutionId,
             position: holding.position,
+            tradeNumber: holding.tradeNumber,
+            tradeNumberYear: holding.tradeNumberYear,
             valuationDate: holding.valuationDate,
             wkn: holding.wkn,
             strike: holding.strike,

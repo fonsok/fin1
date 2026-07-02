@@ -95,7 +95,7 @@ struct PDFTradeStatementGenerator {
         dateFormatter.locale = Locale(identifier: "de_DE")
 
         let infoFields = PDFInfoBlockConfig.tradeStatementFields(
-            tradeNumber: String(format: "%03d", trade.tradeNumber),
+            tradeNumber: trade.formattedTradeNumber,
             date: dateFormatter.string(from: Date()),
             depotNumber: displayData.depotNumber,
             accountNumber: displayData.accountNumber
@@ -116,7 +116,7 @@ struct PDFTradeStatementGenerator {
             in: context,
             pageRect: pageRect,
             title: "Sammelabrechnung",
-            subtitle: "Trade #\(String(format: "%03d", trade.tradeNumber)) - \(displayData.securityIdentifier)",
+            subtitle: "\(TradeNumberFormatting.labeled(number: trade.tradeNumber, year: trade.resolvedTradeNumberYear)) - \(displayData.securityIdentifier)",
             currentY: currentY
         )
 
@@ -360,7 +360,7 @@ struct PDFTradeStatementGenerator {
         [
             kCGPDFContextCreator as String: "\(LegalIdentity.platformName) Trading App",
             kCGPDFContextAuthor as String: LegalIdentity.companyLegalName,
-            kCGPDFContextTitle as String: "Sammelabrechnung Trade #\(String(format: "%03d", trade.tradeNumber))"
+            kCGPDFContextTitle as String: "Sammelabrechnung \(TradeNumberFormatting.labeled(number: trade.tradeNumber, year: trade.resolvedTradeNumberYear))"
         ]
     }
 

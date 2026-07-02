@@ -2,100 +2,71 @@ import Foundation
 
 // MARK: - Trade Number Service Protocol
 
-/// Protocol for managing sequential trade numbering system
-/// Trade numbers are now per-trader to ensure each trader has their own sequence
+/// Protocol for managing sequential trade numbering system.
+/// Trade numbers reset annually per trader (Europe/Berlin calendar year).
+/// Parse Server is SSOT — `generateNextTradeNumber` is a local cache hint only; upsert assigns the authoritative number.
 protocol TradeNumberServiceProtocol: ServiceLifecycle {
-    /// Generates the next sequential trade number for a specific trader (001, 002, 003...)
-    /// - Parameter traderId: The trader's unique identifier
-    /// - Returns: Next trade number in sequence for this trader
+    /// Generates the next sequential trade number for a specific trader in the current calendar year.
     func generateNextTradeNumber(for traderId: String) -> Int
 
-    /// Legacy method for backward compatibility - uses global counter
-    /// - Returns: Next trade number in global sequence
     @available(*, deprecated, message: "Use generateNextTradeNumber(for:) for per-trader numbering")
     func generateNextTradeNumber() -> Int
 
-    /// Gets the current highest trade number for a specific trader
-    /// - Parameter traderId: The trader's unique identifier
-    /// - Returns: Current highest trade number for this trader, or 0 if none exist
     func getCurrentTradeNumber(for traderId: String) -> Int
 
-    /// Gets the current highest trade number (legacy global)
-    /// - Returns: Current highest trade number, or 0 if none exist
     func getCurrentTradeNumber() -> Int
 
-    /// Formats a trade number for display (e.g., 1 -> "001")
-    /// - Parameter number: The trade number to format
-    /// - Returns: Formatted trade number string
-    func formatTradeNumber(_ number: Int) -> String
+    func formatTradeNumber(_ number: Int, year: Int?) -> String
 
-    /// Validates if a trade number is valid
-    /// - Parameter number: The trade number to validate
-    /// - Returns: True if the trade number is valid
     func isValidTradeNumber(_ number: Int) -> Bool
 
-    /// Synchronizes trade numbers from existing trades
-    /// This ensures the service knows the highest trade number for each trader
-    /// - Parameter trades: Array of trades to synchronize from
     func synchronizeTradeNumbers(from trades: [Trade])
 }
 
 // MARK: - Trade Number Service Implementation
 
-/// Service for managing sequential trade numbering system
-/// Provides user-friendly trade numbers (001, 002, 003...) per trader while maintaining UUIDs for internal linking
 final class TradeNumberService: TradeNumberServiceProtocol, @unchecked Sendable {
 
-    // MARK: - Properties
-
-    private var traderTradeNumbers: [String: Int] = [:]  // Per-trader counters
-    private var globalTradeNumber: Int = 0  // Legacy global counter for backward compatibility
+    private var traderTradeNumbers: [String: Int] = [:]
+    private var globalTradeNumber: Int = 0
     private let userDefaults = UserDefaults.standard
-    private let tradeNumberKeyPrefix = "FIN1_TradeNumber_"  // Per-trader key prefix
-    private let legacyTradeNumberKey = "FIN1_CurrentTradeNumber"  // Legacy global key
+    private let tradeNumberKeyPrefix = "FIN1_TradeNumber_"
+    private let legacyTradeNumberKey = "FIN1_CurrentTradeNumber"
     private let queue = DispatchQueue(label: "com.fin.app.tradenumber", attributes: .concurrent)
-
-    // MARK: - ServiceLifecycle
 
     func start() async {
         self.loadLegacyTradeNumber()
     }
 
-    func stop() async {
-        // Per-trader numbers are saved immediately on generation
-    }
+    func stop() async {}
 
     func reset() async {
-        // Note: reset() is async to match protocol, but operations are synchronous
         self.queue.sync {
             self.traderTradeNumbers.removeAll()
             self.globalTradeNumber = 0
-            // Note: We don't clear UserDefaults here to preserve data between sessions
         }
     }
 
-    // MARK: - Public Methods
-
-    /// Generates the next trade number for a specific trader
     func generateNextTradeNumber(for traderId: String) -> Int {
         return self.queue.sync {
-            // Load current number for this trader if not in memory
-            if self.traderTradeNumbers[traderId] == nil {
-                let key = self.tradeNumberKey(for: traderId)
-                self.traderTradeNumbers[traderId] = self.userDefaults.integer(forKey: key)
+            let year = TradeNumberFormatting.calendarYear()
+            let storageKey = self.traderStorageKey(traderId: traderId, year: year)
+
+            if self.traderTradeNumbers[storageKey] == nil {
+                self.traderTradeNumbers[storageKey] = self.userDefaults.integer(forKey: self.tradeNumberKey(traderId: traderId, year: year))
             }
 
-            // Increment and save
-            let currentNumber = (traderTradeNumbers[traderId] ?? 0) + 1
-            self.traderTradeNumbers[traderId] = currentNumber
-            self.saveTradeNumber(currentNumber, for: traderId)
+            let currentNumber = (self.traderTradeNumbers[storageKey] ?? 0) + 1
+            self.traderTradeNumbers[storageKey] = currentNumber
+            self.saveTradeNumber(currentNumber, traderId: traderId, year: year)
 
-            print("🔢 TradeNumberService: Generated trade #\(currentNumber) for trader \(traderId)")
+            print(
+                "🔢 TradeNumberService: Generated trade #\(TradeNumberFormatting.display(number: currentNumber, year: year)) for trader \(traderId)"
+            )
             return currentNumber
         }
     }
 
-    /// Legacy global method - deprecated but kept for backward compatibility
     func generateNextTradeNumber() -> Int {
         return self.queue.sync {
             self.globalTradeNumber += 1
@@ -104,67 +75,70 @@ final class TradeNumberService: TradeNumberServiceProtocol, @unchecked Sendable 
         }
     }
 
-    /// Gets the current trade number for a specific trader
     func getCurrentTradeNumber(for traderId: String) -> Int {
         return self.queue.sync {
-            if let number = traderTradeNumbers[traderId] {
+            let year = TradeNumberFormatting.calendarYear()
+            let storageKey = self.traderStorageKey(traderId: traderId, year: year)
+            if let number = traderTradeNumbers[storageKey] {
                 return number
             }
-            let key = self.tradeNumberKey(for: traderId)
-            return self.userDefaults.integer(forKey: key)
+            return self.userDefaults.integer(forKey: self.tradeNumberKey(traderId: traderId, year: year))
         }
     }
 
     func getCurrentTradeNumber() -> Int {
         return self.queue.sync {
-            return self.globalTradeNumber
+            self.globalTradeNumber
         }
     }
 
-    /// Synchronizes trade numbers from existing trades
-    /// This ensures the service knows the highest trade number for each trader
-    /// - Parameter trades: Array of trades to synchronize from
     func synchronizeTradeNumbers(from trades: [Trade]) {
         self.queue.async(flags: .barrier) {
-            // Group trades by trader ID
+            let currentYear = TradeNumberFormatting.calendarYear()
             let tradesByTrader = Dictionary(grouping: trades) { $0.traderId }
 
-            // For each trader, find the highest trade number
             for (traderId, traderTrades) in tradesByTrader {
-                let maxTradeNumber = traderTrades.map { $0.tradeNumber }.max() ?? 0
+                let currentYearTrades = traderTrades.filter {
+                    $0.resolvedTradeNumberYear == currentYear
+                }
+                let maxTradeNumber = currentYearTrades.map(\.tradeNumber).max() ?? 0
+                let storageKey = self.traderStorageKey(traderId: traderId, year: currentYear)
+                let currentStored = self.userDefaults.integer(forKey: self.tradeNumberKey(traderId: traderId, year: currentYear))
 
-                // Update the counter if the loaded trades have a higher number
-                let currentStored = self.userDefaults.integer(forKey: self.tradeNumberKey(for: traderId))
                 if maxTradeNumber > currentStored {
-                    self.traderTradeNumbers[traderId] = maxTradeNumber
-                    self.saveTradeNumber(maxTradeNumber, for: traderId)
-                    print("🔄 TradeNumberService: Synchronized trade number for trader \(traderId) to \(maxTradeNumber)")
+                    self.traderTradeNumbers[storageKey] = maxTradeNumber
+                    self.saveTradeNumber(maxTradeNumber, traderId: traderId, year: currentYear)
+                    print(
+                        "🔄 TradeNumberService: Synchronized \(traderId) to \(TradeNumberFormatting.display(number: maxTradeNumber, year: currentYear))"
+                    )
                 }
             }
         }
     }
 
-    func formatTradeNumber(_ number: Int) -> String {
-        return String(format: "%03d", number)
+    func formatTradeNumber(_ number: Int, year: Int? = nil) -> String {
+        let resolvedYear = year ?? TradeNumberFormatting.calendarYear()
+        return TradeNumberFormatting.display(number: number, year: resolvedYear)
     }
 
     func isValidTradeNumber(_ number: Int) -> Bool {
-        return number > 0 && number <= 999
+        number > 0
     }
 
-    // MARK: - Private Methods
+    private func traderStorageKey(traderId: String, year: Int) -> String {
+        "\(year)|\(traderId)"
+    }
 
-    private func tradeNumberKey(for traderId: String) -> String {
-        // Sanitize trader ID for use as UserDefaults key
-        // Format: FIN1_TradeNumber_user_trader1_test_com
-        let sanitizedId = traderId.replacingOccurrences(of: ":", with: "_")
+    private func tradeNumberKey(traderId: String, year: Int) -> String {
+        let sanitizedId = traderId
+            .replacingOccurrences(of: ":", with: "_")
             .replacingOccurrences(of: "@", with: "_")
             .replacingOccurrences(of: ".", with: "_")
-        return "\(self.tradeNumberKeyPrefix)user_\(sanitizedId)"
+        return "\(self.tradeNumberKeyPrefix)\(year)_user_\(sanitizedId)"
     }
 
-    private func saveTradeNumber(_ number: Int, for traderId: String) {
-        let key = self.tradeNumberKey(for: traderId)
+    private func saveTradeNumber(_ number: Int, traderId: String, year: Int) {
+        let key = self.tradeNumberKey(traderId: traderId, year: year)
         self.userDefaults.set(number, forKey: key)
     }
 
@@ -175,28 +149,24 @@ final class TradeNumberService: TradeNumberServiceProtocol, @unchecked Sendable 
     }
 }
 
-// MARK: - Extensions
-
 extension TradeNumberService {
-    /// Convenience method to get formatted current trade number for a trader
     func formattedCurrentTradeNumber(for traderId: String) -> String {
-        return self.formatTradeNumber(self.getCurrentTradeNumber(for: traderId))
+        let year = TradeNumberFormatting.calendarYear()
+        return self.formatTradeNumber(self.getCurrentTradeNumber(for: traderId), year: year)
     }
 
-    /// Convenience method to get formatted next trade number for a trader
     func formattedNextTradeNumber(for traderId: String) -> String {
-        return self.formatTradeNumber(self.generateNextTradeNumber(for: traderId))
+        let year = TradeNumberFormatting.calendarYear()
+        return self.formatTradeNumber(self.generateNextTradeNumber(for: traderId), year: year)
     }
 
-    /// Legacy convenience method - uses global counter
     @available(*, deprecated, message: "Use formattedCurrentTradeNumber(for:) for per-trader numbering")
     var formattedCurrentTradeNumber: String {
-        return self.formatTradeNumber(self.getCurrentTradeNumber())
+        self.formatTradeNumber(self.getCurrentTradeNumber(), year: TradeNumberFormatting.calendarYear())
     }
 
-    /// Legacy convenience method - uses global counter
     @available(*, deprecated, message: "Use formattedNextTradeNumber(for:) for per-trader numbering")
     var formattedNextTradeNumber: String {
-        return self.formatTradeNumber(self.generateNextTradeNumber())
+        self.formatTradeNumber(self.generateNextTradeNumber(), year: TradeNumberFormatting.calendarYear())
     }
 }

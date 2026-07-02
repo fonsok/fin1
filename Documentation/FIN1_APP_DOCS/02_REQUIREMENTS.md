@@ -348,6 +348,6 @@ Der Nutzer hat ein **normales Konto** (kein separates Konto-Feature). Kontostand
 
 ### Marketing/CRM (optional)
 
-- Segmente: Rollen, Onboarding-Status, Aktivität (Notifications/Events).
-- Nur mit DSGVO-konformer Einwilligung/Legal Basis.
+- **Intern (implementiert):** Growth-&-Marketing-Dashboard im Admin-Portal (`/growth`) — Aktivierung, AUM, GoB-Umsatz, Attribution (`UserAcquisition`), Marketing-Spend/CAC. SSOT: [`GROWTH_MARKETING_PHASE1_ATTRIBUTION.md`](../GROWTH_MARKETING_PHASE1_ATTRIBUTION.md).
+- **Extern / CRM:** Segmente, Kampagnen-Ausspielung — nur mit DSGVO-konformer Einwilligung/Legal Basis; nicht Teil von Phase 1.
 

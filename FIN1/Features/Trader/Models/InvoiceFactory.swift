@@ -9,7 +9,8 @@ extension Invoice {
         customerInfo: CustomerInfo,
         transactionIdService: any TransactionIdServiceProtocol,
         tradeId: String? = nil,
-        tradeNumber: Int? = nil
+        tradeNumber: Int? = nil,
+        tradeNumberYear: Int? = nil
     ) -> Invoice {
         InvoiceLocalSynthesisGate.requirePermitted()
         let invoiceNumber = InvoiceNumberGenerator.generate(using: transactionIdService)
@@ -49,6 +50,7 @@ extension Invoice {
             items: items,
             tradeId: tradeId ?? order.id, // Use provided tradeId if available, otherwise fall back to order.id
             tradeNumber: tradeNumber,
+            tradeNumberYear: tradeNumberYear,
             orderId: order.id,
             transactionType: .buy,
             taxNote: InvoiceNotes.buyOrderTaxNote,
@@ -63,7 +65,8 @@ extension Invoice {
         customerInfo: CustomerInfo,
         transactionIdService: any TransactionIdServiceProtocol,
         tradeId: String? = nil,
-        tradeNumber: Int? = nil
+        tradeNumber: Int? = nil,
+        tradeNumberYear: Int? = nil
     ) -> Invoice {
         InvoiceLocalSynthesisGate.requirePermitted()
         let invoiceNumber = InvoiceNumberGenerator.generate(using: transactionIdService)
@@ -97,6 +100,7 @@ extension Invoice {
             items: items,
             tradeId: tradeId ?? sellOrder.id, // Use provided tradeId if available, otherwise fall back to order.id
             tradeNumber: tradeNumber,
+            tradeNumberYear: tradeNumberYear,
             orderId: sellOrder.id,
             transactionType: .sell,
             taxNote: InvoiceNotes.sellOrderTaxNote,

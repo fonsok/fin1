@@ -5,20 +5,16 @@ import SwiftUI
 struct TradeStatementHeaderView: View {
     let depotNumber: String
     let depotHolder: String
-    let tradeNumber: Int
+    let tradeNumberLabel: String
 
     var body: some View {
         VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
-            // Title removed - already shown in DocumentHeaderView
-            // Text("Sammelabrechnung\n(Wertpapierkauf/-verkauf)")
-
-            // Trade Number
             HStack {
                 Text("Trade Nr.:")
                     .font(ResponsiveDesign.bodyFont())
                     .foregroundColor(DocumentDesignSystem.textColorSecondary)
                 Spacer()
-                Text(String(format: "%03d", self.tradeNumber))
+                Text(self.tradeNumberLabel)
                     .font(ResponsiveDesign.bodyFont())
                     .fontWeight(.medium)
                     .foregroundColor(DocumentDesignSystem.textColor)
@@ -51,7 +47,7 @@ struct TradeStatementHeaderView_Previews: PreviewProvider {
         TradeStatementHeaderView(
             depotNumber: "104801",
             depotHolder: "Max Mustermann",
-            tradeNumber: 1
+            tradeNumberLabel: "2026-001"
         )
         .padding()
     }

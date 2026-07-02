@@ -111,6 +111,7 @@ export interface SummaryReportPoolBelege {
 export interface SummaryReportTradeEconomics {
   tradeId: string;
   tradeNumber: number;
+  tradeNumberYear?: number | null;
   symbol: string;
   description?: string;
   status: string;
@@ -153,6 +154,7 @@ export type SummaryReportTradeLegKind = 'trader' | 'mirror_pool' | 'standalone';
 export interface SummaryReportTradeRow {
   tradeId: string;
   tradeNumber: number;
+  tradeNumberYear?: number | null;
   symbol: string;
   traderId: string;
   traderName: string;

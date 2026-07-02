@@ -4,6 +4,7 @@ import Foundation
 struct InvestorInvestmentStatementItem: Identifiable {
     let id: String
     let tradeNumber: Int
+    let tradeNumberYear: Int?
     let symbol: String
     let tradeDate: Date
 
@@ -57,6 +58,13 @@ struct InvestorInvestmentStatementItem: Identifiable {
     let belegInconsistencyMessage: String?
     /// False for server Beleg rows; true for local preview / network fallback.
     let isProvisionalLocalEstimate: Bool
+
+    var formattedTradeNumber: String {
+        TradeNumberFormatting.display(
+            number: self.tradeNumber,
+            year: self.tradeNumberYear ?? TradeNumberFormatting.calendarYear(for: self.tradeDate)
+        )
+    }
 
     /// Fee magnitude for display in the Sell Fees row.
     var sellFeesDisplayAmount: Double { abs(self.sellFees) }
@@ -122,6 +130,7 @@ struct InvestorInvestmentStatementItem: Identifiable {
         return InvestorInvestmentStatementItem(
             id: trade.id,
             tradeNumber: trade.tradeNumber,
+            tradeNumberYear: trade.tradeNumberYear,
             symbol: trade.symbol,
             tradeDate: trade.completedAt ?? trade.updatedAt,
             buyQuantity: output.buyQuantity,

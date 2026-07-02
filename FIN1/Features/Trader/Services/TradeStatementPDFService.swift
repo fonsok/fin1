@@ -80,7 +80,7 @@ final class TradeStatementPDFService: TradeStatementPDFServiceProtocol {
 
     private func createPDFContent(from displayData: TradeStatementDisplayData, trade: TradeOverviewItem) -> String {
         var content = """
-        COLLECTION BILL - Trade #\(String(format: "%03d", trade.tradeNumber))
+        COLLECTION BILL - \(TradeNumberFormatting.labeled(number: trade.tradeNumber, year: trade.resolvedTradeNumberYear))
         
         Depot Number: \(displayData.depotNumber)
         Depot Holder: \(displayData.depotHolder)

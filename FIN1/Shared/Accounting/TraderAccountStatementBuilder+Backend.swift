@@ -110,7 +110,10 @@ extension TraderAccountStatementBuilder {
         if let issuer = entry.issuer, !issuer.isEmpty { metadata["issuer"] = issuer }
         if let tradeId = entry.tradeId { metadata["tradeId"] = tradeId }
         if let tradeNumber = entry.tradeNumber {
-            metadata["tradeNumber"] = String(format: "%03d", tradeNumber)
+            metadata["tradeNumber"] = TradeNumberFormatting.display(
+                number: tradeNumber,
+                year: TradeNumberFormatting.calendarYear(for: occurredAt)
+            )
         }
         if let referenceDocumentId = entry.referenceDocumentId, !referenceDocumentId.isEmpty {
             metadata["referenceDocumentId"] = referenceDocumentId
@@ -138,8 +141,12 @@ extension TraderAccountStatementBuilder {
             return nil
         }
 
-        let subtitle = entry.tradeNumber.map { String(format: "Trade #%03d", $0) }
-            ?? entry.description
+        let subtitle = entry.tradeNumber.map {
+            TradeNumberFormatting.labeled(
+                number: $0,
+                year: TradeNumberFormatting.calendarYear(for: occurredAt)
+            )
+        } ?? entry.description
 
         return AccountStatementEntry(
             id: Self.stableEntryId(from: entry.objectId),

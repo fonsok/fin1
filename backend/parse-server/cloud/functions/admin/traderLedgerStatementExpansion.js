@@ -5,6 +5,7 @@ const {
   computeTradingFeesWithBreakdown,
 } = require('../../utils/accountingHelper/settlementTradeMath');
 const { calculateOrderFees } = require('../../utils/helpers');
+const { formatTradeNumberForDisplay, getTradeNumberCalendarYear } = require('../../utils/tradeNumberAllocation');
 
 function stmtRowToEvent(row) {
   return {
@@ -72,7 +73,12 @@ function makeSyntheticTradingFeeEvent({
   phase,
   referenceFrom,
 }) {
-  const tn = tradeNumber != null ? String(tradeNumber).padStart(3, '0') : '???';
+  const tradeNum = tradeNumber != null ? Number(tradeNumber) : null;
+  const tradeYear = trade?.get?.('tradeNumberYear')
+    ?? (tradeNum != null ? getTradeNumberCalendarYear(trade?.get?.('createdAt') || at) : null);
+  const tn = tradeNum != null
+    ? (formatTradeNumberForDisplay(tradeNum, tradeYear) || String(tradeNum).padStart(3, '0'))
+    : '???';
   const symbol = trade?.get?.('symbol') || '';
   const phaseLabel = phase === 'buy' ? 'Kauf' : 'Verkauf';
   return {

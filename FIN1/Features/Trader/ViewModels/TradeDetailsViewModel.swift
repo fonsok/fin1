@@ -25,7 +25,9 @@ final class TradeDetailsViewModel: ObservableObject {
     @Published var calculationBreakdown: TradeCalculationService.TransactionBreakdown?
 
     // Derived display fields for the details table
-    var tradeNumberText: String { "\(self.trade.tradeNumber)" }
+    var tradeNumberText: String {
+        self.trade.displayTradeNumber
+    }
     var gvCurrencyText: String {
         self.trade.profitLoss.formatted(.currency(code: "EUR"))
     }

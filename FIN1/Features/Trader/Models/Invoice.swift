@@ -18,6 +18,7 @@ struct Invoice: Identifiable, Codable, Hashable, Sendable {
     let paidAt: Date?
     let tradeId: String?
     let tradeNumber: Int? // User-friendly trade number (001, 002, 003...)
+    let tradeNumberYear: Int?
     let orderId: String?
     let transactionType: TransactionType?
 
@@ -37,6 +38,7 @@ struct Invoice: Identifiable, Codable, Hashable, Sendable {
         items: [InvoiceItem],
         tradeId: String? = nil,
         tradeNumber: Int? = nil,
+        tradeNumberYear: Int? = nil,
         orderId: String? = nil,
         transactionType: TransactionType? = nil,
         taxNote: String? = nil,
@@ -52,6 +54,7 @@ struct Invoice: Identifiable, Codable, Hashable, Sendable {
         self.items = items
         self.tradeId = tradeId
         self.tradeNumber = tradeNumber
+        self.tradeNumberYear = tradeNumberYear
         self.orderId = orderId
         self.transactionType = transactionType
         self.taxNote = taxNote
@@ -79,7 +82,10 @@ struct Invoice: Identifiable, Codable, Hashable, Sendable {
 
     var formattedTradeNumber: String? {
         guard let tradeNumber = tradeNumber else { return nil }
-        return String(format: "%03d", tradeNumber)
+        return TradeNumberFormatting.display(
+            number: tradeNumber,
+            year: self.tradeNumberYear ?? TradeNumberFormatting.calendarYear(for: self.createdAt)
+        )
     }
 
     var formattedTotalAmount: String {

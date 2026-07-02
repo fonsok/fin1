@@ -27,6 +27,7 @@ async function handleGetTradeSettlementConsistencyStatus(request) {
   for (const trade of trades) {
     const tradeId = trade.id;
     const tradeNumber = trade.get('tradeNumber');
+    const tradeNumberYear = trade.get('tradeNumberYear') || null;
     const expectedTaxByInvestment = await getExpectedTaxByInvestmentForTrade(tradeId);
     const expectedSettlementByInvestment = await getExpectedSettlementByInvestmentForTrade(tradeId);
     const statementSumsByType = await getStatementSumsByTypeForTrade(tradeId);
@@ -115,6 +116,7 @@ async function handleGetTradeSettlementConsistencyStatus(request) {
         mismatches.push({
           tradeId,
           tradeNumber,
+          tradeNumberYear,
           investmentId,
           investorId,
           expected: {

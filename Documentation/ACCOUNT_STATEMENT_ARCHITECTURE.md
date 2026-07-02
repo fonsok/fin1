@@ -116,7 +116,7 @@ Das Account Statement System verwendet zentrale Builder-Methoden als Single Sour
 | Modul | Verantwortung |
 |-------|----------------|
 | `shared.js` | Konstanten (`TIMELINE_SOURCE_LIMIT`, Entry-Type-Sets), `dedupeParseObjectsById`, `iso` |
-| `tradeCoverage.js` | Trade-Abdeckung per `tradeId` / `tradeNumber` |
+| `tradeCoverage.js` | Trade-Abdeckung per `tradeId` / `tradeNumber` (+ optional `tradeNumberYear`: Keys `num:{year}:{number}`; Legacy `num:{number}`) |
 | `cashLegDedup.js` | Deduplizierung paralleler `trade_buy`/`trade_sell`-Cash-Legs |
 | `invoices.js` | Settlement-Rechnungen: Typ, Seite, Zeitstempel |
 | `instrumentTitles.js` | `tradeStatementTitle` (KAUF/VERKAUF-Zeile) |

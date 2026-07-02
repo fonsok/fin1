@@ -51,6 +51,7 @@ struct BackendAccountEntry: Decodable, Identifiable {
     let balanceAfter: Double
     let tradeId: String?
     let tradeNumber: Int?
+    let tradeNumberYear: Int?
     let investmentId: String?
     let investmentNumber: String?
     let businessReference: String?
@@ -83,7 +84,7 @@ struct BackendAccountEntry: Decodable, Identifiable {
 
     enum CodingKeys: String, CodingKey {
         case objectId, userId, entryType, amount, balanceBefore, balanceAfter
-        case tradeId, tradeNumber, investmentId, investmentNumber
+        case tradeId, tradeNumber, tradeNumberYear, investmentId, investmentNumber
         case businessReference, description, source, referenceDocumentId, referenceDocumentNumber, createdAt
         case statementTitle, transactionType, wknOrIsin, underlyingAsset, securitiesDirection
         case quantity, strikePrice, issuer, displayAmountMode
@@ -99,6 +100,7 @@ struct BackendAccountEntry: Decodable, Identifiable {
         self.balanceAfter = c.decodeLossyDouble(forKey: .balanceAfter) ?? 0
         self.tradeId = try c.decodeIfPresent(String.self, forKey: .tradeId)
         self.tradeNumber = c.decodeLossyInt(forKey: .tradeNumber)
+        self.tradeNumberYear = c.decodeLossyInt(forKey: .tradeNumberYear)
         self.investmentId = try c.decodeIfPresent(String.self, forKey: .investmentId)
         self.investmentNumber = try c.decodeIfPresent(String.self, forKey: .investmentNumber)
         self.businessReference = try c.decodeIfPresent(String.self, forKey: .businessReference)

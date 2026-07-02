@@ -5,6 +5,7 @@ import Foundation
 struct ParseTrade: Decodable {
     let objectId: String
     let tradeNumber: Int
+    let tradeNumberYear: Int?
     let traderId: String
     let symbol: String
     let description: String
@@ -22,7 +23,7 @@ struct ParseTrade: Decodable {
     let sellOrders: [ParseOrderSell]?
 
     enum CodingKeys: String, CodingKey {
-        case objectId, tradeNumber, traderId, symbol, description, status
+        case objectId, tradeNumber, tradeNumberYear, traderId, symbol, description, status
         case createdAt, updatedAt, completedAt, calculatedProfit
         case traderPartialSellEventCount
         case buyLegType, pairExecutionId, buyOrder, sellOrder, sellOrders
@@ -33,6 +34,7 @@ struct ParseTrade: Decodable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.objectId = try container.decode(String.self, forKey: .objectId)
         self.tradeNumber = try container.decodeIfPresent(Int.self, forKey: .tradeNumber) ?? 0
+        self.tradeNumberYear = try container.decodeIfPresent(Int.self, forKey: .tradeNumberYear)
         self.traderId = try container.decodeIfPresent(String.self, forKey: .traderId) ?? ""
         self.symbol = try container.decodeIfPresent(String.self, forKey: .symbol) ?? ""
         let desc = try container.decodeIfPresent(String.self, forKey: .description)
@@ -67,6 +69,7 @@ struct ParseTrade: Decodable {
         return Trade(
             id: self.objectId,
             tradeNumber: self.tradeNumber,
+            tradeNumberYear: self.tradeNumberYear,
             traderId: self.traderId,
             symbol: self.symbol,
             description: self.description,

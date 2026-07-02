@@ -70,12 +70,7 @@ enum TraderAccountStatementBuilder {
             }
 
             let reference = invoice.tradeId ?? invoice.invoiceNumber
-            let subtitle: String? = {
-                if let tradeNumber = invoice.tradeNumber {
-                    return String(format: "Trade #%03d", tradeNumber)
-                }
-                return nil
-            }()
+            let subtitle: String? = invoice.formattedTradeNumber.map { "Trade #\($0)" }
 
             let primarySecuritiesItem = invoice.items.first { $0.itemType == .securities }
             let securitiesDescription = primarySecuritiesItem?.description ?? ""
@@ -97,8 +92,8 @@ enum TraderAccountStatementBuilder {
                 "transactionType": transactionType.rawValue
             ]
 
-            if let tradeNumber = invoice.tradeNumber {
-                metadata["tradeNumber"] = String(format: "%03d", tradeNumber)
+            if let formatted = invoice.formattedTradeNumber {
+                metadata["tradeNumber"] = formatted
             }
             if !wknOrIsin.isEmpty {
                 metadata["wknOrIsin"] = wknOrIsin
@@ -197,8 +192,8 @@ enum TraderAccountStatementBuilder {
             } else {
                 subtitle = "Trades #\(tradeNumbers.joined(separator: ", #"))"
             }
-        } else if let tradeNumber = invoice.tradeNumber {
-            subtitle = String(format: "Trade #%03d", tradeNumber)
+        } else if let formatted = invoice.formattedTradeNumber {
+            subtitle = "Trade #\(formatted)"
         } else {
             subtitle = "Trader Commission"
         }
@@ -212,8 +207,8 @@ enum TraderAccountStatementBuilder {
         if let tradeId = invoice.tradeId {
             metadata["tradeId"] = tradeId
         }
-        if let tradeNumber = invoice.tradeNumber {
-            metadata["tradeNumber"] = String(format: "%03d", tradeNumber)
+        if let formatted = invoice.formattedTradeNumber {
+            metadata["tradeNumber"] = formatted
         }
         if !tradeNumbers.isEmpty {
             metadata["tradeNumbers"] = tradeNumbers.joined(separator: ",")
@@ -281,8 +276,8 @@ enum TraderAccountStatementBuilder {
             "tradeId": invoice.tradeId ?? "",
             "transactionType": invoice.transactionType?.rawValue ?? ""
         ]
-        if let tradeNumber = invoice.tradeNumber {
-            metadata["tradeNumber"] = String(format: "%03d", tradeNumber)
+        if let formatted = invoice.formattedTradeNumber {
+            metadata["tradeNumber"] = formatted
         }
 
         let primarySecuritiesItem = invoice.items.first { $0.itemType == .securities }

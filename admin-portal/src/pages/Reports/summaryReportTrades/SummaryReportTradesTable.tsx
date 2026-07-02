@@ -3,6 +3,7 @@ import clsx from 'clsx';
 import { Card, PaginationBar } from '../../../components/ui';
 import { SortableTh, type SortOrder } from '../../../components/table/SortableTh';
 import { formatCurrency, formatDateTime } from '../../../utils/format';
+import { formatTradeNumber } from '../../../utils/tradeNumberFormat';
 import {
   listRowStripeClasses,
   tableBodyDivideClasses,
@@ -206,7 +207,7 @@ function SummaryReportTradeTableRow({
                 adminMuted(isDark),
               )}
               aria-expanded={expanded}
-              aria-label={`Trader- und Pool-Details Trade ${trade.tradeNumber}`}
+              aria-label={`Trader- und Pool-Details Trade ${formatTradeNumber(trade.tradeNumber, trade.tradeNumberYear, trade.createdAt)}`}
             >
               <TradeChevronIcon expanded={expanded} />
             </button>
@@ -215,7 +216,7 @@ function SummaryReportTradeTableRow({
           )}
         </td>
         <td className={clsx('px-4 py-3 text-sm font-mono', adminBodyStrong(isDark))}>
-          {String(trade.tradeNumber).padStart(3, '0')}
+          {formatTradeNumber(trade.tradeNumber, trade.tradeNumberYear, trade.createdAt)}
         </td>
         <td className={clsx('px-4 py-3 text-sm font-medium', adminPrimary(isDark))}>
           {trade.symbol}

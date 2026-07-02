@@ -31,7 +31,9 @@
 - ✅ **Investor Collection Bill**: Belegnummer im Header
 - ✅ **Trader Collection Bill**: Belegnummer im Header (gleiches Layout)
 - ✅ **Rechnungen**: Belegnummer im Header
-- ✅ **Gutschriften**: Belegnummer unterhalb Trade-Nummer
+- ✅ **Gutschriften**: Belegnummer unterhalb Trade-Nummer (`YYYY-NNN`, z. B. `Trade #2026-001`)
+
+**Trade-Referenz in Beleg-Dateinamen:** neue Backend-Belege nutzen `Trade2026-001` im Dateinamen (z. B. `CreditNote_Trade2026-001_…`). Spec: [`TRADE_NUMBER_REFERENCE.md`](./TRADE_NUMBER_REFERENCE.md).
 
 ### 3. Code-Qualität - 100% ✅
 

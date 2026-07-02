@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import clsx from 'clsx';
 import { formatNumber } from '../../../utils/format';
+import { formatTradeNumberHash } from '../../../utils/tradeNumberFormat';
 import {
   adminCaption,
   adminMuted,
@@ -92,7 +93,7 @@ export function TradeExpandPanel({
             <span className={clsx('text-sm font-semibold', adminStrong(isDark))}>
               Pool-Mirror-Trade
               {poolSnap
-                ? ` (#${String(poolSnap.tradeNumber).padStart(3, '0')} · ${poolInvestorCount} Investoren)`
+                ? ` (${formatTradeNumberHash(poolSnap.tradeNumber, poolSnap.tradeNumberYear, poolSnap.createdAt)} · ${poolInvestorCount} Investoren)`
                 : ''}
             </span>
             <TradeChevronIcon expanded={poolOpen} />

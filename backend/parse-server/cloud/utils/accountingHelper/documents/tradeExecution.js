@@ -10,6 +10,7 @@ const { resolveTraderDisplayNameForBeleg } = require('../../traderDisplayNameFor
 const { applyBusinessCaseIdToDocument } = require('./shared');
 const { customerDisplayFromPersistedBelegMetadata } = require('../traderStatementCustomerDisplay');
 const { finalizeBelegMetadataForPersist } = require('../belegMetadataMoney');
+const { resolveTradeNumberPresentation } = require('../../tradeNumberAllocation');
 
 async function loadTradeInvoiceForBeleg(tradeId, executionType) {
   const q = new Parse.Query('Invoice');
@@ -52,7 +53,8 @@ async function createTradeExecutionDocument({
   feeBreakdown,
   sellOrderId,
 }) {
-  const tradeNumber = trade.get('tradeNumber');
+  const tradePresentation = resolveTradeNumberPresentation(trade);
+  const tradeNumber = tradePresentation.tradeNumber;
   const symbol = trade.get('symbol') || '';
   const resolvedBusinessCaseId = businessCaseId || trade.get('businessCaseId');
   const resolvedSellOrderId = String(
@@ -138,7 +140,7 @@ async function createTradeExecutionDocument({
   const doc = new Document();
   doc.set('userId', traderParty.traderId || traderId);
   doc.set('type', docType);
-  doc.set('name', `${label}_Trade${tradeNumber}_${symbol}_${dateStr}_${hash}.pdf`);
+  doc.set('name', `${label}_Trade${tradePresentation.filenameToken}_${symbol}_${dateStr}_${hash}.pdf`);
   doc.set('tradeId', trade.id);
   doc.set('tradeNumber', tradeNumber);
   doc.set('accountingDocumentNumber', docNumber);

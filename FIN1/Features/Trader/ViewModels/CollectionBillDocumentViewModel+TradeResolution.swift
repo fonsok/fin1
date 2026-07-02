@@ -21,15 +21,26 @@ extension CollectionBillDocumentViewModel {
             return true
         }
 
-        if let tradeNumber = extractTradeNumberFromDocumentName(doc.name),
-           let foundByNumber = completedTrades.first(where: { $0.tradeNumber == tradeNumber }) {
-            await self.publishTrade(foundByNumber)
-            return true
+        if let tradeNumber = extractTradeNumberFromDocumentName(doc.name) {
+            let currentYear = TradeNumberFormatting.calendarYear()
+            if let foundByNumber = completedTrades.first(where: {
+                $0.tradeNumber == tradeNumber.number
+                    && (tradeNumber.year == nil || $0.resolvedTradeNumberYear == tradeNumber.year)
+            }) ?? completedTrades.first(where: {
+                $0.tradeNumber == tradeNumber.number && $0.resolvedTradeNumberYear == currentYear
+            }) ?? completedTrades.first(where: { $0.tradeNumber == tradeNumber.number }) {
+                await self.publishTrade(foundByNumber)
+                return true
+            }
         }
 
         if let tradeNumber = extractTradeNumberFromDocumentName(doc.name),
            !doc.userId.isEmpty,
-           let fetched = await fetchTradeFromBackend(tradeNumber: tradeNumber, traderId: doc.userId) {
+           let fetched = await fetchTradeFromBackend(
+               tradeNumber: tradeNumber.number,
+               tradeNumberYear: tradeNumber.year,
+               traderId: doc.userId
+           ) {
             await self.publishTrade(fetched)
             return true
         }
@@ -53,9 +64,14 @@ extension CollectionBillDocumentViewModel {
         }
     }
 
-    func fetchTradeFromBackend(tradeNumber: Int, traderId: String?) async -> Trade? {
+    func fetchTradeFromBackend(tradeNumber: Int, tradeNumberYear: Int? = nil, traderId: String?) async -> Trade? {
         guard let parseAPIClient else { return nil }
         var query: [String: Any] = ["tradeNumber": tradeNumber]
+        if let tradeNumberYear {
+            query["tradeNumberYear"] = tradeNumberYear
+        } else {
+            query["tradeNumberYear"] = TradeNumberFormatting.calendarYear()
+        }
         if let traderId, !traderId.isEmpty {
             query["traderId"] = traderId
         }
@@ -85,6 +101,7 @@ extension CollectionBillDocumentViewModel {
         let tradeOverview = TradeOverviewItem(
             tradeId: foundTrade.id,
             tradeNumber: foundTrade.tradeNumber,
+            tradeNumberYear: foundTrade.tradeNumberYear,
             startDate: foundTrade.createdAt,
             endDate: foundTrade.completedAt ?? foundTrade.updatedAt,
             profitLoss: foundTrade.currentPnL ?? 0,
@@ -102,13 +119,23 @@ extension CollectionBillDocumentViewModel {
         trade = tradeOverview
     }
 
-    func extractTradeNumberFromDocumentName(_ name: String) -> Int? {
-        // Extract trade number from "CollectionBill_Trade1_20251024_Z2CBXA7T.pdf" format
-        let pattern = #"Trade(\d+)"#
-        if let regex = try? NSRegularExpression(pattern: pattern),
+    func extractTradeNumberFromDocumentName(_ name: String) -> (number: Int, year: Int?)? {
+        let yearPattern = #"(\d{4})-(\d{3})"#
+        if let regex = try? NSRegularExpression(pattern: yearPattern),
            let match = regex.firstMatch(in: name, range: NSRange(name.startIndex..., in: name)),
-           let range = Range(match.range(at: 1), in: name) {
-            return Int(String(name[range]))
+           let yearRange = Range(match.range(at: 1), in: name),
+           let numberRange = Range(match.range(at: 2), in: name),
+           let year = Int(String(name[yearRange])),
+           let number = Int(String(name[numberRange])) {
+            return (number, year)
+        }
+
+        let legacyPattern = #"Trade(\d+)"#
+        if let regex = try? NSRegularExpression(pattern: legacyPattern),
+           let match = regex.firstMatch(in: name, range: NSRange(name.startIndex..., in: name)),
+           let range = Range(match.range(at: 1), in: name),
+           let number = Int(String(name[range])) {
+            return (number, nil)
         }
         return nil
     }
