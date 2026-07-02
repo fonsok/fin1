@@ -4,8 +4,7 @@ extension TradingNotificationService {
     func generateInvoiceAndNotification(
         for order: Order,
         tradeId: String? = nil,
-        tradeNumber: Int? = nil,
-        tradeNumberYear: Int? = nil
+        tradeNumber: Int? = nil
     ) async {
         if self.configurationService.blocksLocalInvoiceGeneration {
             print(
@@ -44,8 +43,7 @@ extension TradingNotificationService {
                     customerInfo: customerInfo,
                     transactionIdService: self.transactionIdService,
                     tradeId: tradeId,
-                    tradeNumber: tradeNumber,
-                    tradeNumberYear: tradeNumberYear
+                    tradeNumber: tradeNumber
                 )
             }
             let orderSell = OrderSell(from: order)
@@ -54,8 +52,7 @@ extension TradingNotificationService {
                 customerInfo: customerInfo,
                 transactionIdService: self.transactionIdService,
                 tradeId: tradeId,
-                tradeNumber: tradeNumber,
-                tradeNumberYear: tradeNumberYear
+                tradeNumber: tradeNumber
             )
         }
 

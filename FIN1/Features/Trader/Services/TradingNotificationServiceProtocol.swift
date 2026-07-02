@@ -10,12 +10,7 @@ protocol TradingNotificationServiceProtocol: ObservableObject, Sendable {
     // MARK: - Trading Notifications
     func showBuyConfirmation(for trade: Trade) async
     func showSellConfirmation(for trade: Trade) async
-    func generateInvoiceAndNotification(
-        for order: Order,
-        tradeId: String?,
-        tradeNumber: Int?,
-        tradeNumberYear: Int?
-    ) async
+    func generateInvoiceAndNotification(for order: Order, tradeId: String?, tradeNumber: Int?) async
     func generateCollectionBillDocument(for trade: Trade) async
     func regenerateCollectionBills(for trades: [Trade]) async
     func sendOrderStatusNotification(orderId: String, status: String) async
