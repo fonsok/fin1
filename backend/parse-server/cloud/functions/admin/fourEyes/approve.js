@@ -12,7 +12,18 @@ const { applyConfigurationChange: persistConfigurationChange, applyCommissionRat
 const {
   validateCommissionRateBundle,
   COMMISSION_RATE_BUNDLE_PARAMETER_NAME,
+  normalizeCommissionRateBundle,
 } = require('../../../utils/configHelper/commissionRateBundle');
+const { USER_COMMISSION_OVERRIDE_FIELDS } = require('../../../utils/configHelper/index.js');
+const { REQUEST_TYPE: USER_COMMISSION_REQUEST_TYPE } = require('../usersRequestCommissionRateBundle');
+const { REQUEST_TYPE: USER_APP_SERVICE_CHARGE_REQUEST_TYPE } = require('../usersRequestAppServiceCharge');
+const { REQUEST_TYPE: USER_OPEN_DEPOT_LIMIT_REQUEST_TYPE } = require('../usersRequestOpenDepotLimit');
+const {
+  USER_APP_SERVICE_CHARGE_OVERRIDE_FIELDS,
+  normalizeAppServiceChargeRate,
+  USER_OPEN_DEPOT_LIMIT_OVERRIDE_FIELDS,
+  normalizeMaxOpenDepotPositions,
+} = require('../../../utils/configHelper/index.js');
 const {
   saveFourEyesAudit,
   saveConfigurationAuditLog,
@@ -133,6 +144,187 @@ async function applyUserWalletActionModeChange({ req, requestId, request }) {
   return true;
 }
 
+async function applyUserCommissionRateBundleChange({ req, requestId, request }) {
+  const metadata = req.get('metadata') || {};
+  const {
+    targetUserId,
+    overrideRole,
+    newValue,
+    oldValue,
+    clearOverride,
+    effectiveFrom,
+  } = metadata;
+
+  if (!targetUserId || !overrideRole) {
+    throw new Parse.Error(Parse.Error.INVALID_VALUE, 'Invalid user commission rate bundle change request');
+  }
+
+  const targetUser = await new Parse.Query(Parse.User).get(targetUserId, { useMasterKey: true });
+
+  if (clearOverride) {
+    targetUser.unset(USER_COMMISSION_OVERRIDE_FIELDS.bundle);
+    targetUser.unset(USER_COMMISSION_OVERRIDE_FIELDS.role);
+    targetUser.unset(USER_COMMISSION_OVERRIDE_FIELDS.effectiveFrom);
+  } else {
+    const validation = validateCommissionRateBundle(newValue);
+    if (!validation.valid || !validation.bundle) {
+      throw new Parse.Error(Parse.Error.INVALID_VALUE, `Value no longer valid: ${validation.error}`);
+    }
+    const effectiveAt = effectiveFrom ? new Date(effectiveFrom) : new Date();
+    if (Number.isNaN(effectiveAt.getTime())) {
+      throw new Parse.Error(Parse.Error.INVALID_VALUE, 'effectiveFrom is invalid');
+    }
+    targetUser.set(USER_COMMISSION_OVERRIDE_FIELDS.bundle, validation.bundle);
+    targetUser.set(USER_COMMISSION_OVERRIDE_FIELDS.role, overrideRole);
+    targetUser.set(USER_COMMISSION_OVERRIDE_FIELDS.effectiveFrom, effectiveAt);
+  }
+
+  targetUser.set('commissionRateOverrideUpdatedAt', new Date());
+  targetUser.set('commissionRateOverrideUpdatedBy', request.user.id);
+  await targetUser.save(null, { useMasterKey: true });
+
+  await saveConfigurationAuditLog({
+    action: 'user_commission_rate_bundle_change_approved',
+    userId: request.user.id,
+    userRole: request.user.get('role'),
+    parameterName: 'commissionRateBundleOverride',
+    oldValue: oldValue || null,
+    newValue: clearOverride ? null : normalizeCommissionRateBundle(newValue),
+    metadata: {
+      fourEyesRequestId: requestId,
+      targetUserId,
+      targetUserEmail: metadata.targetUserEmail || null,
+      overrideRole,
+      clearOverride: Boolean(clearOverride),
+      effectiveFrom: effectiveFrom || null,
+      requesterId: req.get('requesterId'),
+      reason: metadata.reason,
+      isCritical: true,
+      ip: request.ip,
+    },
+  });
+
+  return true;
+}
+
+async function applyUserAppServiceChargeChange({ req, requestId, request }) {
+  const metadata = req.get('metadata') || {};
+  const {
+    targetUserId,
+    newValue,
+    oldValue,
+    clearOverride,
+    effectiveFrom,
+  } = metadata;
+
+  if (!targetUserId) {
+    throw new Parse.Error(Parse.Error.INVALID_VALUE, 'Invalid user app service charge change request');
+  }
+
+  const targetUser = await new Parse.Query(Parse.User).get(targetUserId, { useMasterKey: true });
+
+  if (clearOverride) {
+    targetUser.unset(USER_APP_SERVICE_CHARGE_OVERRIDE_FIELDS.rate);
+    targetUser.unset(USER_APP_SERVICE_CHARGE_OVERRIDE_FIELDS.effectiveFrom);
+  } else {
+    const normalized = normalizeAppServiceChargeRate(newValue);
+    if (normalized === null) {
+      throw new Parse.Error(Parse.Error.INVALID_VALUE, 'App Service Charge value no longer valid');
+    }
+    const effectiveAt = effectiveFrom ? new Date(effectiveFrom) : new Date();
+    if (Number.isNaN(effectiveAt.getTime())) {
+      throw new Parse.Error(Parse.Error.INVALID_VALUE, 'effectiveFrom is invalid');
+    }
+    targetUser.set(USER_APP_SERVICE_CHARGE_OVERRIDE_FIELDS.rate, normalized);
+    targetUser.set(USER_APP_SERVICE_CHARGE_OVERRIDE_FIELDS.effectiveFrom, effectiveAt);
+  }
+
+  targetUser.set('appServiceChargeOverrideUpdatedAt', new Date());
+  targetUser.set('appServiceChargeOverrideUpdatedBy', request.user.id);
+  await targetUser.save(null, { useMasterKey: true });
+
+  await saveConfigurationAuditLog({
+    action: 'user_app_service_charge_change_approved',
+    userId: request.user.id,
+    userRole: request.user.get('role'),
+    parameterName: 'appServiceChargeRateOverride',
+    oldValue: oldValue ?? null,
+    newValue: clearOverride ? null : normalizeAppServiceChargeRate(newValue),
+    metadata: {
+      fourEyesRequestId: requestId,
+      targetUserId,
+      targetUserEmail: metadata.targetUserEmail || null,
+      clearOverride: Boolean(clearOverride),
+      effectiveFrom: effectiveFrom || null,
+      requesterId: req.get('requesterId'),
+      reason: metadata.reason,
+      isCritical: true,
+      ip: request.ip,
+    },
+  });
+
+  return true;
+}
+
+async function applyUserOpenDepotLimitChange({ req, requestId, request }) {
+  const metadata = req.get('metadata') || {};
+  const {
+    targetUserId,
+    newValue,
+    oldValue,
+    clearOverride,
+    effectiveFrom,
+  } = metadata;
+
+  if (!targetUserId) {
+    throw new Parse.Error(Parse.Error.INVALID_VALUE, 'Invalid user open depot limit change request');
+  }
+
+  const targetUser = await new Parse.Query(Parse.User).get(targetUserId, { useMasterKey: true });
+
+  if (clearOverride) {
+    targetUser.unset(USER_OPEN_DEPOT_LIMIT_OVERRIDE_FIELDS.limit);
+    targetUser.unset(USER_OPEN_DEPOT_LIMIT_OVERRIDE_FIELDS.effectiveFrom);
+  } else {
+    const normalized = normalizeMaxOpenDepotPositions(newValue);
+    if (normalized === null) {
+      throw new Parse.Error(Parse.Error.INVALID_VALUE, 'Depot-Positions-Limit value no longer valid');
+    }
+    const effectiveAt = effectiveFrom ? new Date(effectiveFrom) : new Date();
+    if (Number.isNaN(effectiveAt.getTime())) {
+      throw new Parse.Error(Parse.Error.INVALID_VALUE, 'effectiveFrom is invalid');
+    }
+    targetUser.set(USER_OPEN_DEPOT_LIMIT_OVERRIDE_FIELDS.limit, normalized);
+    targetUser.set(USER_OPEN_DEPOT_LIMIT_OVERRIDE_FIELDS.effectiveFrom, effectiveAt);
+  }
+
+  targetUser.set('maxOpenDepotPositionsOverrideUpdatedAt', new Date());
+  targetUser.set('maxOpenDepotPositionsOverrideUpdatedBy', request.user.id);
+  await targetUser.save(null, { useMasterKey: true });
+
+  await saveConfigurationAuditLog({
+    action: 'user_open_depot_limit_change_approved',
+    userId: request.user.id,
+    userRole: request.user.get('role'),
+    parameterName: 'maxOpenDepotPositionsOverride',
+    oldValue: oldValue ?? null,
+    newValue: clearOverride ? null : normalizeMaxOpenDepotPositions(newValue),
+    metadata: {
+      fourEyesRequestId: requestId,
+      targetUserId,
+      targetUserEmail: metadata.targetUserEmail || null,
+      clearOverride: Boolean(clearOverride),
+      effectiveFrom: effectiveFrom || null,
+      requesterId: req.get('requesterId'),
+      reason: metadata.reason,
+      isCritical: true,
+      ip: request.ip,
+    },
+  });
+
+  return true;
+}
+
 function registerApproveApprovalFunctions() {
   Parse.Cloud.define('approveRequest', async (request) => {
     requirePermission(request, 'approveRequest');
@@ -171,6 +363,15 @@ function registerApproveApprovalFunctions() {
     }
     if (requestType === 'user_wallet_action_mode_change') {
       applied = await applyUserWalletActionModeChange({ req, requestId, request });
+    }
+    if (requestType === USER_COMMISSION_REQUEST_TYPE) {
+      applied = await applyUserCommissionRateBundleChange({ req, requestId, request });
+    }
+    if (requestType === USER_APP_SERVICE_CHARGE_REQUEST_TYPE) {
+      applied = await applyUserAppServiceChargeChange({ req, requestId, request });
+    }
+    if (requestType === USER_OPEN_DEPOT_LIMIT_REQUEST_TYPE) {
+      applied = await applyUserOpenDepotLimitChange({ req, requestId, request });
     }
 
     if (requestType === 'correction') {
@@ -223,7 +424,19 @@ function registerApproveApprovalFunctions() {
           ? `Konfiguration '${metadata.parameterName}' wurde auf ${metadata.newValue} gesetzt.`
           : requestType === 'user_wallet_action_mode_change'
             ? `Nutzerbezogener Konto-Aktionsmodus wurde auf ${metadata.newMode} gesetzt.`
-          : `Korrektur (${metadata.correctionType || requestType}) wurde ausgeführt.`
+            : requestType === USER_COMMISSION_REQUEST_TYPE
+              ? metadata.clearOverride
+                ? 'Individuelle Erfolgsprovision wurde entfernt (globale Provision gilt wieder).'
+                : 'Individuelle Erfolgsprovision wurde für den Nutzer gesetzt.'
+              : requestType === USER_APP_SERVICE_CHARGE_REQUEST_TYPE
+                ? metadata.clearOverride
+                  ? 'Individuelle App Service Charge wurde entfernt (globale Rate gilt wieder).'
+                  : 'Individuelle App Service Charge wurde für den Nutzer gesetzt.'
+                : requestType === USER_OPEN_DEPOT_LIMIT_REQUEST_TYPE
+                  ? metadata.clearOverride
+                    ? 'Individuelles Depot-Positionslimit wurde entfernt (globales Limit gilt wieder).'
+                    : 'Individuelles Depot-Positionslimit wurde für den Nutzer gesetzt.'
+                  : `Korrektur (${metadata.correctionType || requestType}) wurde ausgeführt.`
         : 'Anfrage genehmigt (manuelle Ausführung erforderlich).',
     };
   });

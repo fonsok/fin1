@@ -58,3 +58,41 @@ export async function requestUserWalletActionModeChange(
 ): Promise<{ success: boolean; requiresApproval: boolean; fourEyesRequestId?: string; message: string }> {
   return cloudFunction('requestUserWalletActionModeChange', { userId, newMode, reason });
 }
+
+export async function requestUserCommissionRateBundleChange(
+  userId: string,
+  params: {
+    investorCommissionRateTotal?: number;
+    traderCommissionRate?: number;
+    appCommissionRate?: number;
+    effectiveFrom?: string;
+    clearOverride?: boolean;
+    reason: string;
+  },
+): Promise<{ success: boolean; requiresApproval: boolean; fourEyesRequestId?: string; message: string }> {
+  return cloudFunction('requestUserCommissionRateBundleChange', { userId, ...params });
+}
+
+export async function requestUserAppServiceChargeChange(
+  userId: string,
+  params: {
+    appServiceChargeRate?: number;
+    effectiveFrom?: string;
+    clearOverride?: boolean;
+    reason: string;
+  },
+): Promise<{ success: boolean; requiresApproval: boolean; fourEyesRequestId?: string; message: string }> {
+  return cloudFunction('requestUserAppServiceChargeChange', { userId, ...params });
+}
+
+export async function requestUserOpenDepotLimitChange(
+  userId: string,
+  params: {
+    maxOpenDepotPositions?: number;
+    effectiveFrom?: string;
+    clearOverride?: boolean;
+    reason: string;
+  },
+): Promise<{ success: boolean; requiresApproval: boolean; fourEyesRequestId?: string; message: string }> {
+  return cloudFunction('requestUserOpenDepotLimitChange', { userId, ...params });
+}

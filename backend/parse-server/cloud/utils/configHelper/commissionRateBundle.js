@@ -82,6 +82,14 @@ function extractCommissionRateBundleFromConfig(config) {
   });
 }
 
+function bundleToSettlementRates(bundle) {
+  return {
+    traderRate: bundle.traderCommissionRate,
+    appRate: bundle.appCommissionRate,
+    totalRate: bundle.investorCommissionRateTotal,
+  };
+}
+
 module.exports = {
   COMMISSION_RATE_KEYS,
   COMMISSION_RATE_BUNDLE_PARAMETER_NAME,
@@ -89,4 +97,5 @@ module.exports = {
   validateCommissionRateBundle,
   formatCommissionRateBundle,
   extractCommissionRateBundleFromConfig,
+  bundleToSettlementRates,
 };

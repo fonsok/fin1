@@ -51,6 +51,7 @@ const CONFIG_PARAM_TYPES: Record<string, 'percentage' | 'currency'> = {
   maxInvestment: 'currency',
   poolBalanceDistributionThreshold: 'currency',
   maxPoolMirrorBuyOrderAmount: 'currency',
+  minTraderBuyOrderAmount: 'currency',
   daily_transaction_limit: 'currency',
   weekly_transaction_limit: 'currency',
   monthly_transaction_limit: 'currency',
@@ -68,6 +69,9 @@ const PARAM_DISPLAY_NAMES: Record<string, string> = {
   maxInvestment: 'Maximuminvestmentbetrag',
   poolBalanceDistributionThreshold: 'Pool-Verteilungsschwelle',
   maxPoolMirrorBuyOrderAmount: 'Pool-Mirror-Buy-Obergrenze',
+  minTraderBuyOrderAmount: 'Mindest-Kaufbetrag (Trader)',
+  maxTraderPartialSells: 'Max. Teil-Verkäufe (Trader)',
+  maxTraderOpenDepotPositions: 'Max. offene Depot-Positionen (Trader)',
   daily_transaction_limit: 'Tages-Transaktionslimit',
   weekly_transaction_limit: 'Wochen-Transaktionslimit',
   monthly_transaction_limit: 'Monats-Transaktionslimit',
@@ -78,7 +82,7 @@ const PARAM_DISPLAY_NAMES: Record<string, string> = {
   walletActionModeTrader: 'Konto-Aktionsmodus (Trader)',
   walletActionModeIndividual: 'Konto-Aktionsmodus (Privatperson)',
   walletActionModeCompany: 'Konto-Aktionsmodus (Company)',
-  walletActionModeOverride: 'Nutzer-Konto-Aktionsmodus',
+  commissionRateBundleOverride: 'Individuelle Erfolgsprovision',
   serviceChargeInvoiceFromBackend: 'Servicegebühr-Rechnung über Server',
   showTraderDashboardInvestmentActiveStatus: 'Trader-Depot: Investment-Pool Status anzeigen',
 };
@@ -126,6 +130,9 @@ function getRequestTypeLabel(type: string): string {
     configuration_change: 'Konfigurationsänderung',
     role_change: 'Rollenänderung',
     user_wallet_action_mode_change: 'Nutzer-Konto-Sperre',
+    user_commission_rate_bundle_change: 'Individuelle Erfolgsprovision',
+    user_app_service_charge_change: 'Individuelle App Service Charge',
+    user_open_depot_limit_change: 'Individuelles Depot-Positions-Limit',
   };
   return labels[type] || type || '-';
 }
@@ -186,6 +193,122 @@ function RequestDetails({ request }: { request: ApprovalRequest }) {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
           </svg>
           <span className="font-semibold text-fin1-primary">{String(request.metadata.newMode ?? '-')}</span>
+        </div>
+        {typeof request.metadata.reason === 'string' && request.metadata.reason && (
+          <p className={clsx('text-xs truncate max-w-xs', adminMuted(isDark))}>
+            Grund: {request.metadata.reason}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  if (request.requestType === 'user_commission_rate_bundle_change' && request.metadata) {
+    const clearOverride = Boolean(request.metadata.clearOverride);
+    return (
+      <div className="text-sm space-y-1">
+        <p className={clsx('font-medium', adminPrimary(isDark))}>
+          Nutzer ({String(request.metadata.overrideRole || 'n/a')}):{' '}
+          {String(request.metadata.targetUserEmail || request.metadata.targetUserId || '-')}
+        </p>
+        <div className="flex items-center gap-2">
+          <span className={clsx(adminMuted(isDark))}>
+            {request.metadata.oldValue
+              ? formatConfigValue('commissionRateBundle', request.metadata.oldValue)
+              : 'kein Override'}
+          </span>
+          <svg
+            className={clsx('w-4 h-4 flex-shrink-0', adminCaption(isDark))}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+          </svg>
+          <span className="font-semibold text-fin1-primary">
+            {clearOverride
+              ? 'Override entfernen'
+              : formatConfigValue('commissionRateBundle', request.metadata.newValue)}
+          </span>
+        </div>
+        {typeof request.metadata.reason === 'string' && request.metadata.reason && (
+          <p className={clsx('text-xs truncate max-w-xs', adminMuted(isDark))}>
+            Grund: {request.metadata.reason}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  if (request.requestType === 'user_app_service_charge_change' && request.metadata) {
+    const clearOverride = Boolean(request.metadata.clearOverride);
+    return (
+      <div className="text-sm space-y-1">
+        <p className={clsx('font-medium', adminPrimary(isDark))}>
+          Investor: {String(request.metadata.targetUserEmail || request.metadata.targetUserId || '-')}
+        </p>
+        <div className="flex items-center gap-2">
+          <span className={clsx(adminMuted(isDark))}>
+            {request.metadata.oldValue != null
+              ? formatConfigValue('appServiceChargeRate', request.metadata.oldValue)
+              : 'kein Override'}
+          </span>
+          <svg
+            className={clsx('w-4 h-4 flex-shrink-0', adminCaption(isDark))}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+          </svg>
+          <span className="font-semibold text-fin1-primary">
+            {clearOverride
+              ? 'Override entfernen'
+              : formatConfigValue('appServiceChargeRate', request.metadata.newValue)}
+          </span>
+        </div>
+        {typeof request.metadata.reason === 'string' && request.metadata.reason && (
+          <p className={clsx('text-xs truncate max-w-xs', adminMuted(isDark))}>
+            Grund: {request.metadata.reason}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  if (request.requestType === 'user_open_depot_limit_change' && request.metadata) {
+    const clearOverride = Boolean(request.metadata.clearOverride);
+    const formatLimit = (value: unknown) => {
+      const n = Math.floor(Number(value));
+      if (!Number.isFinite(n)) {
+        return 'kein Override';
+      }
+      return `${n} Position${n === 1 ? '' : 'en'}`;
+    };
+    return (
+      <div className="text-sm space-y-1">
+        <p className={clsx('font-medium', adminPrimary(isDark))}>
+          Trader: {String(request.metadata.targetUserEmail || request.metadata.targetUserId || '-')}
+        </p>
+        <div className="flex items-center gap-2">
+          <span className={clsx(adminMuted(isDark))}>
+            {request.metadata.oldValue != null
+              ? formatLimit(request.metadata.oldValue)
+              : 'kein Override'}
+          </span>
+          <svg
+            className={clsx('w-4 h-4 flex-shrink-0', adminCaption(isDark))}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+          </svg>
+          <span className="font-semibold text-fin1-primary">
+            {clearOverride
+              ? 'Override entfernen'
+              : formatLimit(request.metadata.newValue)}
+          </span>
         </div>
         {typeof request.metadata.reason === 'string' && request.metadata.reason && (
           <p className={clsx('text-xs truncate max-w-xs', adminMuted(isDark))}>
@@ -376,6 +499,9 @@ export function ApprovalsListPage() {
             <optgroup label="Antragsart">
               <option value="configuration_change">Konfigurationsänderung (alle)</option>
               <option value="correction">Korrekturbuchung</option>
+              <option value="user_commission_rate_bundle_change">Individuelle Erfolgsprovision</option>
+              <option value="user_app_service_charge_change">Individuelle App Service Charge</option>
+              <option value="user_open_depot_limit_change">Individuelles Depot-Positions-Limit</option>
               <option value="user_delete">Benutzer löschen</option>
               <option value="large_transaction">Große Transaktion</option>
               <option value="role_change">Rollenänderung</option>

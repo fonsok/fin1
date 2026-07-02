@@ -7,7 +7,7 @@ import type { InvestmentItem, ActivityItem } from '../../api/admin';
 import { InvestorOutcomeHighlightsCard } from './components/InvestorOutcomeHighlightsCard';
 import { usePermissions } from '../../hooks/usePermissions';
 import { useAuth } from '../../context/AuthContext';
-import { Card, CardHeader, Button, Badge, getStatusVariant } from '../../components/ui';
+import { Card, CardHeader, Button, Badge, getStatusVariant, AdminCollapsibleCard } from '../../components/ui';
 import { formatDateTime, formatCurrency, getRoleDisplay, getStatusDisplay } from '../../utils/format';
 import { useTheme } from '../../context/ThemeContext';
 import { UserTradeCard } from './components/UserTradeCard';
@@ -15,10 +15,27 @@ import { InvestmentTable } from './components/InvestmentTable';
 import { AccountStatementCard } from './components/AccountStatementCard';
 import { orientInvestorStatementsForAdminPortal } from './utils/orientInvestorStatementsForAdminPortal';
 import { resolveUserDetailErrorMessage } from './utils/resolveUserDetailErrorMessage';
+import { UserCommissionRateOverrideCard } from './components/UserCommissionRateOverrideCard';
+import { UserAppServiceChargeOverrideCard } from './components/UserAppServiceChargeOverrideCard';
+import { UserOpenDepotLimitOverrideCard } from './components/UserOpenDepotLimitOverrideCard';
 import { UserActionModal } from './components/UserActionModal';
 import { DetailRow, StatBox } from './components/UserShared';
 
-import { adminBackLink, adminControlField, adminHeadlineAlt, adminPrimary, adminPrimaryBrand, adminSoft, adminStatTitle, adminStrong } from '../../utils/adminThemeClasses';
+import { adminBackLink, adminControlField, adminHeadlineAlt, adminMuted, adminPrimary, adminPrimaryBrand, adminSoft, adminStatTitle, adminStrong } from '../../utils/adminThemeClasses';
+
+const WALLET_MODE_LABELS: Record<string, string> = {
+  disabled: 'Deaktiviert',
+  deposit_only: 'Nur Einzahlungen',
+  withdrawal_only: 'Nur Auszahlungen',
+  deposit_and_withdrawal: 'Ein- und Auszahlungen',
+};
+
+function formatWalletModeLabel(mode: string | null | undefined): string {
+  if (!mode) {
+    return 'kein Override';
+  }
+  return WALLET_MODE_LABELS[mode] ?? mode;
+}
 export function UserDetailPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -52,6 +69,9 @@ export function UserDetailPage() {
   const investorOutcomeHighlights = data?.investorOutcomeHighlights;
   const investorCollectionBills = data?.investorCollectionBills;
   const walletControls = data?.walletControls;
+  const commissionControls = data?.commissionControls;
+  const appServiceChargeControls = data?.appServiceChargeControls;
+  const openDepotLimitControls = data?.openDepotLimitControls;
   const recentActivity = data?.recentActivity || [];
 
   const statusMutation = useMutation({
@@ -314,65 +334,93 @@ export function UserDetailPage() {
         </Card>
       )}
 
-      <Card>
-        <CardHeader title="Nutzerbezogene Konto-Aktionssperre (4-Augen)" />
-        <div className="space-y-3">
-          <p className={clsx('text-sm', adminSoft(isDark))}>
-            Effektiver Modus wird pro Nutzer aus der Schnittmenge berechnet: Global, Rolle (Investor/Trader),
-            Account-Typ (Privatperson/Company) und optional Nutzer-Override. Dadurch gilt automatisch:
-            Nutzer-Override kann nur weiter einschränken, nie erweitern.
-          </p>
-          <p className={clsx('text-sm', adminSoft(isDark))}>
-            Aktueller Modus für diesen Nutzer:{' '}
-            <span className={clsx('font-semibold', adminPrimary(isDark))}>
-              {walletControls?.effectiveMode ?? 'deposit_and_withdrawal'}
-            </span>
-            {' '}| Nutzer-Override:{' '}
-            <span className={clsx('font-semibold', adminPrimary(isDark))}>
-              {walletControls?.userOverrideMode ?? 'kein Override'}
-            </span>
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <select
-              value={walletMode}
-              onChange={(e) => setWalletMode(e.target.value as 'disabled' | 'deposit_only' | 'withdrawal_only' | 'deposit_and_withdrawal')}
-              className={clsx(
-                'px-3 py-2 border rounded-lg',
-                adminControlField(isDark),
-              )}
-            >
-              <option value="disabled">Deaktiviert (beides gesperrt)</option>
-              <option value="deposit_only">Nur Einzahlungen</option>
-              <option value="withdrawal_only">Nur Auszahlungen</option>
-              <option value="deposit_and_withdrawal">Ein- und Auszahlungen</option>
-            </select>
-            <input
-              value={walletReason}
-              onChange={(e) => setWalletReason(e.target.value)}
-              placeholder="Begründung (Pflicht)"
-              className={clsx(
-                'px-3 py-2 border rounded-lg md:col-span-2',
-                adminControlField(isDark),
-              )}
-            />
-          </div>
-          <div className="flex items-center gap-3">
-            <Button
-              size="sm"
-              onClick={() => walletModeMutation.mutate({ mode: walletMode, reason: walletReason })}
-              disabled={!walletReason.trim() || walletModeMutation.isPending}
-            >
-              Sperrung via 4-Augen beantragen
-            </Button>
-            {walletModeMutation.isSuccess && (
-              <span className={clsx('text-sm', isDark ? 'text-emerald-400' : 'text-green-600')}>Antrag erstellt.</span>
+      <AdminCollapsibleCard
+        title="Nutzerbezogene Konto-Aktionssperre (4-Augen)"
+        isDark={isDark}
+        panelId="user-wallet-action-mode-panel"
+        badges={<Badge variant="warning" size="sm">4-Augen</Badge>}
+        collapsedSummary={(
+          <span className={adminMuted(isDark)}>
+            Effektiv: {formatWalletModeLabel(walletControls?.effectiveMode)}
+            {' · '}
+            Override: {formatWalletModeLabel(walletControls?.userOverrideMode ?? null)}
+          </span>
+        )}
+      >
+        <p className={clsx('text-sm', adminSoft(isDark))}>
+          Effektiver Modus wird pro Nutzer aus der Schnittmenge berechnet: Global, Rolle (Investor/Trader),
+          Account-Typ (Privatperson/Company) und optional Nutzer-Override. Dadurch gilt automatisch:
+          Nutzer-Override kann nur weiter einschränken, nie erweitern.
+        </p>
+        <p className={clsx('text-sm', adminSoft(isDark))}>
+          Aktueller Modus für diesen Nutzer:{' '}
+          <span className={clsx('font-semibold', adminPrimary(isDark))}>
+            {walletControls?.effectiveMode ?? 'deposit_and_withdrawal'}
+          </span>
+          {' '}| Nutzer-Override:{' '}
+          <span className={clsx('font-semibold', adminPrimary(isDark))}>
+            {walletControls?.userOverrideMode ?? 'kein Override'}
+          </span>
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <select
+            value={walletMode}
+            onChange={(e) => setWalletMode(e.target.value as 'disabled' | 'deposit_only' | 'withdrawal_only' | 'deposit_and_withdrawal')}
+            className={clsx(
+              'px-3 py-2 border rounded-lg',
+              adminControlField(isDark),
             )}
-            {walletModeMutation.isError && (
-              <span className={clsx('text-sm', isDark ? 'text-red-400' : 'text-red-500')}>Antrag konnte nicht erstellt werden.</span>
+          >
+            <option value="disabled">Deaktiviert (beides gesperrt)</option>
+            <option value="deposit_only">Nur Einzahlungen</option>
+            <option value="withdrawal_only">Nur Auszahlungen</option>
+            <option value="deposit_and_withdrawal">Ein- und Auszahlungen</option>
+          </select>
+          <input
+            value={walletReason}
+            onChange={(e) => setWalletReason(e.target.value)}
+            placeholder="Begründung (Pflicht)"
+            className={clsx(
+              'px-3 py-2 border rounded-lg md:col-span-2',
+              adminControlField(isDark),
             )}
-          </div>
+          />
         </div>
-      </Card>
+        <div className="flex items-center gap-3">
+          <Button
+            size="sm"
+            onClick={() => walletModeMutation.mutate({ mode: walletMode, reason: walletReason })}
+            disabled={!walletReason.trim() || walletModeMutation.isPending}
+          >
+            Sperrung via 4-Augen beantragen
+          </Button>
+          {walletModeMutation.isSuccess && (
+            <span className={clsx('text-sm', isDark ? 'text-emerald-400' : 'text-green-600')}>Antrag erstellt.</span>
+          )}
+          {walletModeMutation.isError && (
+            <span className={clsx('text-sm', isDark ? 'text-red-400' : 'text-red-500')}>Antrag konnte nicht erstellt werden.</span>
+          )}
+        </div>
+      </AdminCollapsibleCard>
+
+      <UserCommissionRateOverrideCard
+        userId={userId!}
+        userRole={user.role}
+        commissionControls={commissionControls}
+        isDark={isDark}
+      />
+
+      <UserAppServiceChargeOverrideCard
+        userId={userId!}
+        appServiceChargeControls={appServiceChargeControls}
+        isDark={isDark}
+      />
+
+      <UserOpenDepotLimitOverrideCard
+        userId={userId!}
+        openDepotLimitControls={openDepotLimitControls}
+        isDark={isDark}
+      />
 
       {/* Trader Section */}
       {tradeSummary && (

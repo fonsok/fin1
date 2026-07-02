@@ -23,6 +23,7 @@ protocol BuyOrderValidatorProtocol {
         limit: String,
         priceValidityProgress: Double,
         estimatedCost: Double,
+        traderLegGrossAmount: Double,
         userService: any UserServiceProtocol,
         cashBalanceService: any CashBalanceServiceProtocol,
         configurationService: any ConfigurationServiceProtocol,
@@ -58,6 +59,7 @@ final class BuyOrderValidator: BuyOrderValidatorProtocol {
         limit: String,
         priceValidityProgress: Double,
         estimatedCost: Double,
+        traderLegGrossAmount: Double,
         userService: any UserServiceProtocol,
         cashBalanceService: any CashBalanceServiceProtocol,
         configurationService: any ConfigurationServiceProtocol,
@@ -81,12 +83,15 @@ final class BuyOrderValidator: BuyOrderValidatorProtocol {
             hasSufficientFunds = false
         }
 
+        let minTraderBuy = configurationService.minTraderBuyOrderAmount
+        let meetsMinTraderBuy = minTraderBuy <= 0 || traderLegGrossAmount + 1e-6 >= minTraderBuy
+
         // Staleness indicator is advisory only (green → red); it does not gate placement.
-        let isValid = hasValidQuantity && hasValidOrderMode && hasValidLimitPrice && hasSufficientFunds
+        let isValid = hasValidQuantity && hasValidOrderMode && hasValidLimitPrice && hasSufficientFunds && meetsMinTraderBuy
 
         #if DEBUG
         print(
-            "🔍 DEBUG: BuyOrder canPlaceOrder validation - quantity: \(quantity), orderMode: \(orderMode), limit: '\(limit)', priceStalenessProgress: \(priceValidityProgress), estimatedCost: €\(estimatedCost.formatted(.currency(code: "EUR"))), hasValidQuantity: \(hasValidQuantity), hasValidOrderMode: \(hasValidOrderMode), hasValidLimitPrice: \(hasValidLimitPrice), hasSufficientFunds: \(hasSufficientFunds), isValid: \(isValid)"
+            "🔍 DEBUG: BuyOrder canPlaceOrder validation - quantity: \(quantity), orderMode: \(orderMode), limit: '\(limit)', priceStalenessProgress: \(priceValidityProgress), estimatedCost: €\(estimatedCost.formatted(.currency(code: "EUR"))), traderLegGross: €\(traderLegGrossAmount.formatted(.currency(code: "EUR"))), minTraderBuy: €\(minTraderBuy.formatted(.currency(code: "EUR"))), hasValidQuantity: \(hasValidQuantity), hasValidOrderMode: \(hasValidOrderMode), hasValidLimitPrice: \(hasValidLimitPrice), hasSufficientFunds: \(hasSufficientFunds), meetsMinTraderBuy: \(meetsMinTraderBuy), isValid: \(isValid)"
         )
         #endif
 

@@ -14,6 +14,7 @@ async function settleParticipation({
   tradeNumber,
   netTradingProfit,
   commissionRates,
+  commissionRateResolver,
   feeConfig,
   tradeBuyPrice,
   tradeSellPrice,
@@ -22,11 +23,6 @@ async function settleParticipation({
   const businessCaseId = await ensureBusinessCaseIdForTrade(trade);
   const rawOwnership = participation.get('ownershipPercentage') || 0;
   const ownershipRatio = rawOwnership > 1 ? rawOwnership / 100 : rawOwnership;
-  const totalCommissionRate = commissionRates.totalRate;
-
-  const proportionalProfitShare = round2(netTradingProfit * ownershipRatio);
-  const proportionalCommission = round2(proportionalProfitShare * totalCommissionRate);
-  const proportionalNetProfit = round2(proportionalProfitShare - proportionalCommission);
 
   const rawInvestmentId = participation.get('investmentId');
   const investment = await findInvestment(rawInvestmentId, participation, trade);
@@ -37,8 +33,25 @@ async function settleParticipation({
   }
 
   const investorId = investment.get('investorId');
+  const resolvedCommissionRates = commissionRateResolver
+    ? await commissionRateResolver.resolve({ traderId, investorId, investment })
+    : commissionRates;
+  if (!resolvedCommissionRates) {
+    throw new Error(
+      `GoB fail-closed: commission rates missing for participation ${participation.id}`,
+    );
+  }
+
+  const totalCommissionRate = resolvedCommissionRates.totalRate;
+  const proportionalProfitShare = round2(netTradingProfit * ownershipRatio);
+  const proportionalCommission = round2(proportionalProfitShare * totalCommissionRate);
+  const proportionalNetProfit = round2(proportionalProfitShare - proportionalCommission);
+
   const investmentCapital = investment.get('amount') || 0;
-  console.log(`  📊 Found investment ${investment.id} for investor ${investorId}, capital=€${investmentCapital}`);
+  console.log(
+    `  📊 Found investment ${investment.id} for investor ${investorId}, capital=€${investmentCapital}, `
+    + `commissionSource=${resolvedCommissionRates.source || 'global'}`,
+  );
 
   const feeConfigForInvestor = mergeInvestorFeeConfig(investment, trade, feeConfig);
 
@@ -48,7 +61,7 @@ async function settleParticipation({
     traderId,
     trade,
     tradeNumber,
-    commissionRates,
+    commissionRates: resolvedCommissionRates,
     feeConfig: feeConfigForInvestor,
     tradeBuyPrice,
   });
@@ -60,7 +73,7 @@ async function settleParticipation({
     trade,
     traderId,
     tradeNumber,
-    commissionRates,
+    commissionRates: resolvedCommissionRates,
     feeConfig: feeConfigForInvestor,
     tradeBuyPrice,
     tradeSellPrice,

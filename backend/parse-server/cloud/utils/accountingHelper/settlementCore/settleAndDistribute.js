@@ -13,6 +13,7 @@ const {
   bookTraderCommissionCreditIfDue,
 } = require('./traderCommissionCredit');
 const { bookAppCommissionRevenueIfDue } = require('./appCommissionRevenue');
+const { effectiveCommissionRateFromAmount } = require('../../configHelper/index.js');
 
 async function settleAndDistribute(trade) {
   const traderId = trade.get('traderId');
@@ -90,7 +91,6 @@ async function settleAndDistribute(trade) {
     traderId,
     settlementTradeNumber,
     netTradingProfitForPool,
-    commissionRates,
     feeConfig,
     tradeBuyPrice,
     tradeSellPrice,
@@ -103,6 +103,16 @@ async function settleAndDistribute(trade) {
     0,
   );
   const creditNoteGrossProfit = totalInvestorGrossProfit > 0 ? totalInvestorGrossProfit : netTradingProfit;
+  const effectiveTraderRate = effectiveCommissionRateFromAmount(
+    totalTraderCommission,
+    creditNoteGrossProfit,
+    commissionRates.traderRate,
+  );
+  const effectiveAppRate = effectiveCommissionRateFromAmount(
+    totalAppCommission,
+    creditNoteGrossProfit,
+    commissionRates.appRate,
+  );
 
   const commissionResult = await bookTraderCommissionCreditIfDue({
     totalCommission: totalTraderCommission,
@@ -115,6 +125,7 @@ async function settleAndDistribute(trade) {
     netTradingProfit,
     investorBreakdown,
     businessCaseId,
+    commissionRate: effectiveTraderRate,
   });
 
   await bookAppCommissionRevenueIfDue({
@@ -123,7 +134,7 @@ async function settleAndDistribute(trade) {
     tradeId: commissionTradeId,
     tradeNumber: commissionTradeNumber,
     traderId,
-    appCommissionRate: commissionRates.appRate,
+    appCommissionRate: effectiveAppRate,
     grossProfitBasis: creditNoteGrossProfit,
     businessCaseId,
   });

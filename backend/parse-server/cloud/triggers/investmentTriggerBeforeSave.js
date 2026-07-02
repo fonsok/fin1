@@ -2,7 +2,7 @@
 
 const { newBusinessCaseId } = require('../utils/accountingHelper/businessCaseId');
 const { generateSequentialNumber, generateInvestorInvestmentNumber } = require('../utils/helpers');
-const { getAppServiceChargeRateForAccountType, loadConfig } = require('../utils/configHelper/index.js');
+const { loadConfig, resolveCommissionRateBundle, resolveAppServiceChargeRate } = require('../utils/configHelper/index.js');
 const { round2 } = require('../utils/accountingHelper/shared');
 const { formatProfileShortDisplayName } = require('../utils/profileDisplayName');
 const { validateInvestmentAmountAgainstLimits } = require('../utils/investmentLimitsValidation');
@@ -10,6 +10,7 @@ const { validatePoolMirrorReservationCapacity } = require('../utils/poolMirrorBu
 const { isBatchPoolCapValidated } = require('../utils/investmentBatchContext');
 const { assertNoDuplicateInvestmentSplit } = require('./investmentDuplicateGuard');
 const { resolveCanonicalUserId } = require('../utils/canonicalUserId');
+const { resolveInvestorAccountType } = require('../functions/investmentAccess');
 const {
   runPendingSchemaMigrations,
 } = require('../utils/schemaMigration/schemaMigrationRunner');
@@ -101,8 +102,33 @@ Parse.Cloud.beforeSave('Investment', async (request) => {
 
     // ADR-007: App Service Charge is billed via Invoice/service_charge (+ AppLedger),
     // not by reducing investment notional — keep initialValue/currentValue == amount.
-    const accountType = ((request.user && request.user.get('accountType')) || 'individual');
-    const configuredRate = await getAppServiceChargeRateForAccountType(accountType);
+    const sessionAccountType = (request.user && request.user.get('accountType')) || 'individual';
+    const accountType = await resolveInvestorAccountType(investorId, sessionAccountType);
+
+    const userFetchCache = new Map();
+    const fetchUserForRates = async (userId) => {
+      if (!userId) {
+        return null;
+      }
+      const key = String(userId);
+      if (userFetchCache.has(key)) {
+        return userFetchCache.get(key);
+      }
+      let user = null;
+      try {
+        user = await new Parse.Query(Parse.User).get(key, { useMasterKey: true });
+      } catch {
+        user = null;
+      }
+      userFetchCache.set(key, user);
+      return user;
+    };
+
+    const resolvedServiceCharge = await resolveAppServiceChargeRate({
+      investorId,
+      accountType,
+    }, { fetchUser: fetchUserForRates });
+    const configuredRate = resolvedServiceCharge.rate;
     const serviceChargeRate = investment.get('serviceChargeRate') || configuredRate;
     const isCompany = String(accountType).toLowerCase() === 'company';
     const grossCharge = round2(amount * serviceChargeRate);
@@ -126,6 +152,17 @@ Parse.Cloud.beforeSave('Investment', async (request) => {
         const liveCfg = await loadConfig();
         const fin = liveCfg && liveCfg.financial ? liveCfg.financial : {};
         investment.set('feeConfigSnapshot', JSON.parse(JSON.stringify(fin)));
+        const resolvedCommission = await resolveCommissionRateBundle({
+          traderId,
+          investorId,
+        }, { fetchUser: fetchUserForRates });
+        investment.set('commissionRateBundleSnapshot', {
+          investorCommissionRateTotal: resolvedCommission.totalRate,
+          traderCommissionRate: resolvedCommission.traderRate,
+          appCommissionRate: resolvedCommission.appRate,
+          resolvedAt: new Date().toISOString(),
+          source: resolvedCommission.source,
+        });
       } else {
         console.warn('beforeSave Investment: feeConfigSnapshot skipped (schema migrations not ok)');
       }

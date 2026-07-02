@@ -88,6 +88,34 @@ extension BuyOrderView {
     }
 
     @ViewBuilder
+    var minBuyOrderWarningSection: some View {
+        if self.viewModel.showMinBuyOrderWarning {
+            VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {
+                HStack {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundColor(.orange)
+                        .font(ResponsiveDesign.scaledSystemFont(size: ResponsiveDesign.iconSize()))
+                    Text("Mindest-Kaufbetrag")
+                        .font(ResponsiveDesign.headlineFont())
+                        .foregroundColor(.orange)
+                }
+
+                Text(self.viewModel.minBuyOrderWarningMessage)
+                    .font(ResponsiveDesign.bodyFont())
+                    .foregroundColor(AppTheme.primaryText)
+                    .multilineTextAlignment(.leading)
+            }
+            .padding()
+            .background(Color.orange.opacity(0.1))
+            .overlay(
+                RoundedRectangle(cornerRadius: ResponsiveDesign.spacing(10))
+                    .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+            )
+            .cornerRadius(ResponsiveDesign.spacing(10))
+        }
+    }
+
+    @ViewBuilder
     var insufficientFundsWarningSection: some View {
         if self.viewModel.showInsufficientFundsWarning {
             VStack(alignment: .leading, spacing: ResponsiveDesign.spacing(8)) {

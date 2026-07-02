@@ -6,6 +6,9 @@ const { formatAdminUserDate } = require('./usersDetailFormat');
 const { loadAccountStatementAndWalletControls } = require('./usersDetailStatementsAndWallet');
 const { loadTraderTradeLists, enrichTradesWithInvestors } = require('./usersDetailTrader');
 const { loadInvestorInvestmentLists, mapInvestmentsForAdminDetail } = require('./usersDetailInvestor');
+const { loadUserCommissionControls } = require('./usersCommissionControls');
+const { loadUserAppServiceChargeControls } = require('./usersAppServiceChargeControls');
+const { loadUserOpenDepotLimitControls } = require('./usersOpenDepotLimitControls');
 
 async function handleGetUserDetails(request) {
   const { userId } = request.params;
@@ -49,6 +52,10 @@ async function handleGetUserDetails(request) {
     userWalletActionModeOverride,
     investorCollectionBills,
   } = await loadAccountStatementAndWalletControls(user, formatDate);
+
+  const commissionControls = await loadUserCommissionControls(user, formatDate);
+  const appServiceChargeControls = await loadUserAppServiceChargeControls(user, formatDate);
+  const openDepotLimitControls = await loadUserOpenDepotLimitControls(user, formatDate);
 
   const tradesWithInvestors = await enrichTradesWithInvestors(trades, formatDate);
 
@@ -94,6 +101,9 @@ async function handleGetUserDetails(request) {
       lastUpdated: formatDate(wallet.get('updatedAt')),
     } : null,
     walletControls,
+    commissionControls,
+    appServiceChargeControls,
+    openDepotLimitControls,
     tradeSummary,
     trades: tradesWithInvestors,
     investmentSummary,

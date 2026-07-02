@@ -26,12 +26,48 @@ const {
   getFinancialConfig,
 } = require('./getters');
 const { validateConfigValue, validateInvestmentAmountOrdering, validateInvestorCommissionRateTotalMatch } = require('./validateConfigValue');
+const { bundleToSettlementRates } = require('./commissionRateBundle');
+const {
+  USER_COMMISSION_OVERRIDE_FIELDS,
+  COMMISSION_OVERRIDE_ROLES,
+  normalizeCommissionOverrideRole,
+  readUserCommissionRateOverride,
+  resolveCommissionRateBundle,
+  createCommissionRateResolver,
+  effectiveCommissionRateFromAmount,
+} = require('./resolveCommissionRateBundle');
+const {
+  USER_APP_SERVICE_CHARGE_OVERRIDE_FIELDS,
+  normalizeAppServiceChargeRate,
+  readUserAppServiceChargeOverride,
+  resolveAppServiceChargeRate,
+  createAppServiceChargeResolver,
+} = require('./resolveAppServiceChargeRate');
 
 const {
   getMaxTraderPartialSells,
   countTraderPartialSellEvents,
   assertTraderPartialSellWithinLimit,
 } = require('./traderPartialSellLimits');
+
+const {
+  USER_OPEN_DEPOT_LIMIT_OVERRIDE_FIELDS,
+  getMaxTraderOpenDepotPositions,
+  normalizeMaxOpenDepotPositions,
+  readUserMaxOpenDepotPositionsOverride,
+  resolveMaxOpenDepotPositions,
+} = require('./resolveMaxOpenDepotPositions');
+
+const {
+  countOpenTraderDepotPositions,
+  assertTraderCanOpenNewDepotPosition,
+} = require('./traderOpenDepotLimits');
+
+const {
+  normalizeMinTraderBuyOrderAmount,
+  getMinTraderBuyOrderAmount,
+  assertTraderBuyOrderMeetsMinimum,
+} = require('./minTraderBuyOrderAmount');
 
 module.exports = {
   loadConfig,
@@ -58,4 +94,27 @@ module.exports = {
   getMaxTraderPartialSells,
   countTraderPartialSellEvents,
   assertTraderPartialSellWithinLimit,
+  USER_OPEN_DEPOT_LIMIT_OVERRIDE_FIELDS,
+  getMaxTraderOpenDepotPositions,
+  normalizeMaxOpenDepotPositions,
+  readUserMaxOpenDepotPositionsOverride,
+  resolveMaxOpenDepotPositions,
+  countOpenTraderDepotPositions,
+  assertTraderCanOpenNewDepotPosition,
+  normalizeMinTraderBuyOrderAmount,
+  getMinTraderBuyOrderAmount,
+  assertTraderBuyOrderMeetsMinimum,
+  USER_COMMISSION_OVERRIDE_FIELDS,
+  COMMISSION_OVERRIDE_ROLES,
+  normalizeCommissionOverrideRole,
+  readUserCommissionRateOverride,
+  resolveCommissionRateBundle,
+  createCommissionRateResolver,
+  effectiveCommissionRateFromAmount,
+  bundleToSettlementRates,
+  USER_APP_SERVICE_CHARGE_OVERRIDE_FIELDS,
+  normalizeAppServiceChargeRate,
+  readUserAppServiceChargeOverride,
+  resolveAppServiceChargeRate,
+  createAppServiceChargeResolver,
 };

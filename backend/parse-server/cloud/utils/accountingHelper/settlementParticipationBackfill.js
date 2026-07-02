@@ -37,7 +37,10 @@ async function trySettleFromExistingBill({
   const { traderCommission: traderCommForBackfill, appCommission: appCommForBackfill } =
     resolveCommissionPartsFromBillMetadata(meta);
   const netForBackfill = round2(grossForBackfill - commForBackfill);
-  const totalCommissionRate = commissionRates.totalRate;
+  const billCommissionRate = Number(meta.commissionRate);
+  const totalCommissionRate = Number.isFinite(billCommissionRate)
+    ? billCommissionRate
+    : commissionRates.totalRate;
 
   if (!participation.get('isSettled')) {
     participation.set('isSettled', true);

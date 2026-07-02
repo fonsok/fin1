@@ -75,6 +75,61 @@ function registerRejectApprovalFunctions() {
         },
       });
     }
+    if (requestType === 'user_commission_rate_bundle_change') {
+      await saveConfigurationAuditLog({
+        action: 'user_commission_rate_bundle_change_rejected',
+        userId: request.user.id,
+        userRole: request.user.get('role'),
+        parameterName: 'commissionRateBundleOverride',
+        metadata: {
+          fourEyesRequestId: requestId,
+          requesterId: req.get('requesterId'),
+          targetUserId: metadata.targetUserId,
+          targetUserEmail: metadata.targetUserEmail || null,
+          overrideRole: metadata.overrideRole || null,
+          originalReason: metadata.reason,
+          rejectionReason: reason,
+          isCritical: true,
+          ip: request.ip,
+        },
+      });
+    }
+    if (requestType === 'user_app_service_charge_change') {
+      await saveConfigurationAuditLog({
+        action: 'user_app_service_charge_change_rejected',
+        userId: request.user.id,
+        userRole: request.user.get('role'),
+        parameterName: 'appServiceChargeRateOverride',
+        metadata: {
+          fourEyesRequestId: requestId,
+          requesterId: req.get('requesterId'),
+          targetUserId: metadata.targetUserId,
+          targetUserEmail: metadata.targetUserEmail || null,
+          originalReason: metadata.reason,
+          rejectionReason: reason,
+          isCritical: true,
+          ip: request.ip,
+        },
+      });
+    }
+    if (requestType === 'user_open_depot_limit_change') {
+      await saveConfigurationAuditLog({
+        action: 'user_open_depot_limit_change_rejected',
+        userId: request.user.id,
+        userRole: request.user.get('role'),
+        parameterName: 'maxOpenDepotPositionsOverride',
+        metadata: {
+          fourEyesRequestId: requestId,
+          requesterId: req.get('requesterId'),
+          targetUserId: metadata.targetUserId,
+          targetUserEmail: metadata.targetUserEmail || null,
+          originalReason: metadata.reason,
+          rejectionReason: reason,
+          isCritical: true,
+          ip: request.ip,
+        },
+      });
+    }
 
     await sendRejectionNotification(req, requestType, metadata, reason);
     return { success: true };

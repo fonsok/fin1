@@ -112,6 +112,10 @@ export function useConfigurationPage() {
           if (n === 0) return '0 (nur Vollverkauf)';
           return String(n);
         }
+        if (key === 'maxTraderOpenDepotPositions') {
+          const n = Math.floor(Number(value));
+          return Number.isFinite(n) ? String(n) : String(value ?? '');
+        }
         return String(value ?? '');
       default:
         return String(value ?? '');
@@ -197,6 +201,9 @@ export function useConfigurationPage() {
       if (isNaN(newValue)) {
         setEditError('Bitte einen gültigen Zahlenwert eingeben.');
         return;
+      }
+      if (def.type === 'number' && (editingParam === 'maxTraderPartialSells' || editingParam === 'maxTraderOpenDepotPositions')) {
+        newValue = Math.floor(newValue);
       }
       if (def.min !== undefined && newValue < def.min) {
         setEditError(`Wert zu klein. Minimum: ${formatLocalizedNumericValue(def.min)}.`);

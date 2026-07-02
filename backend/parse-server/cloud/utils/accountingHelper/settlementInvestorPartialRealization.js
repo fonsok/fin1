@@ -1,6 +1,6 @@
 'use strict';
 
-const { getCommissionRateBundle, loadConfig } = require('../configHelper/index.js');
+const { createCommissionRateResolver, loadConfig } = require('../configHelper/index.js');
 const { round2 } = require('./shared');
 const { ensureBusinessCaseIdForTrade } = require('./businessCaseId');
 const { createPartialSellInternalBeleg } = require('./documents');
@@ -203,7 +203,8 @@ async function bookInvestorPartialRealizationForSellOrderDelta({
   const sellFraction = deltaSellQty / buyQuantity;
   const tradeNumber = poolTrade.get('tradeNumber') || traderTrade.get('tradeNumber');
   const businessCaseId = await ensureBusinessCaseIdForTrade(traderTrade);
-  const commissionRates = await getCommissionRateBundle();
+  const traderId = traderTrade.get('traderId');
+  const commissionRateResolver = await createCommissionRateResolver();
   const config = await loadConfig();
   const feeConfig = config.financial || {};
   const tradeBuyPrice = resolveTradeBuyPrice(poolTrade);
@@ -236,6 +237,11 @@ async function bookInvestorPartialRealizationForSellOrderDelta({
     if (status === 'completed' || status === 'cancelled') continue;
 
     const investmentCapital = Number(investment.get('amount') || investment.get('currentValue') || 0);
+    const resolvedCommissionRates = await commissionRateResolver.resolve({
+      traderId,
+      investorId,
+      investment,
+    });
     const legDelta = computeInvestorPartialSellDelta({
       investmentCapital,
       costBasisPerShare,
@@ -245,7 +251,7 @@ async function bookInvestorPartialRealizationForSellOrderDelta({
       traderBuyQuantity: buyQuantity,
       traderSoldBefore: previousSellQty,
       traderSoldAfter: currentSellQty,
-      commissionRate: commissionRates.totalRate,
+      commissionRate: resolvedCommissionRates.totalRate,
       feeConfig,
     });
     if (!legDelta) continue;

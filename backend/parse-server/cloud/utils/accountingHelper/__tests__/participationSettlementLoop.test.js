@@ -25,7 +25,6 @@ describe('participationSettlementLoop batching', () => {
       traderId: 't1',
       settlementTradeNumber: 1,
       netTradingProfitForPool: 100,
-      commissionRates: {},
       feeConfig: {},
       tradeBuyPrice: 1,
       tradeSellPrice: 2,

@@ -31,4 +31,14 @@ describe('resolveConfig', () => {
 
     expect(config.showCommissionBreakdownInCreditNote).toBe(false);
   });
+
+  it('defaults showTraderDashboardInvestmentActiveStatus to enabled', () => {
+    const config = resolveConfig(undefined);
+    expect(config.showTraderDashboardInvestmentActiveStatus).toBe(1);
+  });
+
+  it('defaults minTraderBuyOrderAmount to 300', () => {
+    const config = resolveConfig(undefined);
+    expect(config.minTraderBuyOrderAmount).toBe(300);
+  });
 });

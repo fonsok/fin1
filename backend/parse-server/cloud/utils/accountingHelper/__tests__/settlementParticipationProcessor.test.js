@@ -120,4 +120,62 @@ describe('settleParticipation (settlementParticipationProcessor)', () => {
     await expect(settleParticipation(baseArgs())).rejects.toThrow(/GoB fail-closed/);
     expect(settleNewParticipation).not.toHaveBeenCalled();
   });
+
+  test('uses investment commission snapshot via resolver when provided', async () => {
+    const investment = makeInvestment();
+    investment.get = (k) => {
+      if (k === 'commissionRateBundleSnapshot') {
+        return {
+          investorCommissionRateTotal: 0.08,
+          traderCommissionRate: 0.05,
+          appCommissionRate: 0.03,
+        };
+      }
+      if (k === 'investorId') return 'investor-1';
+      if (k === 'amount') return 5000;
+      return undefined;
+    };
+    findInvestment.mockResolvedValue(investment);
+
+    const resolve = jest.fn().mockResolvedValue({
+      traderRate: 0.05,
+      appRate: 0.03,
+      totalRate: 0.08,
+      source: 'investment_snapshot',
+    });
+    await settleParticipation({
+      ...baseArgs(),
+      commissionRateResolver: { resolve },
+    });
+    expect(settleNewParticipation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        proportionalCommission: 20,
+        commissionRates: expect.objectContaining({ totalRate: 0.08 }),
+      }),
+    );
+  });
+
+  test('uses commissionRateResolver when provided', async () => {
+    const resolve = jest.fn().mockResolvedValue({
+      traderRate: 0.07,
+      appRate: 0.03,
+      totalRate: 0.1,
+      source: 'trader',
+    });
+    await settleParticipation({
+      ...baseArgs(),
+      commissionRateResolver: { resolve },
+    });
+    expect(resolve).toHaveBeenCalledWith({
+      traderId: 'trader-1',
+      investorId: 'investor-1',
+      investment: expect.objectContaining({ id: 'inv-x' }),
+    });
+    expect(settleNewParticipation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        proportionalCommission: 25,
+        commissionRates: expect.objectContaining({ totalRate: 0.1, traderRate: 0.07 }),
+      }),
+    );
+  });
 });

@@ -1,6 +1,7 @@
 'use strict';
 
 const { audit } = require('../../structuredLogger');
+const { createCommissionRateResolver } = require('../../configHelper/index.js');
 const { settleParticipation } = require('../settlementParticipationProcessor');
 const { readSettlementParticipationBatchSize } = require('../../../services/poolMirrorActivation/poolMirrorScaleLimits');
 
@@ -10,7 +11,7 @@ async function settleParticipationSafe({
   traderId,
   settlementTradeNumber,
   netTradingProfitForPool,
-  commissionRates,
+  commissionRateResolver,
   feeConfig,
   tradeBuyPrice,
   tradeSellPrice,
@@ -25,7 +26,7 @@ async function settleParticipationSafe({
       traderId,
       tradeNumber: settlementTradeNumber,
       netTradingProfit: netTradingProfitForPool,
-      commissionRates,
+      commissionRateResolver,
       feeConfig,
       tradeBuyPrice,
       tradeSellPrice,
@@ -60,7 +61,6 @@ async function settleAllParticipations({
   traderId,
   settlementTradeNumber,
   netTradingProfitForPool,
-  commissionRates,
   feeConfig,
   tradeBuyPrice,
   tradeSellPrice,
@@ -68,6 +68,7 @@ async function settleAllParticipations({
   businessCaseId,
 }) {
   const batchSize = readSettlementParticipationBatchSize();
+  const commissionRateResolver = await createCommissionRateResolver();
   const totals = {
     totalCommission: 0,
     totalTraderCommission: 0,
@@ -85,7 +86,7 @@ async function settleAllParticipations({
       traderId,
       settlementTradeNumber,
       netTradingProfitForPool,
-      commissionRates,
+      commissionRateResolver,
       feeConfig,
       tradeBuyPrice,
       tradeSellPrice,

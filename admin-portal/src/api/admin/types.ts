@@ -226,6 +226,50 @@ export interface UserDetailsResponse {
     userOverrideMode: 'disabled' | 'deposit_only' | 'withdrawal_only' | 'deposit_and_withdrawal' | null;
     effectiveMode: 'disabled' | 'deposit_only' | 'withdrawal_only' | 'deposit_and_withdrawal';
   };
+  commissionControls?: UserCommissionControls;
+  appServiceChargeControls?: UserAppServiceChargeControls;
+  openDepotLimitControls?: UserOpenDepotLimitControls;
+}
+
+export interface CommissionRateBundle {
+  investorCommissionRateTotal: number;
+  traderCommissionRate: number;
+  appCommissionRate: number;
+}
+
+export interface UserCommissionControls {
+  globalRates: CommissionRateBundle;
+  storedOverride: CommissionRateBundle | null;
+  userOverride: CommissionRateBundle | null;
+  pendingOverride: CommissionRateBundle | null;
+  overrideRole: 'trader' | 'investor' | null;
+  effectiveFrom: string | null;
+  applicableOverrideRole: 'trader' | 'investor' | null;
+  effectiveRates: (CommissionRateBundle & { source?: string }) | null;
+}
+
+export interface UserAppServiceChargeControls {
+  globalRate: number;
+  storedOverride: number | null;
+  userOverride: number | null;
+  pendingOverride: number | null;
+  effectiveFrom: string | null;
+  applicable: boolean;
+  accountType: string;
+  effectiveRate: number | null;
+  source: 'global' | 'investor' | null;
+}
+
+export interface UserOpenDepotLimitControls {
+  globalLimit: number;
+  storedOverride: number | null;
+  userOverride: number | null;
+  pendingOverride: number | null;
+  effectiveFrom: string | null;
+  applicable: boolean;
+  effectiveLimit: number;
+  source: 'global' | 'trader' | null;
+  openDepotPositions: number;
 }
 
 export interface DashboardStats {

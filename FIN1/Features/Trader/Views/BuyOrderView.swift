@@ -29,6 +29,7 @@ struct BuyOrderView: View {
                     self.costEstimateSection
                     self.priceValidityWarningSection
                     self.insufficientFundsWarningSection
+                    self.minBuyOrderWarningSection
                     self.transactionLimitWarningSection
                     BuyOrderFailureSection(viewModel: self.viewModel)
                     self.orderActionButton
