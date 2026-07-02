@@ -91,6 +91,7 @@ extension ConfigurationService {
         showTraderDashboardInvestmentActiveStatus = configuration.effectiveShowTraderDashboardInvestmentActiveStatus
         minimumInvestmentAmount = configuration.effectiveMinimumInvestment
         maximumInvestmentAmount = configuration.effectiveMaximumInvestment
+        minTraderBuyOrderAmount = configuration.effectiveMinTraderBuyOrderAmount
         maxTraderPartialSells = configuration.effectiveMaxTraderPartialSells
         taxCollectionMode = configuration.effectiveTaxCollectionMode
         slaMonitoringInterval = configuration.slaMonitoringInterval
@@ -148,6 +149,10 @@ extension ConfigurationService {
                     if self.configuration.maxInvestment != lim.maxInvestment { self.configuration.maxInvestment = lim.maxInvestment; changed = true }
                     if self.configuration.maxPoolMirrorBuyOrderAmount != lim.maxPoolMirrorBuyOrderAmount {
                         self.configuration.maxPoolMirrorBuyOrderAmount = lim.maxPoolMirrorBuyOrderAmount
+                        changed = true
+                    }
+                    if self.configuration.minTraderBuyOrderAmount != lim.minTraderBuyOrderAmount {
+                        self.configuration.minTraderBuyOrderAmount = lim.minTraderBuyOrderAmount
                         changed = true
                     }
                 }

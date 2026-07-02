@@ -57,6 +57,7 @@ extension ConfigurationServiceProtocol {
     var monthlyTransactionLimit: Double { CalculationConstants.TransactionLimits.baseMonthlyLimit }
     var minimumInvestmentAmount: Double { CalculationConstants.Investment.fallbackMinimumInvestmentAmount }
     var maximumInvestmentAmount: Double { CalculationConstants.Investment.fallbackMaximumInvestmentAmount }
+    var minTraderBuyOrderAmount: Double { CalculationConstants.TraderBuyOrder.fallbackMinimumBuyOrderAmount }
     var maxTraderPartialSells: Int { 3 }
     var effectiveMaxTraderPartialSells: Int { min(3, max(0, self.maxTraderPartialSells)) }
     var taxCollectionMode: TaxCollectionMode { .customerSelfReports }

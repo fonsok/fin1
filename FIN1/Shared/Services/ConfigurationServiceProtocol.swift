@@ -75,6 +75,9 @@ protocol ConfigurationServiceProtocol: ObservableObject, Sendable {
     /// Maximum capital per investment slot (EUR) from `getConfig` / admin limits.
     var maximumInvestmentAmount: Double { get }
 
+    /// Minimum gross EUR for trader-owned buy leg (0 = disabled). Pool-mirror leg excluded.
+    var minTraderBuyOrderAmount: Double { get }
+
     /// 0 = nur Vollverkauf; 1–3 = max. Teil-Verkäufe pro Trader-Trade (Admin `maxTraderPartialSells`).
     var maxTraderPartialSells: Int { get }
     var effectiveMaxTraderPartialSells: Int { get }

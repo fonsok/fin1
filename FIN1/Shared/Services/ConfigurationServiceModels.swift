@@ -15,6 +15,7 @@ struct GetConfigResponse: Decodable {
         let minInvestment: Double?
         let maxInvestment: Double?
         let maxPoolMirrorBuyOrderAmount: Double?
+        let minTraderBuyOrderAmount: Double?
     }
 
     struct FinancialSection: Decodable {

@@ -43,6 +43,7 @@ final class ConfigurationService: ConfigurationServiceProtocol, ServiceLifecycle
     @Published var showTraderDashboardInvestmentActiveStatus: Bool = true
     @Published var minimumInvestmentAmount: Double = CalculationConstants.Investment.fallbackMinimumInvestmentAmount
     @Published var maximumInvestmentAmount: Double = CalculationConstants.Investment.fallbackMaximumInvestmentAmount
+    @Published var minTraderBuyOrderAmount: Double = CalculationConstants.TraderBuyOrder.fallbackMinimumBuyOrderAmount
     @Published var maxTraderPartialSells: Int = 3
     @Published var taxCollectionMode: TaxCollectionMode = .customerSelfReports
     @Published var slaMonitoringInterval: TimeInterval = 300.0 // 5 minutes default, internal(set) for extension access

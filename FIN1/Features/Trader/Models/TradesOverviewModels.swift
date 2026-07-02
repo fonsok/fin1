@@ -7,6 +7,7 @@ struct TradeOverviewItem: Identifiable {
     let id = UUID()
     let tradeId: String? // Actual trade ID for linking with invoices
     let tradeNumber: Int
+    let tradeNumberYear: Int?
     let startDate: Date
     let endDate: Date
     let profitLoss: Double // Net profit (after fees)
@@ -22,6 +23,54 @@ struct TradeOverviewItem: Identifiable {
     // Additional fields for profit breakdown info
     let grossProfit: Double // Gross profit (before fees)
     let totalFees: Double // Total fees for the trade
+
+    init(
+        tradeId: String?,
+        tradeNumber: Int,
+        tradeNumberYear: Int? = nil,
+        startDate: Date,
+        endDate: Date,
+        profitLoss: Double,
+        returnPercentage: Double,
+        commission: Double,
+        isCommissionPending: Bool,
+        isActive: Bool,
+        statusText: String,
+        statusDetail: String,
+        onDetailsTapped: @escaping () -> Void,
+        grossProfit: Double,
+        totalFees: Double
+    ) {
+        self.tradeId = tradeId
+        self.tradeNumber = tradeNumber
+        self.tradeNumberYear = tradeNumberYear
+        self.startDate = startDate
+        self.endDate = endDate
+        self.profitLoss = profitLoss
+        self.returnPercentage = returnPercentage
+        self.commission = commission
+        self.isCommissionPending = isCommissionPending
+        self.isActive = isActive
+        self.statusText = statusText
+        self.statusDetail = statusDetail
+        self.onDetailsTapped = onDetailsTapped
+        self.grossProfit = grossProfit
+        self.totalFees = totalFees
+    }
+
+    var resolvedTradeNumberYear: Int {
+        self.tradeNumberYear ?? TradeNumberFormatting.calendarYear(for: self.startDate)
+    }
+
+    var formattedTradeNumber: String {
+        TradeNumberFormatting.display(number: self.tradeNumber, year: self.resolvedTradeNumberYear)
+    }
+
+    /// User-facing label for lists and detail headers (never raw integer).
+    var displayTradeNumber: String {
+        let formatted = self.formattedTradeNumber
+        return formatted.isEmpty ? "—" : formatted
+    }
 
     var backgroundColor: Color {
         // Alternate row colors for better readability
