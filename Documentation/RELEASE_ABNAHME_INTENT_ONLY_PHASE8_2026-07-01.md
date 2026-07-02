@@ -1,14 +1,16 @@
-# Release-Abnahme — Intent-only Execution + MarketData Publish (ADR-019 Phase 8)
+# Release-Abnahme — Intent-only Execution + MarketData Feed (ADR-019 Phase 8–9)
 
-**Ziel:** Go-Live-Nachweis für **intent-only** Market-Orders (kein Client-`price` in Execute-Payloads) und die **Interim-Brücke** `upsertMarketDataQuote` → Parse `MarketData` → `executePairedBuy` / `executeSellOrder`.
+**Ziel:** Go-Live-Nachweis für **intent-only** Market-Orders (kein Client-`price` in Execute-Payloads), den **serverseitigen Market-Data-Feed** und **iOS feed-first** mit `upsertMarketDataQuote` als Fallback.
 
 **Referenzen**
 
-- ADR: `Documentation/ADR-019-Sell-Server-Authoritative-Execution.md` (Phase 8)
+- ADR: `Documentation/ADR-019-Sell-Server-Authoritative-Execution.md` (Phase 8–9)
 - Preis-Resolver: `backend/parse-server/cloud/utils/executionPriceResolver.js`
-- Cloud Function: `backend/parse-server/cloud/functions/upsertMarketDataQuote.js`
-- iOS Publish: `FIN1/Shared/Services/MarketDataQuotePublisher.swift`
-- E2E-Smoke: `scripts/smoke-publish-market-data-quote-e2e.sh`
+- Feed: `backend/parse-server/cloud/utils/marketDataFeed/`
+- Cloud Functions: `upsertMarketDataQuote`, `runMarketDataFeedRefresh`
+- iOS: `FIN1/Shared/Services/MarketDataQuotePublisher.swift`
+- E2E-Smokes: `scripts/smoke-publish-market-data-quote-e2e.sh`, `scripts/smoke-market-data-feed-e2e.sh`
+- Unit-Tests: `FIN1Tests/MarketDataQuotePublisherTests.swift`
 - Test-Accounts: `Documentation/DEV_LOGIN_ACCOUNTS.md`
 
 ---
@@ -17,9 +19,9 @@
 
 | Bereich | Enthalten | Nicht abgedeckt |
 |---------|-----------|-----------------|
-| Backend | Intent-only Resolver, `upsertMarketDataQuote`, Deploy iobox | Serverseitiger Dauer-Market-Data-Feed |
-| iOS Trader | Market-Buy/Sell mit Publish vor Execute | Vollständige Trader-Regression |
-| Ops | Post-Deploy-Smoke inkl. `upsertMarketDataQuote` E2E | Produktions-App-Store-Release (manuell) |
+| Backend | Intent-only Resolver, Feed-Worker, `upsertMarketDataQuote` (Fallback) | Echter externer Market-Data-Service (`backend/market-data/`) |
+| iOS Trader | Feed-first vor Market-Buy/Sell; Upsert nur bei fehlendem/stale Quote | Vollständige Trader-Regression |
+| Ops | Post-Deploy-Smoke full profile inkl. Feed + Upsert E2E | Produktions-App-Store-Release (manuell) |
 | Monetary SSOT | P0 #2 Fees/Belege | Separates Ticket |
 
 ---
@@ -28,37 +30,63 @@
 
 | Check | Status |
 |-------|--------|
-| Parse Cloud auf iobox deployed (`upsertMarketDataQuote`, intent-only Resolver) | ✅ |
-| Post-Deploy-Smoke `upsertMarketDataQuote E2E` (Server localhost) | ✅ |
-| Post-Deploy-Smoke full profile (Deploy 2026-07-01) | ✅ |
-| iOS: `MarketDataQuotePublisher` + Buy/Sell Placement-Hooks | ✅ (lokaler Build) |
-| ADR-019 Phase 8 dokumentiert | ✅ |
+| Parse Cloud auf iobox deployed (intent-only, Feed, `upsertMarketDataQuote`) | ✅ |
+| Post-Deploy-Smoke `upsertMarketDataQuote` E2E | ✅ |
+| Post-Deploy-Smoke `market data feed` E2E | ✅ |
+| Post-Deploy-Smoke full profile (Deploy 2026-07-02) | ✅ |
+| iOS: `MarketDataQuotePublisher` feed-first + Buy/Sell Hooks | ✅ |
+| iOS Unit-Tests `MarketDataQuotePublisherTests` (3/3) | ✅ (2026-07-02) |
+| ADR-019 Phase 8–9 dokumentiert | ✅ |
 
 **Umgebung:** iobox — `192.168.178.20`, Parse `~/fin1-server/`, App → Staging-Parse (Simulator)
 
-**Git-Ref (Abnahme-Stand):** Lokaler Build mit Phase-8-Änderungen (Commit noch ausstehend; `main` @ `048701f` + uncommittete Phase-8-Dateien siehe §6)
+**Git-Ref (Abnahme-Stand):**
+
+| Commit | Inhalt |
+|--------|--------|
+| `b3bcad3` | Intent-only + `upsertMarketDataQuote` Brücke |
+| `c8c4cfb` | Server-Feed + iOS feed-first |
+| `b408068` | Feed: Katalog + kürzlich gehandelte Symbole |
 
 ---
 
-## 3) Manuelle Abnahme iOS (2026-07-01)
+## 3) iOS feed-first Check (2026-07-02)
 
-**Tester:** manuell im **Simulator**, App neu gebaut mit Phase-8-Swift-Änderungen
+**Tester:** automatisiert (Unit-Tests + API-Mirror gegen iobox)
 
-| Phase | Schritt | Ergebnis |
-|-------|---------|----------|
-| 1 | Neuer Geschäftsfall (Trader): Market-Order-Flow | ✅ In Ordnung |
-| 2 | Kein Fehler `no market data` / `market data stale` | ✅ (implizit — Durchlauf erfolgreich) |
-| 3 | Order/Trade wie erwartet abgeschlossen | ✅ In Ordnung |
+### Szenario A — Feed-WKN (`865985`, Apple)
 
-**Pass-Kriterien Phase 8 (Client):**
+| Schritt | Erwartung | Ergebnis |
+|-------|-----------|----------|
+| `runMarketDataFeedRefresh` | Frische `MarketData` | ✅ price≈174, age≤300s |
+| iOS-Logik (`ensureFreshMarketDataBeforeExecution`) | **Kein** `upsertMarketDataQuote` | ✅ skip upsert |
 
-- [x] Market-Order im Simulator ohne Market-Data-Fehler
-- [x] Geschäftsfall vollständig durchlaufen
-- [x] Neuer iOS-Build (nicht alte App-Version)
+### Szenario B — Exotische WKN (noch nie gehandelt)
+
+| Schritt | Erwartung | Ergebnis |
+|-------|-----------|----------|
+| Vor Upsert | Kein `MarketData` | ✅ |
+| iOS-Logik | **Upsert-Fallback** | ✅ `upsertMarketDataQuote` |
+| Nach Upsert | Frische Quote, Execute möglich | ✅ |
+
+### Unit-Tests (Simulator iPhone 16)
+
+| Test | Ergebnis |
+|------|----------|
+| `testSkipsUpsertWhenFeedQuoteIsFresh` | ✅ |
+| `testUpsertsWhenFeedQuoteMissing` | ✅ |
+| `testUpsertsWhenFeedQuoteStale` | ✅ |
+
+**Pass-Kriterien Phase 9 (Client):**
+
+- [x] Feed-WKN: Upsert wird übersprungen bei Quote ≤ 300s
+- [x] Exotische WKN: Upsert-Fallback funktioniert
+- [x] Stale Quote (>300s): Upsert wird ausgelöst
+- [x] Unit-Tests grün
 
 **Optional (nicht im Protokoll ausgefüllt):**
 
-- [ ] Xcode-Konsole: `upsertMarketDataQuote` vor `executePairedBuy` sichtbar
+- [ ] Xcode-Konsole im Simulator: Market-Buy `865985` ohne `upsertMarketDataQuote`-Log
 - [ ] Separater Market-Sell-Only-Durchlauf dokumentiert
 - [ ] Limit-Order (ohne Publish) Regression
 
@@ -68,14 +96,22 @@
 
 | Check | Ergebnis |
 |-------|----------|
-| `scripts/smoke-publish-market-data-quote-e2e.sh` (lokal + Server) | ✅ |
-| Deploy Parse Cloud + full post-deploy-smoke | ✅ (2026-07-01) |
+| `scripts/smoke-publish-market-data-quote-e2e.sh` | ✅ |
+| `scripts/smoke-market-data-feed-e2e.sh` | ✅ |
+| Deploy Parse Cloud + full post-deploy-smoke | ✅ (2026-07-02) |
+| API-Mirror feed-first (865985 + exotische WKN) | ✅ (2026-07-02) |
 
-Smoke-Ablauf (ohne Master-Key-`MarketData`-Seed):
+**Upsert-Smoke** (Fallback-Pfad):
 
 1. `executePairedBuy` ohne Quote → `no market data`
 2. `upsertMarketDataQuote` (Trader-Session)
-3. `executePairedBuy` → Preisauflösung OK (Mindest-Kaufbetrag-Block)
+3. `executePairedBuy` → Preisauflösung OK
+
+**Feed-Smoke** (Hauptpfad):
+
+1. `runMarketDataFeedRefresh` für Feed-WKN
+2. `MarketData` frisch vorhanden
+3. `executePairedBuy` ohne Upsert → Preisauflösung OK
 
 ---
 
@@ -83,29 +119,43 @@ Smoke-Ablauf (ohne Master-Key-`MarketData`-Seed):
 
 | Feld | Wert |
 |------|------|
-| **Datum** | 2026-07-01 |
+| **Datum** | 2026-07-02 |
 | **Umgebung** | iobox (`192.168.178.20`) |
-| **iOS** | Simulator, neu gebaut |
-| **Manuelle Abnahme** | ✅ Geschäftsfall in Ordnung |
-| **Backend-Deploy** | ✅ Parse Cloud (intent-only + `upsertMarketDataQuote`) |
-| **Ergebnis** | **Go** — Phase-8-Client-Lücke geschlossen (interim) |
+| **iOS** | Unit-Tests + API-Mirror; Simulator-Geschäftsfall Phase 8 (2026-07-01) |
+| **Automatisierter Check** | ✅ feed-first 2-Szenario + 3 Unit-Tests |
+| **Backend-Deploy** | ✅ Parse Cloud (intent-only + Feed Slice 1–3) |
+| **Ergebnis** | **Go** — Phase 8–9 abgenommen |
 
-**Bemerkungen:** `upsertMarketDataQuote` ist bewusst **Interim** bis ein serverseitiger Market-Data-Feed existiert (ADR-019 Phase 8). Alte iOS-Builds ohne Publish schlagen bei Market-Orders fehl, sofern kein externes `MarketData` existiert.
+**Bemerkungen:**
+
+- **Hauptpfad:** Server-Feed (Mock-Katalog + kürzlich gehandelte WKNs, 60s Worker) → Parse `MarketData` → `executionPriceResolver`.
+- **Fallback:** `upsertMarketDataQuote` bleibt für erstmalige/exotische WKNs ohne Feed-Quote (bewusst nicht entfernen).
+- Alte iOS-Builds ohne feed-first schicken ggf. weiter Upsert — harmlos. Builds **ohne** Publish **und** ohne Feed-Quote schlagen bei Market-Orders fehl.
 
 ---
 
-## 6) Enthaltene Änderungen (Phase 8)
+## 6) Enthaltene Änderungen
+
+### Phase 8 — Intent-only
 
 | Pfad | Inhalt |
 |------|--------|
 | `backend/parse-server/cloud/utils/executionPriceResolver.js` | Intent-only: nur `MarketData` / `limitPrice` |
-| `backend/parse-server/cloud/functions/upsertMarketDataQuote.js` | Quote in `MarketData` schreiben |
-| `backend/parse-server/cloud/functions/trading.js` | CF registriert |
-| `FIN1/Shared/Services/MarketDataQuotePublisher.swift` | iOS Publish vor Market-Execute |
+| `backend/parse-server/cloud/functions/upsertMarketDataQuote.js` | Fallback-Quote in `MarketData` |
+| `FIN1/Shared/Services/MarketDataQuotePublisher.swift` | Publish / feed-first vor Market-Execute |
 | `FIN1/Features/Trader/Services/BuyOrderPlacementService+PairedBuy.swift` | Hook Buy |
 | `FIN1/Features/Trader/Services/OrderAPIService.swift` | Hook Sell |
-| `scripts/smoke-publish-market-data-quote-e2e.sh` | E2E ohne Master-Key-Seed |
-| `Documentation/ADR-019-Sell-Server-Authoritative-Execution.md` | Phase 8 Addendum |
+| `scripts/smoke-publish-market-data-quote-e2e.sh` | E2E Fallback |
+
+### Phase 9 — Server-Feed + iOS feed-first
+
+| Pfad | Inhalt |
+|------|--------|
+| `backend/parse-server/cloud/utils/marketDataFeed/` | Feed-Worker, Katalog, Trade-Discovery |
+| `backend/parse-server/cloud/functions/runMarketDataFeedRefresh.js` | Admin/Ops manueller Refresh |
+| `backend/parse-server/cloud/main.js` | 60s Worker |
+| `FIN1Tests/MarketDataQuotePublisherTests.swift` | feed-first Unit-Tests |
+| `scripts/smoke-market-data-feed-e2e.sh` | E2E Feed-Hauptpfad |
 
 ---
 
@@ -113,8 +163,9 @@ Smoke-Ablauf (ohne Master-Key-`MarketData`-Seed):
 
 | # | Aktion | Priorität |
 |---|--------|-----------|
-| 1 | Phase-8-Änderungen committen + iOS Release (TestFlight/intern) | Jetzt |
-| 2 | Serverseitiger Market-Data-Feed (ersetzt App-Publish) | Backlog |
-| 3 | P0 #2 Fees/Belege | Backlog |
+| 1 | iOS Release (TestFlight/intern) mit `b408068`+ | Jetzt |
+| 2 | Optional: Simulator-Konsole für Szenario A manuell bestätigen | Niedrig |
+| 3 | Echter Market-Data-Service (`backend/market-data/`) | Backlog (Slice 4) |
+| 4 | P0 #2 Fees/Belege | Backlog |
 
-**Kein weiterer Parse-Cloud-Deploy** für diese Welle erforderlich (bereits live).
+**Parse-Cloud-Deploy:** Stand 2026-07-02 live auf iobox — kein weiterer Deploy für diese Welle erforderlich.

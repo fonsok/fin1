@@ -18,7 +18,11 @@ final class MarketDataQuotePublisherTests: XCTestCase {
     func testSkipsUpsertWhenFeedQuoteIsFresh() async throws {
         let iso = ISO8601DateFormatter().string(from: Date())
         self.mockClient.mockFetchResults = [
-            MarketDataQuotePublisherTestRow(symbol: "865985", price: 174.0, timestampISO: iso)
+            [
+                "symbol": "865985",
+                "price": 174.0,
+                "timestamp": ["iso": iso]
+            ]
         ]
 
         try await MarketDataQuotePublisher.ensureFreshMarketDataBeforeExecution(
@@ -33,7 +37,7 @@ final class MarketDataQuotePublisherTests: XCTestCase {
     }
 
     func testUpsertsWhenFeedQuoteMissing() async throws {
-        self.mockClient.mockFetchResults = [MarketDataQuotePublisherTestRow]()
+        self.mockClient.mockFetchResults = [[String: Any]]()
 
         try await MarketDataQuotePublisher.ensureFreshMarketDataBeforeExecution(
             symbol: "UNKNOWN-WKN",
@@ -50,7 +54,11 @@ final class MarketDataQuotePublisherTests: XCTestCase {
         let stale = Calendar.current.date(byAdding: .minute, value: -10, to: Date())!
         let iso = ISO8601DateFormatter().string(from: stale)
         self.mockClient.mockFetchResults = [
-            MarketDataQuotePublisherTestRow(symbol: "865985", price: 174.0, timestampISO: iso)
+            [
+                "symbol": "865985",
+                "price": 174.0,
+                "timestamp": ["iso": iso]
+            ]
         ]
 
         try await MarketDataQuotePublisher.ensureFreshMarketDataBeforeExecution(
@@ -61,28 +69,5 @@ final class MarketDataQuotePublisherTests: XCTestCase {
         )
 
         XCTAssertEqual(self.mockClient.lastFunctionName, "upsertMarketDataQuote")
-    }
-}
-
-/// Test-only Decodable mirror for `MarketData` REST rows.
-private struct MarketDataQuotePublisherTestRow: Decodable {
-    let symbol: String?
-    let price: Double?
-    let timestamp: Timestamp?
-
-    struct Timestamp: Decodable {
-        let iso: String?
-    }
-
-    init(symbol: String, price: Double, timestampISO: String) {
-        self.symbol = symbol
-        self.price = price
-        self.timestamp = Timestamp(iso: timestampISO)
-    }
-
-    init() {
-        self.symbol = nil
-        self.price = nil
-        self.timestamp = nil
     }
 }

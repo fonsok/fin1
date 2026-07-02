@@ -52,6 +52,11 @@ final class MockParseAPIClient: ParseAPIClientProtocol, @unchecked Sendable {
             throw self.errorToThrow
         }
 
+        if let dicts = mockFetchResults as? [[String: Any]] {
+            let data = try JSONSerialization.data(withJSONObject: dicts)
+            return try JSONDecoder().decode([T].self, from: data)
+        }
+
         if let results = mockFetchResults as? [T] {
             return results
         }
